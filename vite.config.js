@@ -8,6 +8,7 @@ export default defineConfig({
             input: [
                 'resources/assets/frontend/css/styles.css',
                 'resources/assets/admin/css/styles_admin.css',
+                'resources/assets/frontend/css/styles-header.css',
             ],
             refresh: true,
         }),

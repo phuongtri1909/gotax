@@ -1,8 +1,8 @@
 :root {
-    --primary-color: #3B5994;
-    --primary-color-2: #3B599499;
-    --primary-color-3: #4769C9;
-    --primary-color-4: #394B9B;
+    --primary-color: #227447;
+    --primary-color-2: #10A142;
+    --primary-color-3: #FF3B30;
+    --primary-color-4: #FE416D;
     --primary-color-5: #7BA3DF;
     --primary-color-6: #37814B;
     --primary-color-7: #F2F5FC;
@@ -64,7 +64,7 @@
 }
 
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: "Be Vietnam Pro", sans-serif;
 }
 
 html {
