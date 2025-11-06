@@ -9,7 +9,7 @@
         <div class="container">
             @include('components.tools-section')
             @include('components.smart-support-section')
-
+            @include('components.statistics-section')
         </div>
     </section>
 @endsection
