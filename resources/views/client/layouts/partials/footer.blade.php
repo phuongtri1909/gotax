@@ -60,18 +60,21 @@
                     </p>
                     <p class="contact-item">
                         <span class="contact-label">Số điện thoại:</span>
-                        <a href="tel:{{ str_replace(' ', '', $footerData['contact']['phone']) }}" class="contact-value">{{ $footerData['contact']['phone'] }}</a>
+                        <a href="tel:{{ str_replace(' ', '', $footerData['contact']['phone']) }}"
+                            class="contact-value">{{ $footerData['contact']['phone'] }}</a>
                     </p>
                     <p class="contact-item">
                         <span class="contact-label">Email:</span>
-                        <a href="mailto:{{ $footerData['contact']['email'] }}" class="contact-value">{{ $footerData['contact']['email'] }}</a>
+                        <a href="mailto:{{ $footerData['contact']['email'] }}"
+                            class="contact-value">{{ $footerData['contact']['email'] }}</a>
                     </p>
                 </div>
                 <div class="footer-social">
-                    @if(isset($socials) && $socials->count() > 0)
-                        @foreach($socials as $social)
-                            <a href="{{ $social->url }}" target="_blank" class="social-link" aria-label="{{ $social->name }}">
-                                @if(strpos($social->icon, 'custom-') === 0)
+                    @if (isset($socials) && $socials->count() > 0)
+                        @foreach ($socials as $social)
+                            <a href="{{ $social->url }}" target="_blank" class="social-link"
+                                aria-label="{{ $social->name }}">
+                                @if (strpos($social->icon, 'custom-') === 0)
                                     <span class="{{ $social->icon }}"></span>
                                 @else
                                     <i class="{{ $social->icon }}"></i>
@@ -98,6 +101,9 @@
     </div>
 </footer>
 
-@push('styles')
-    
-@endpush
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@stack('scripts')
+</body>
+
+</html>

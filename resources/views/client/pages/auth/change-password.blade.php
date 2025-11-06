@@ -15,21 +15,25 @@
 
         <div class="login-container">
             <div class="login-card">
-                <h2 class="login-title">Đăng Nhập</h2>
-                <p class="login-subtitle">Vui lòng nhập thông tin của bạn để tiến hành đăng nhập.</p>
+                <h2 class="login-title">Đổi Mật Khẩu</h2>
+                <p class="login-subtitle">Vui lòng nhập mật khẩu mới của bạn để tiến hành đăng nhập.</p>
 
                 @include('components.toast-main')
                 @include('components.toast')
 
-                <form method="POST" action="{{ route('login.post') }}" class="login-form">
+                <form method="POST" action="{{ route('change-password.post') }}" class="login-form">
                     @csrf
 
                     <div class="form-group">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control @error('email') is-invalid @enderror"
-                            id="email" name="email" value="{{ old('email') }}"
-                            placeholder="Tài khoản" required autofocus>
-                        @error('email')
+                        <label for="password" class="form-label">Mật khẩu mới</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" class="form-control @error('password') is-invalid @enderror"
+                                id="password" name="password" placeholder="Mật khẩu" required autofocus>
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password', 'password-icon')">
+                                <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye" class="eye-icon" id="password-icon">
+                            </button>
+                        </div>
+                        @error('password')
                             <div class="invalid-feedback d-block">
                                 {{ $message }}
                             </div>
@@ -37,17 +41,17 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password_confirmation" class="form-label">Nhập lại</label>
                         <div class="password-input-wrapper">
-                            <input type="password" class="form-control @error('password') is-invalid @enderror"
-                                id="password" name="password" placeholder="Mật khẩu" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePassword()">
-                                <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye" class="eye-icon" id="password-icon">
+                            <input type="password" class="form-control @error('password_confirmation') is-invalid @enderror"
+                                id="password_confirmation" name="password_confirmation" placeholder="Mật khẩu" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password_confirmation', 'password-confirmation-icon')">
+                                <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye" class="eye-icon" id="password-confirmation-icon">
                             </button>
                         </div>
-                        @error('password')
+                        @error('password_confirmation')
                             <div class="invalid-feedback d-block">
-                                {{ $message }}
+                                <i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}
                             </div>
                         @enderror
                     </div>
@@ -78,9 +82,9 @@
 
 @push('scripts')
     <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const passwordIcon = document.getElementById('password-icon');
+        function togglePassword(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const passwordIcon = document.getElementById(iconId);
 
             if (!passwordInput || !passwordIcon) {
                 return;
@@ -88,13 +92,11 @@
 
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                // Change to eye-slash icon if exists, otherwise keep same
                 const eyeSlashPath = "{{ asset('/images/svg/eye-slash.svg') }}";
                 passwordIcon.src = eyeSlashPath;
                 passwordIcon.alt = 'Hide Password';
             } else {
                 passwordInput.type = 'password';
-                // Change back to eye icon
                 const eyePath = "{{ asset('/images/svg/eye.svg') }}";
                 passwordIcon.src = eyePath;
                 passwordIcon.alt = 'Show Password';
@@ -106,3 +108,4 @@
 @push('styles')
     @vite('resources/assets/frontend/css/pages/auth/login.css')
 @endpush
+

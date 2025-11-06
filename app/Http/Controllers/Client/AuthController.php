@@ -16,9 +16,9 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ], [
-            'email.required' => 'Please enter your email.',
-            'email.email' => 'The email you entered is invalid.',
-            'password.required' => 'Please enter your password.',
+            'email.required' => 'Email không được để trống.',
+            'email.email' => 'Email không hợp lệ.',
+            'password.required' => 'Mật khẩu không được để trống.',
         ]);
 
         try {
@@ -28,19 +28,19 @@ class AuthController extends Controller
             $user = User::where('email', $request->email)->first();
             if (!$user) {
                 return redirect()->back()->withInput()->withErrors([
-                    'email' => 'Invalid credentials. Please try again.',
+                    'email' => 'Tài khoản không tồn tại.',
                 ]);
             }
 
             if ($user->active == false) {
                 return redirect()->back()->withInput()->withErrors([
-                    'email' => 'Invalid credentials. Please try again.',
+                    'email' => 'Tài khoản đã bị khóa.',
                 ]);
             }
 
             if (!password_verify($request->password, $user->password)) {
                 return redirect()->back()->withInput()->withErrors([
-                    'email' => 'Invalid credentials. Please try again.',
+                    'email' => 'Mật khẩu không chính xác.',
                 ]);
             }
 
@@ -53,7 +53,7 @@ class AuthController extends Controller
 
             return redirect()->route('dashboard');
         } catch (Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'An error occurred during login. Please try again later.');
+            return redirect()->back()->withInput()->with('error', 'Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau.');
         }
     }
 

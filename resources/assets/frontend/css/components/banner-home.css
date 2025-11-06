@@ -2,7 +2,6 @@
     position: relative;
     min-height: 600px;
     overflow: hidden;
-    margin-top: 100px;
 }
 
 .banner-slider {
@@ -161,7 +160,6 @@
 @media (max-width: 991.98px) {
     .banner-home {
         min-height: 500px;
-        margin-top: 70px;
     }
 
     .banner-content-wrapper {

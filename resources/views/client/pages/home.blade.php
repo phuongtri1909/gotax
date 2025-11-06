@@ -4,7 +4,7 @@
 @section('keywords', config('app.name'))
 
 @section('content')
-    <section class="home-page">
+    <section class="home-page container-page">
         @include('components.banner-home')
         <div class="container">
             @include('components.tools-section')

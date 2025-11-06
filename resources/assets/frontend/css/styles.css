@@ -73,6 +73,16 @@ html {
     scroll-behavior: smooth;
 }
 
+.container-page {
+    margin-top: 100px;
+}
+
+@media (max-width: 991.98px) {
+    .container-page {
+        margin-top: 70px;
+    }
+}
+
 .rounded-6 {
     border-radius: 3rem !important;
 }

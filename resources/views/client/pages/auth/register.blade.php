@@ -15,21 +15,45 @@
 
         <div class="login-container">
             <div class="login-card">
-                <h2 class="login-title">Đăng Nhập</h2>
-                <p class="login-subtitle">Vui lòng nhập thông tin của bạn để tiến hành đăng nhập.</p>
+                <h2 class="login-title">Đăng Ký</h2>
+                <p class="login-subtitle">Vui lòng nhập thông tin của bạn để tiến hành đăng ký tài khoản.</p>
 
                 @include('components.toast-main')
                 @include('components.toast')
 
-                <form method="POST" action="{{ route('login.post') }}" class="login-form">
+                <form method="POST" action="{{ route('register.post') }}" class="login-form">
                     @csrf
+
+                    <div class="form-group">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror"
+                            id="name" name="name" value="{{ old('name') }}"
+                            placeholder="Họ và Tên" required autofocus>
+                        @error('name')
+                            <div class="invalid-feedback d-block">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
 
                     <div class="form-group">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control @error('email') is-invalid @enderror"
                             id="email" name="email" value="{{ old('email') }}"
-                            placeholder="Tài khoản" required autofocus>
+                            placeholder="Tài khoản" required>
                         @error('email')
+                            <div class="invalid-feedback d-block">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control @error('phone') is-invalid @enderror"
+                            id="phone" name="phone" value="{{ old('phone') }}"
+                            placeholder="Số điện thoại" required>
+                        @error('phone')
                             <div class="invalid-feedback d-block">
                                 {{ $message }}
                             </div>
@@ -62,13 +86,13 @@
                     </div>
 
                     <button type="submit" class="login-button">
-                        Đăng nhập
+                        Tạo Tài Khoản
                     </button>
                 </form>
 
                 <div class="login-footer">
                     <p class="signup-text">
-                        Bạn chưa có tài khoản? <a href="{{ route('register') }}" class="signup-link">Đăng ký</a>
+                        Bạn đã có tài khoản? <a href="{{ route('login') }}" class="signup-link">Đăng nhập</a>
                     </p>
                 </div>
             </div>
@@ -106,3 +130,4 @@
 @push('styles')
     @vite('resources/assets/frontend/css/pages/auth/login.css')
 @endpush
+
