@@ -9,6 +9,8 @@ export default defineConfig({
                 'resources/assets/frontend/css/styles.css',
                 'resources/assets/admin/css/styles_admin.css',
                 'resources/assets/frontend/css/styles-header.css',
+                'resources/assets/frontend/css/components/banner-home.css',
+                'resources/assets/frontend/css/pages/home.css',
             ],
             refresh: true,
         }),
