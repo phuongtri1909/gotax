@@ -33,7 +33,6 @@
 @endphp
 
 <section class="tools-section">
-    <div class="container">
         <h2 class="tools-title">Tất Cả Công Cụ</h2>
         <p class="tools-subtitle">Các công cụ tối ưu công việc kế toán để giúp cuộc sống của bạn dễ dàng hơn.</p>
 
@@ -64,7 +63,6 @@
                 </a>
             @endforeach
         </div>
-    </div>
 </section>
 
 @push('styles')

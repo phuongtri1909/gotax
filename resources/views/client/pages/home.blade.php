@@ -6,7 +6,11 @@
 @section('content')
     <section class="home-page">
         @include('components.banner-home')
-        @include('components.tools-section')
+        <div class="container">
+            @include('components.tools-section')
+            @include('components.smart-support-section')
+
+        </div>
     </section>
 @endsection
 

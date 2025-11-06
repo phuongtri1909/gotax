@@ -1,0 +1,122 @@
+.smart-support-section {
+    padding: 50px 50px;
+    background-color: var(--primary-color-1);
+    border-radius: 20px;
+}
+
+.support-subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+}
+
+.support-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 24px;
+    line-height: 1.3;
+}
+
+.support-description {
+    font-size: 18px;
+    color: var(--primary-color-8);
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+.support-button {
+    display: inline-block;
+    padding: 16px 40px;
+    background: var(--primary-color);
+    color: #ffffff;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.support-button:hover {
+    background: var(--primary-color-2);
+    transform: translateY(-2px);
+    color: #ffffff;
+}
+
+/* Responsive Design */
+@media (max-width: 991.98px) {
+    .smart-support-section {
+        padding: 60px 0;
+        margin: 40px 20px;
+        border-radius: 16px;
+    }
+
+    .support-title {
+        font-size: 36px;
+        margin-bottom: 20px;
+    }
+
+    .support-description {
+        font-size: 16px;
+        margin-bottom: 28px;
+    }
+
+    .support-button {
+        padding: 14px 36px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .smart-support-section {
+        padding: 50px 0;
+        margin: 30px 15px;
+        border-radius: 12px;
+    }
+
+    .support-subtitle {
+        font-size: 12px;
+        margin-bottom: 12px;
+    }
+
+    .support-title {
+        font-size: 28px;
+        margin-bottom: 16px;
+    }
+
+    .support-description {
+        font-size: 15px;
+        margin-bottom: 24px;
+    }
+
+    .support-button {
+        padding: 12px 32px;
+        font-size: 15px;
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .smart-support-section {
+        padding: 40px 0;
+        margin: 20px 10px;
+    }
+
+    .support-title {
+        font-size: 24px;
+    }
+
+    .support-description {
+        font-size: 14px;
+    }
+
+    .support-button {
+        padding: 12px 28px;
+        font-size: 14px;
+    }
+}
+
