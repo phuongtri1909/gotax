@@ -6,6 +6,7 @@
 @section('content')
     <section class="home-page">
         @include('components.banner-home')
+        @include('components.tools-section')
     </section>
 @endsection
 
