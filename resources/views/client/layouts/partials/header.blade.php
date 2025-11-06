@@ -56,6 +56,7 @@
 
     @vite('resources/assets/frontend/css/styles.css')
     @vite('resources/assets/frontend/css/styles-header.css')
+    @vite('resources/assets/frontend/css/components/footer.css')
 
     @stack('styles')
     {{-- end styles --}}

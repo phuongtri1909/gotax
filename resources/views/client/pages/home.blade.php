@@ -10,6 +10,12 @@
             @include('components.tools-section')
             @include('components.smart-support-section')
             @include('components.statistics-section')
+            @include('components.get-more-section')
+            @include('components.testimonials-section')
+
+            
+                @include('components.cta-banner-section')
+            
         </div>
     </section>
 @endsection

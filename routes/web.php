@@ -1,9 +1,17 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Client\AuthController;
 use App\Http\Controllers\Client\HomeController;
 
+Route::get('clear-cache', function () {
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('view:clear');
+    Artisan::call('route:clear');
+    return 'Cache cleared';
+})->name('clear.cache');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
