@@ -13,9 +13,9 @@
             @include('components.get-more-section')
             @include('components.testimonials-section')
 
-            
+            @guest
                 @include('components.cta-banner-section')
-            
+            @endguest
         </div>
     </section>
 @endsection
