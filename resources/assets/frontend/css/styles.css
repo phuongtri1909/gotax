@@ -11,7 +11,7 @@
     --primary-color-9: #F5F5F5;
     --primary-color-10: #0F1125;
     --primary-color-11: #f6f6f6;
-    --primary-color-12: #F8F8FF;
+    --primary-color-12: #717171;
     --primary-hover: #444444;
     --secondary-color: #8C5E3B;
     --accent-color: #D1A66E;
@@ -297,6 +297,10 @@ html {
 
 .color-primary-10 {
     color: var(--primary-color-10) !important;
+}
+
+.color-primary-12 {
+    color: var(--primary-color-12) !important;
 }
 
 .font-light {

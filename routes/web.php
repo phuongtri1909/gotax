@@ -15,6 +15,12 @@ Route::get('clear-cache', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+Route::get('contact', function () {
+    return view('client.pages.contact');
+})->name('contact');
+
+Route::post('contact', [HomeController::class, 'contact'])->name('contact.post');
+
 Route::group(['middleware' => 'auth'], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
 });

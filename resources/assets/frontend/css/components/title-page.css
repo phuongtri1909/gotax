@@ -1,0 +1,35 @@
+/* Title Page Component */
+.title-page-section {
+    position: relative;
+    background: linear-gradient(to right, #FFE5E5, #E5E5FF);
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.title-page-content {
+    padding: 45px 20px 45px;
+    text-align: center;
+}
+
+.title-page-text {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--primary-color);
+    margin: 0 0 20px 0;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .title-page-content {
+        padding: 30px 15px 30px;
+    }
+
+    .title-page-text {
+        font-size: var(--font-size-xl);
+        margin-bottom: 16px;
+    }
+}
+
+

@@ -86,7 +86,7 @@
                     </div>
                     <a href="#" class="nav-link">Bảng giá</a>
                     <a href="#" class="nav-link">Tài liệu</a>
-                    <a href="#" class="nav-link">Liên hệ</a>
+                    <a href="{{ route('contact') }}" class="nav-link">Liên hệ</a>
                 </nav>
 
                 <div class="user-section">
@@ -232,7 +232,7 @@
             <li><a href="#" class="text-lg fw-medium ">Công cụ</a></li>
             <li><a href="#" class="text-lg fw-medium">Bảng giá</a></li>
             <li><a href="#" class="text-lg fw-medium">Tài liệu</a></li>
-            <li><a href="#" class="text-lg fw-medium">Liên hệ</a></li>
+            <li><a href="{{ route('contact') }}" class="text-lg fw-medium">Liên hệ</a></li>
         </ul>
 
         @guest
