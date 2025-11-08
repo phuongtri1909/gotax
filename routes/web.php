@@ -21,6 +21,10 @@ Route::get('contact', function () {
 
 Route::post('contact', [HomeController::class, 'contact'])->name('contact.post');
 
+Route::get('faqs', function () {
+    return view('client.pages.faqs');
+})->name('faqs');
+
 Route::group(['middleware' => 'auth'], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
 });

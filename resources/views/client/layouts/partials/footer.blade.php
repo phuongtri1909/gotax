@@ -6,7 +6,7 @@
             ['text' => 'Tài Liệu', 'url' => '#'],
             ['text' => 'Bảng Giá', 'url' => '#'],
             ['text' => 'Chính Sách', 'url' => '#'],
-            ['text' => 'Câu Hỏi Thường Gặp', 'url' => '#'],
+            ['text' => 'Câu Hỏi Thường Gặp', 'url' => route('faqs')],
         ],
         'tools_links' => [
             ['text' => 'Go Invoice', 'url' => '#'],

@@ -1,0 +1,122 @@
+/* FAQ Section */
+.faq-section {
+    padding: 0;
+}
+
+.faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.faq-item {
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.faq-question {
+    padding: 20px 24px;
+    color: var(--primary-color);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s ease;
+    user-select: none;
+    border-radius: 5px;
+    border: 1px solid var(--Gray-3, #EDEDED);
+}
+
+.faq-item.active .faq-question {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: 0;
+}
+
+.faq-question:hover {
+    background-color: var(--primary-color-9);
+}
+
+.faq-item.active .faq-question:hover {
+    background-color: var(--primary-color-6);
+}
+
+.faq-question-text {
+    flex: 1;
+    line-height: 1.5;
+}
+
+.faq-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.faq-icon svg {
+    width: 24px;
+    height: 24px;
+    transition: all 0.3s ease;
+}
+
+.faq-icon-minus {
+    position: absolute;
+    opacity: 0;
+    color: #fff;
+}
+
+.faq-icon-plus {
+    color: var(--primary-color);
+}
+
+.faq-item.active .faq-icon-minus {
+    opacity: 1;
+}
+
+.faq-item.active .faq-icon-plus {
+    opacity: 0;
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background-color: #fff;
+}
+
+.faq-item.active .faq-answer {
+    max-height: 500px;
+}
+
+.faq-answer-content {
+    padding: 24px 30px;
+    color: var(--text-color);
+    font-size: var(--font-size-md);
+    line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .faq-question {
+        padding: 16px 20px;
+        font-size: var(--font-size-sm);
+    }
+
+    .faq-answer-content {
+        padding: 0 20px 16px;
+        font-size: var(--font-size-sm);
+    }
+
+    .faq-list {
+        gap: 12px;
+    }
+}
+
+
+
