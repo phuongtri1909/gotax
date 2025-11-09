@@ -1,6 +1,6 @@
 <button id="topButton" class="btn btn-pry rounded-circle position-fixed bottom-0 end-0 m-4" 
         style="display: none; z-index: 1000;">
-    <i class="fas fa-arrow-up text-white"></i>
+    <img src="{{ asset('images/svg/arrow-up.svg') }}" alt="Arrow Up" width="20" height="20">
 </button>
 
 <style>

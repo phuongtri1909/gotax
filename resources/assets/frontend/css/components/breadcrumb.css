@@ -15,7 +15,7 @@
 .breadcrumb-link {
     color: var(--primary-color-1);
     text-decoration: none;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-lg);
     transition: color 0.3s ease;
     font-weight: var(--font-weight-normal);
 }
@@ -27,7 +27,7 @@
 
 .breadcrumb-current {
     color: var(--primary-color-1);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-normal);
 }
 

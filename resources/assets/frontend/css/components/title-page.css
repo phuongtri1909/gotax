@@ -7,12 +7,12 @@
 }
 
 .title-page-content {
-    padding: 45px 20px 45px;
+    padding: 55px 20px 45px;
     text-align: center;
 }
 
 .title-page-text {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-4xl);
     font-weight: var(--font-weight-bold);
     color: var(--primary-color);
     margin: 0 0 20px 0;

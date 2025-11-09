@@ -1,152 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('client.layouts.app')
+@section('title', '500 - Internal Server Error - ' . config('app.name'))
+@section('description', '500 - Internal Server Error')
+@section('keywords', '500, internal server error')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+@section('content')
+    <section class="error-page container-page">
+        @include('components.title-page', [
+            'title' => '500 - INTERNAL SERVER ERROR',
+            'breadcrumb' => [
+                ['label' => 'Home', 'url' => route('home')],
+                ['label' => 'Pages']
+            ]
+        ])
 
-    <title>500 - Internal Server Error</title>
-    <meta name="description" content="500 - Internal Server Error">
-    <link rel="icon" href="{{ $faviconPath }}" type="image/x-icon">
-    <link rel="shortcut icon" href="{{ $faviconPath }}" type="image/x-icon">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        <div class="container py-5">
+            <div class="row align-items-center error-row py-5">
+                <!-- Content Section - Left on Desktop, Right on Mobile -->
+                <div class="col-12 col-lg-6 order-2 order-lg-1 error-content">
+                    <h1 class="error-title">SORRY, PAGE NOT FOUND!</h1>
+                    <div class="error-text-content">
+                        <p class="error-subtitle">Oops! Bọn mình đang "tút tát" lại trang web!</p>
+                        <p class="error-description-line">Trang sẽ hoạt động trở lại trong thời gian ngắn. Quay lại sau</p>
+                        <p class="error-description-line">chút xíu nhé - Cảm ơn bạn đã đồng hành!</p>
+                    </div>
+                    <a href="{{ route('home') }}" class="error-button">
+                        <span class="error-button-icon">
+                            <img src="{{ asset('images/svg/arrow-left.svg') }}" alt="Arrow Left">
+                        </span>
+                        <span class="error-button-text text-1lg">Về Trang Chủ</span>
+                    </a>
+                </div>
 
-        body {
-            height: 100vh;
-            overflow: hidden;
-        }
+                <!-- Illustration Section - Right on Desktop, Left on Mobile -->
+                <div class="col-12 col-lg-6 order-1 order-lg-2 error-illustration">
+                    <img src="{{ asset('images/d/errors/500.png') }}" 
+                         alt="500 Error Illustration" 
+                         onerror="this.src='https://via.placeholder.com/600x500/227447/FFFFFF?text=500+Error'">
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
 
-        .error-container {
-            background-image: url('{{ asset('assets/images/dev/bg-error-page.webp') }}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            flex-direction: column;
-        }
-
-        .title-error {
-            background: linear-gradient(180deg, rgba(57, 75, 155, 0.45) 19.79%, rgba(215, 211, 219, 0.20) 194.53%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: clamp(120px, 25vw, 300px);
-            font-style: normal;
-            font-weight: 700;
-            line-height: 1;
-            text-align: center;
-            margin: 0;
-            animation: fadeInUp 1.2s ease-out forwards, float 3s ease-in-out infinite 1.5s;
-            transform: translateY(50px);
-            opacity: 0;
-        }
-
-        .button-back-to-home {
-            color: #000;
-            border-radius: 20px;
-            padding: 12px 24px;
-            text-decoration: none;
-            background: #fff;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            animation: fadeInUp 1.2s ease-out 0.5s forwards, pulse 2s ease-in-out infinite 2s;
-            transform: translateY(30px);
-            opacity: 0;
-            display: inline-block;
-        }
-
-        .button-back-to-home:hover {
-            background: #000;
-            color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-            100% {
-                background-position: 200% 0;
-            }
-        }
-
-        /* Thêm hiệu ứng shimmer cho text 404 */
-        .title-error::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 3s ease-in-out infinite 2s;
-            border-radius: inherit;
-        }
-
-        /* Responsive cho mobile */
-        @media (max-width: 768px) {
-            .title-error {
-                font-size: clamp(80px, 20vw, 200px);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .title-error {
-                font-size: clamp(60px, 15vw, 150px);
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="error-container">
-        <h1 class="title-error">500</h1>
-        <a href="{{ route('home') }}" class="button-back-to-home">{{ __('Back to home') }}</a>
-    </div>
-</body>
-
-</html>
+@push('styles')
+    @vite('resources/assets/frontend/css/pages/error-pages.css')
+@endpush

@@ -9,7 +9,13 @@
     border: none;
     border-radius: 12px;
     box-shadow: 0 1px 10px 0 rgba(0, 0, 0, 0.10);
-    padding: 40px 120px;
+    padding: 10px 10px;
+}
+
+@media (min-width: 992px) {
+    .account-settings-card {
+        padding: 40px 120px;
+    }
 }
 
 .form-account-settings#email {
