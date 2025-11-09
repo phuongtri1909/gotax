@@ -148,10 +148,10 @@
                             <div class="user-dropdown-menu" id="userDropdown">
                                 <div class="p-4 pb-2">
                                     <div class="user-info">
-                                        <div class="user-details">
+                                        <a href="{{ route('profile') }}" class="user-details text-decoration-none">
                                             <h6 class="user-name fw-semibold text-lg">{{ auth()->user()->full_name }}</h6>
                                             <p class="user-email text-md">{{ auth()->user()->email }}</p>
-                                        </div>
+                                        </a>
                                     </div>
 
                                     <hr class="mt-3 mb-0 divider-header">

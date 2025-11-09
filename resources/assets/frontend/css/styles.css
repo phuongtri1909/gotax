@@ -12,7 +12,7 @@
     --primary-color-10: #0F1125;
     --primary-color-11: #f6f6f6;
     --primary-color-12: #717171;
-    --primary-hover: #444444;
+    --primary-color-13: #444444;
     --secondary-color: #8C5E3B;
     --accent-color: #D1A66E;
     --text-color: #333333;
@@ -147,6 +147,10 @@ html {
     font-size: var(--font-size-md) !important;
 }
 
+.text-lg{
+    font-size: var(--font-size-lg) !important;
+}
+
 .text-1lg {
     font-size: var(--font-size-1lg) !important;
 }
@@ -199,6 +203,10 @@ html {
 
 .text-lg {
     font-size: var(--font-size-lg) !important;
+}
+
+.text-1lg {
+    font-size: var(--font-size-1lg) !important;
 }
 
 .text-lg-2 {
@@ -301,6 +309,10 @@ html {
 
 .color-primary-12 {
     color: var(--primary-color-12) !important;
+}
+
+.color-primary-13 {
+    color: var(--primary-color-13) !important;
 }
 
 .font-light {

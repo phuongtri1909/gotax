@@ -1,0 +1,112 @@
+/* Profile Page */
+.profile-page {
+    min-height: 100vh;
+    padding-bottom: 60px;
+}
+
+/* Avatar */
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+}
+
+.avatar-upload-btn {
+    width: 40px;
+    height: 40px;
+    background-color: #050505C4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #050505C4;
+    transition: all 0.3s ease;
+    bottom: 15%;
+    right: 50%;
+    transform: translate(50%, 50%);
+}
+
+.camera-icon {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+/* Profile Card */
+.profile-card {
+    background-color: var(--primary-color-11);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 10px 0 rgba(0, 0, 0, 0.10);
+}
+
+.profile-field {
+    position: relative;
+}
+
+.profile-input {
+    font-size: var(--font-size-md);
+}
+
+.profile-field .email-profile {
+    color: #9E9E9E;
+}
+
+.profile-input:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.profile-edit-btn,
+.profile-copy-btn {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.profile-edit-btn:hover,
+.profile-copy-btn:hover {
+    opacity: 1;
+}
+
+.referral-code {
+    font-size: var(--font-size-md);
+}
+
+.btn-save {
+    font-weight: var(--font-weight-medium);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    padding: 14px 80px;
+}
+
+.btn-save:hover {
+    background-color: var(--primary-color-6) !important;
+    border-color: var(--primary-color-6) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 116, 71, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+    }
+
+    .avatar-upload-btn {
+        width: 35px;
+        height: 35px;
+    }
+
+    .camera-icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .profile-card .card-body {
+        padding: 1.5rem !important;
+    }
+}
+

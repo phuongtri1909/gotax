@@ -1,0 +1,91 @@
+/* Account Settings Page */
+.account-settings-page {
+    min-height: 100vh;
+    padding-bottom: 60px;
+}
+
+.account-settings-card {
+    background-color: var(--primary-color-11);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 10px 0 rgba(0, 0, 0, 0.10);
+    padding: 40px 120px;
+}
+
+.form-account-settings#email {
+    border-radius: 10px;
+    border: 1px solid var(--Gray-6, #9E9E9E);
+    background: var(--white2, #F7F8F9);
+    color: #9E9E9E;
+}
+
+.form-account-settings#email::placeholder {
+    font-size: var(--font-size-1lg);
+}
+
+.form-account-settings#newPassword,
+.form-account-settings#confirmPassword {
+    border-radius: 10px;
+    border: 1px solid var(--Gray-4, #CBCBCB);
+    background: var(--White, #FFF);
+}
+
+.form-account-settings#newPassword::placeholder,
+.form-account-settings#confirmPassword::placeholder {
+    font-size: var(--font-size-md);
+}
+
+.account-settings-card .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(34, 116, 71, 0.25);
+}
+
+.account-settings-card .form-control[readonly] {
+    cursor: not-allowed;
+}
+
+.account-settings-label {
+    color: var(--primary-color);
+}
+
+.password-toggle-btn {
+    z-index: 10;
+    padding: 0 12px;
+    text-decoration: none;
+    border: none;
+    background: none;
+}
+
+.password-toggle-btn:hover {
+    opacity: 0.7;
+}
+
+.account-settings-btn-save {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    border-radius: 6px;
+}
+
+.account-settings-btn-save:hover {
+    background-color: var(--primary-color-6) !important;
+    border-color: var(--primary-color-6) !important;
+}
+
+.account-settings-btn-cancel {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    border-radius: 6px;
+}
+
+.account-settings-btn-cancel:hover {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .account-settings-card .card-body {
+        padding: 1.5rem !important;
+    }
+}

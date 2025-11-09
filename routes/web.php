@@ -27,6 +27,12 @@ Route::get('faqs', function () {
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('profile', function () {
+        return view('client.pages.profile');
+    })->name('profile');
+    Route::get('account-settings', function () {
+        return view('client.pages.account-settings');
+    })->name('account-settings');
 });
 
 
