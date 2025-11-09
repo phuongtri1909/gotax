@@ -54,7 +54,7 @@
                             <div class="content-item {{ $index === 0 ? 'active' : '' }}" data-content="{{ $index }}">
                                 <h1 class="banner-title">{{ $banner['title'] }}</h1>
                                 <p class="banner-subtitle">{{ $banner['subtitle'] }}</p>
-                                <a href="{{ $banner['button_link'] }}" class="btn-banner btn-sm btn px-3">
+                                <a href="{{ $banner['button_link'] }}" class="btn-banner btn-sm btn px-4 py-2">
                                     {{ $banner['button_text'] }}
                                 </a>
                             </div>
