@@ -25,6 +25,22 @@ Route::get('faqs', function () {
     return view('client.pages.faqs');
 })->name('faqs');
 
+Route::get('go-invoice', function () {
+    return view('client.pages.tools.go-invoice');
+})->name('tools.go-invoice');
+
+Route::get('go-bot', function () {
+    return view('client.pages.tools.go-bot');
+})->name('tools.go-bot');
+
+Route::get('go-soft', function () {
+    return view('client.pages.tools.go-soft');
+})->name('tools.go-soft');
+
+Route::get('go-quick', function () {
+    return view('client.pages.tools.go-quick');
+})->name('tools.go-quick');
+
 Route::group(['middleware' => 'auth'], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('profile', function () {

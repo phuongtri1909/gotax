@@ -1,34 +1,5 @@
 @php
-    // Sample data - sẽ truyền từ controller sau
-    $banners = $banners ?? [
-        [
-            'id' => 1,
-            'title' => 'Nền Tảng Công Nghệ Cho Kế Toán',
-            'subtitle' => 'Đơn giản hoá công việc kế toán, kiểm tra rủi ro, tải tờ khai và đọc CCCD nhanh chóng.',
-            'button_text' => 'Dùng Thử Miễn Phí',
-            'button_link' => '#',
-            'image' => asset('images/dev/banner.png'),
-            'overlay_opacity' => 0.2,
-        ],
-        [
-            'id' => 2,
-            'title' => 'Giải Pháp Kế Toán Thông Minh',
-            'subtitle' => 'Tự động hóa quy trình kế toán, tiết kiệm thời gian và tăng hiệu quả làm việc.',
-            'button_text' => 'Bắt Đầu Ngay',
-            'button_link' => '#',
-            'image' => asset('images/dev/banner.png'),
-            'overlay_opacity' => 0.2,
-        ],
-        [
-            'id' => 3,
-            'title' => 'Công Nghệ Cho Tương Lai',
-            'subtitle' => 'Trải nghiệm dịch vụ kế toán hiện đại với công nghệ AI và tự động hóa.',
-            'button_text' => 'Khám Phá Ngay',
-            'button_link' => '#',
-            'image' => asset('images/dev/banner.png'),
-            'overlay_opacity' => 0.2,
-        ],
-    ];
+    $banners = $banners ?? [];
 @endphp
 
 <section class="banner-home">
@@ -52,7 +23,8 @@
                     <div class="banner-content">
                         @foreach ($banners as $index => $banner)
                             <div class="content-item {{ $index === 0 ? 'active' : '' }}" data-content="{{ $index }}">
-                                <h1 class="banner-title">{{ $banner['title'] }}</h1>
+
+                                <h1 class="banner-title"><span class="banner-name">{{ empty($banner['name']) ? '' : $banner['name'] . ' ' }}</span> <span class="banner-title">{{ $banner['title'] ? $banner['title'] : '' }}</span></h1>
                                 <p class="banner-subtitle">{{ $banner['subtitle'] }}</p>
                                 <a href="{{ $banner['button_link'] }}" class="btn-banner btn-sm btn px-4 py-2">
                                     {{ $banner['button_text'] }}

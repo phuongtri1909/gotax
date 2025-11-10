@@ -4,10 +4,9 @@
 }
 
 .tools-title {
-    font-size: 42px;
+    font-size: 40px;
     font-weight: 700;
     color: var(--primary-color);
-    margin-bottom: 20px;
     text-align: center;
 }
 
@@ -46,6 +45,13 @@
 }
 
 .tool-card:hover {
+    border: 1px solid var(--Primary, var(--primary-color));
+    background: var(--select, #E6F0E8);
+
+    box-shadow: -2px 2px 15px -1px rgba(113, 113, 113, 0.12);
+}
+
+.tool-card.active {
     border: 1px solid var(--Primary, var(--primary-color));
     background: var(--select, #E6F0E8);
 

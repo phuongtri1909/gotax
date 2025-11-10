@@ -76,12 +76,23 @@
                     <a href="{{ route('home') }}"
                         class="nav-link {{ Route::currentRouteNamed('home') ? 'active' : '' }}">Trang chủ</a>
                     <div class="nav-dropdown">
-                        <a href="#" class="nav-link" id="toolsDropdownBtn">
+                        <a href="#" class="nav-link {{ Route::currentRouteNamed('tools.*') ? 'active' : '' }}" id="toolsDropdownBtn">
                             Công cụ
                             <i class="fas fa-chevron-down ms-1" style="font-size: 10px;"></i>
                         </a>
                         <div class="nav-dropdown-menu" id="toolsDropdown">
-                            <!-- Dropdown content sẽ được thêm sau -->
+                            <a href="{{ route('tools.go-invoice') }}" class="nav-dropdown-item {{ Route::currentRouteNamed('tools.go-invoice') ? 'active' : '' }}">
+                                Go Invoice
+                            </a>
+                            <a href="{{ route('tools.go-bot') }}" class="nav-dropdown-item {{ Route::currentRouteNamed('tools.go-bot') ? 'active' : '' }}">
+                                Go Bot
+                            </a>
+                            <a href="{{ route('tools.go-soft') }}" class="nav-dropdown-item {{ Route::currentRouteNamed('tools.go-soft') ? 'active' : '' }}">
+                                Go Soft
+                            </a>
+                            <a href="{{ route('tools.go-quick') }}" class="nav-dropdown-item {{ Route::currentRouteNamed('tools.go-quick') ? 'active' : '' }}">
+                                Go Quick
+                            </a>
                         </div>
                     </div>
                     <a href="#" class="nav-link">Bảng giá</a>
@@ -229,7 +240,18 @@
             <li><a href="{{ route('home') }}"
                     class="text-md fw-medium {{ Route::currentRouteNamed('home') ? 'active' : '' }}">Trang chủ</a>
             </li>
-            <li><a href="#" class="text-lg fw-medium ">Công cụ</a></li>
+            <li>
+                <a href="#" class="text-lg fw-medium mobile-nav-dropdown-toggle" id="mobileToolsToggle">
+                    Công cụ
+                    <i class="fas fa-chevron-down ms-2" style="font-size: 12px;"></i>
+                </a>
+                <ul class="mobile-nav-dropdown" id="mobileToolsDropdown">
+                    <li><a href="{{ route('tools.go-invoice') }}" class="text-md">Go Invoice</a></li>
+                    <li><a href="{{ route('tools.go-bot') }}" class="text-md">Go Bot</a></li>
+                    <li><a href="{{ route('tools.go-soft') }}" class="text-md">Go Soft</a></li>
+                    <li><a href="{{ route('tools.go-quick') }}" class="text-md">Go Quick</a></li>
+                </ul>
+            </li>
             <li><a href="#" class="text-lg fw-medium">Bảng giá</a></li>
             <li><a href="#" class="text-lg fw-medium">Tài liệu</a></li>
             <li><a href="{{ route('contact') }}" class="text-lg fw-medium">Liên hệ</a></li>
@@ -287,7 +309,24 @@
             mobileMenuClose.addEventListener('click', closeMobileMenu);
             mobileMenuOverlay.addEventListener('click', closeMobileMenu);
 
-            const mobileNavLinks = document.querySelectorAll('.mobile-nav-list a');
+            // Mobile Tools Dropdown
+            const mobileToolsToggle = document.getElementById('mobileToolsToggle');
+            const mobileToolsDropdown = document.getElementById('mobileToolsDropdown');
+
+            if (mobileToolsToggle && mobileToolsDropdown) {
+                mobileToolsToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    mobileToolsDropdown.classList.toggle('active');
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('fa-chevron-down');
+                        icon.classList.toggle('fa-chevron-up');
+                    }
+                });
+            }
+
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-list > li > a:not(.mobile-nav-dropdown-toggle), .mobile-nav-dropdown a');
             mobileNavLinks.forEach(link => {
                 link.addEventListener('click', closeMobileMenu);
             });

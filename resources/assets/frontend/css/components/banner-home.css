@@ -98,6 +98,10 @@
     line-height: 1.2;
 }
 
+.banner-name {
+    color: var(--primary-color-1);
+}
+
 .banner-subtitle {
     font-size: 20px;
     color: var(--primary-color-5);
