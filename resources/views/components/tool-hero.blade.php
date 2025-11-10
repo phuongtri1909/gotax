@@ -12,8 +12,8 @@
 ])
 
 <section class="tool-hero-section">
-    <h2 class="tools-title-hero">{{ $title }}</h2>
-    <p class="tools-subtitle-hero">{{ $description }}</p>
+    <h2 class="tools-title">{{ $title }}</h2>
+    <p class="tools-subtitle">{{ $description }}</p>
 
     <div class="row align-items-center g-4 g-lg-5">
         <div class="col-12 col-lg-5">
