@@ -1,0 +1,237 @@
+.pricing-section {
+    padding: 80px 0;
+    background-color: #ffffff;
+}
+
+.pricing-card {
+    border-radius: 10px;
+    background: var(--White, #FFF);
+    box-shadow: 0 4px 8px -2px rgba(16, 24, 40, 0.10), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12);
+}
+
+.pricing-header {
+    padding: 25px 20px 10px 20px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pricing-badge {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 2;
+}
+
+.pricing-badge-popular {
+    background: var(--primary-color);
+    color: #FFFFFF;
+}
+
+.pricing-badge-choice {
+    background: #FF9500;
+    color: #FFFFFF;
+}
+
+.pricing-discount {
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    background: #E4EEFE;
+    color: var(--primary-color);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.pricing-bg-name {
+    background-color: var(--primary-color-14);
+    width: 100%;
+}
+
+.pricing-name {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+    text-align: center;
+}
+
+.pricing-body {
+    padding: 0 20px 25px 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.pricing-price {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.price-amount {
+    font-size: 32px;
+    font-weight: 700;
+    color: #444;
+    display: block;
+    line-height: 1.2;
+}
+
+.price-unit {
+    font-size: 14px;
+    color: #444;
+    font-weight: 400;
+}
+
+.pricing-copyright {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #D9D9D9;
+}
+
+.copyright-note {
+    font-size: 14px;
+    color: #717171;
+    margin: 0;
+}
+
+.pricing-mst {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.mst-number {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-right: 8px;
+}
+
+.pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 30px 0;
+    flex-grow: 1;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 18px;
+    color: #1C1C1B;
+    line-height: 1.5;
+    border-radius: 8px;
+    border: 1px solid var(--Gray-2, #F6F6F6);
+    padding: 14px;
+}
+
+.feature-item:last-child {
+    margin-bottom: 0;
+    color: var(--primary-color);
+}
+
+.checkmark-icon {
+    width: 28px;
+    height: 28px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--primary-color);
+}
+
+.pricing-button {
+    width: 100%;
+    padding: 10px 10px;
+    background: #FFFFFF;
+    color: var(--primary-color);
+    border-radius: 6px;
+    border: 2px solid var(--Primary, #227447);
+    font-size: 20px;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.pricing-button:hover {
+    background: var(--primary-color);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 116, 71, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 1199.98px) {
+    .pricing-card {
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .pricing-section {
+        padding: 60px 0;
+    }
+
+    .pricing-name {
+        font-size: 22px;
+    }
+
+    .pricing-body {
+        padding: 24px;
+    }
+
+    .price-amount {
+        font-size: 32px;
+    }
+
+    .mst-number {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pricing-section {
+        padding: 50px 0;
+    }
+
+    .pricing-name {
+        font-size: 20px;
+    }
+
+    .pricing-body {
+        padding: 20px;
+    }
+
+    .price-amount {
+        font-size: 28px;
+    }
+
+    .mst-number {
+        font-size: 24px;
+    }
+
+    .feature-item {
+        font-size: 14px;
+    }
+}

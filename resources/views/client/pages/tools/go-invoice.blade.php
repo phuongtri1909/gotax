@@ -56,6 +56,86 @@
             @endphp
 
             <x-features-section title="Giải Pháp Tối Ưu Công Việc Của Bạn" :features="$features" />
+
+            @php
+                $commonFeatures = [
+                    'Tải bảng kê chi tiết hóa đơn mua vào & bán ra hàng loạt.',
+                    'Thời gian tải: Tháng - Quý - Năm.',
+                    'Không giới hạn số lượng hóa đơn.',
+                    'Lấy link hóa đơn gốc từ NCC.',
+                    'Xuất dữ liệu Excel, XML, PDF.',
+                    'Không giới hạn thiết bị truy cập.',
+                ];
+
+                // Convert arrays to objects
+                $packages = [
+                    (object) [
+                        'name' => 'Basic',
+                        'price' => '300.000',
+                        'mst' => '1',
+                        'discount' => 'Ưu đãi',
+                        'badge' => null,
+                        'features' => $commonFeatures,
+                        'button_text' => 'Đăng ký',
+                        'button_link' => '#',
+                    ],
+                    (object) [
+                        'name' => 'Standard',
+                        'price' => '1.000.000',
+                        'mst' => '5',
+                        'discount' => 'Giảm 30%',
+                        'badge' => null,
+                        'features' => $commonFeatures,
+                        'button_text' => 'Đăng ký',
+                        'button_link' => '#',
+                    ],
+                    (object) [
+                        'name' => 'Advanced',
+                        'price' => '1.500.000',
+                        'mst' => '10',
+                        'discount' => 'Giảm 50%',
+                        'badge' => 'Most Popular',
+                        'badge_type' => 'popular',
+                        'features' => $commonFeatures,
+                        'button_text' => 'Đăng ký',
+                        'button_link' => '#',
+                    ],
+                    (object) [
+                        'name' => 'Pro',
+                        'price' => '2.000.000',
+                        'mst' => '20',
+                        'discount' => 'Giảm 70%',
+                        'badge' => 'Most Popular',
+                        'badge_type' => 'popular',
+                        'features' => $commonFeatures,
+                        'button_text' => 'Đăng ký',
+                        'button_link' => '#',
+                    ],
+                    (object) [
+                        'name' => 'Premium',
+                        'price' => '2.500.000',
+                        'mst' => '30',
+                        'discount' => 'Giảm 75%',
+                        'badge' => null,
+                        'features' => $commonFeatures,
+                        'button_text' => 'Đăng ký',
+                        'button_link' => '#',
+                    ],
+                    (object) [
+                        'name' => 'Enterprise',
+                        'price' => '3.000.000',
+                        'mst' => '50',
+                        'discount' => 'Giảm 80%',
+                        'badge' => 'Best Choice',
+                        'badge_type' => 'choice',
+                        'features' => $commonFeatures,
+                        'button_text' => 'Đăng ký',
+                        'button_link' => '#',
+                    ],
+                ];
+            @endphp
+
+            <x-pricing-section :packages="$packages" />
         </div>
 
 
