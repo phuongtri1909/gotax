@@ -45,13 +45,13 @@
                                             @endif
                                         </div>
                                         <div class="pricing-bot-right">
-                                            <div class="pricing-info-item">
-                                                <span class="info-label">Số lượng MST</span>
+                                            <div class="pricing-info-item align-items-end">
+                                                <span class="info-label">{{ $pkg->title }}</span>
                                                 <span class="info-value mst-value">{{ $pkg->mst ?? '' }} MST</span>
                                             </div>
-                                            <div class="pricing-info-item">
+                                            <div class="pricing-info-item align-items-end">
                                                 <span class="info-label">Phí đăng ký</span>
-                                                <span class="info-value price-value">{{ $pkg->price ?? '' }}₫</span>
+                                                <span class="info-value price-value">{{ $pkg->price ?? '' }} đ</span>
                                             </div>
                                         </div>
                                     </div>
