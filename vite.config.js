@@ -32,6 +32,7 @@ export default defineConfig({
                 'resources/assets/frontend/css/pages/profile.css',
                 'resources/assets/frontend/css/pages/error-pages.css',
                 'resources/assets/frontend/css/pages/tools/go-invoice.css',
+                'resources/assets/frontend/css/pages/tools/go-invoice-trial.css',
             ],
             refresh: true,
         }),

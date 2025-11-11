@@ -41,6 +41,10 @@ Route::get('go-quick', function () {
     return view('client.pages.tools.go-quick');
 })->name('tools.go-quick');
 
+Route::get('go-invoice/trial', function () {
+    return view('client.pages.tools.go-invoice-trial');
+})->name('tools.go-invoice.trial');
+
 Route::group(['middleware' => 'auth'], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('profile', function () {

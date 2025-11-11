@@ -7,7 +7,7 @@
     'primaryText' => 'Đăng Ký Ngay!',
     'primaryLink' => '#',
     'secondaryText' => 'Dùng Thử',
-    'secondaryLink' => '#',
+    'secondaryLink' => route("tools.go-invoice.trial"),
     'image' => null,
 ])
 
