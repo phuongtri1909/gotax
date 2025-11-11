@@ -1,7 +1,7 @@
 @extends('client.layouts.app')
-@section('title', 'Go Invoice - ' . config('app.name'))
-@section('description', 'Go Invoice - ' . config('app.name'))
-@section('keywords', 'Go Invoice, ' . config('app.name'))
+@section('title', 'Go Soft - ' . config('app.name'))
+@section('description', 'Go Soft - ' . config('app.name'))
+@section('keywords', 'Go Soft, ' . config('app.name'))
 
 @section('content')
     <section class="home-page container-page">

@@ -25,6 +25,7 @@ export default defineConfig({
                 'resources/assets/frontend/css/components/tool-hero.css',
                 'resources/assets/frontend/css/components/features-section.css',
                 'resources/assets/frontend/css/components/pricing-section.css',
+                'resources/assets/frontend/css/components/pricing-bot-section.css',
                 'resources/assets/frontend/css/pages/auth/login.css',
                 'resources/assets/frontend/css/pages/contact.css',
                 'resources/assets/frontend/css/pages/faqs.css',
