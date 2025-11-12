@@ -106,7 +106,7 @@
                     </button>
 
                     @guest
-                        <a href="#" class="btn-register fw-semibold">Đăng ký</a>
+                        <a href="{{ route('register') }}" class="btn-register fw-semibold">Đăng ký</a>
 
                         <a href="{{ route('login') }}" class="btn-login">
                             Đăng Nhập
@@ -259,7 +259,7 @@
 
         @guest
             <div class="mobile-actions">
-                <a href="#" class="btn-register-mobile">Đăng ký</a>
+                <a href="{{ route('register') }}" class="btn-register-mobile">Đăng ký</a>
                 <a href="{{ route('login') }}" class="btn-login-mobile">Đăng Nhập</a>
             </div>
         @endguest
