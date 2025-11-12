@@ -76,28 +76,28 @@
                         'title' => 'Số lượng MST',
                         'mst' => '1000',
                         'price' => '200.000',
-                        'badge' => 'Ưu đãi',
+                        'discount' => 'Ưu đãi',
                     ],
                     (object) [
                         'name' => 'Standard',
                         'title' => 'Số lượng MST',
                         'mst' => '5000',
                         'price' => '600.000',
-                        'badge' => 'Giảm 40%',
+                        'discount' => 'Giảm 40%',
                     ],
                     (object) [
                         'name' => 'Advanced',
                         'title' => 'Số lượng MST',
                         'mst' => '10.000',
                         'price' => '1.000.000',
-                        'badge' => 'Giảm 50%',
+                        'discount' => 'Giảm 50%',
                     ],
                     (object) [
                         'name' => 'Pro',
                         'title' => 'Số lượng MST',
                         'mst' => '20.000',
                         'price' => '1.500.000',
-                        'badge' => 'Giảm 60%',
+                        'discount' => 'Giảm 60%',
                     ],
                 ];
             @endphp

@@ -54,9 +54,23 @@
                                 @endforeach
                             </ul>
 
-                            <a href="{{ $pkg->button_link ?? '#' }}" class="btn pricing-button">
+                            @php
+                                $cleanPrice = str_replace(['.', ',', ' ', 'đ'], '', $pkg->price ?? '0');
+                                $packageData = [
+                                    'name' => $pkg->name ?? '',
+                                    'description' => ($pkg->mst ?? '') . ' MST / năm',
+                                    'price' => $cleanPrice,
+                                    'badge' => $pkg->badge ?? null,
+                                    'discount' => $pkg->discount ?? null,
+                                ];
+                            @endphp
+                            <button type="button" 
+                                    class="btn pricing-button" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#registerModal"
+                                    data-package="{{ json_encode($packageData) }}">
                                 {{ $pkg->button_text ?? 'Đăng ký' }}
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -64,6 +78,8 @@
         </div>
     </div>
 </section>
+
+<x-payment.register-modal modalId="registerModal" />
 
 @push('styles')
     @vite('resources/assets/frontend/css/components/pricing-section.css')
