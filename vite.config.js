@@ -33,6 +33,7 @@ export default defineConfig({
                 'resources/assets/frontend/css/pages/error-pages.css',
                 'resources/assets/frontend/css/pages/tools/go-invoice.css',
                 'resources/assets/frontend/css/pages/tools/go-invoice-trial.css',
+                'resources/assets/frontend/css/components/payment/register-modal.css',
             ],
             refresh: true,
         }),
