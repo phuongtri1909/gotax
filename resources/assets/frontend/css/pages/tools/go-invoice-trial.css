@@ -65,3 +65,143 @@
         margin-top: 10px;
     }
 }
+
+/* Verification Modal Styles */
+.verification-modal-dialog {
+    max-width: 900px;
+    margin: 1.75rem auto;
+}
+
+.verification-modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    background: #fff;
+}
+
+.verification-modal-body {
+    padding: 40px 30px;
+    text-align: center;
+    background: #f5f5f5;
+    border-radius: 16px;
+}
+
+.verification-illustration {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.verification-illustration img {
+    max-width: 400px;
+    height: auto;
+}
+
+.verification-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--primary-color, #227447);
+    margin-bottom: 24px;
+    line-height: 1.2;
+}
+
+.verification-message {
+    margin-bottom: 32px;
+    color: #1c1c1b;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.verification-message p {
+    margin-bottom: 12px;
+}
+
+.verification-message p:last-child {
+    margin-bottom: 0;
+}
+
+.verification-message strong {
+    font-weight: 700;
+    color: #1c1c1b;
+}
+
+.verification-gmail-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 24px;
+    background: #fff;
+    border: 1px solid #e2e0db;
+    border-radius: 8px;
+    color: #1c1c1b;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    width: auto;
+    min-width: 160px;
+}
+
+.verification-gmail-btn:hover {
+    background: #f8f8f8;
+    border-color: #d0d0d0;
+    color: #1c1c1b;
+}
+
+.verification-gmail-btn:focus {
+    box-shadow: 0 0 0 3px rgba(34, 116, 71, 0.15);
+    outline: none;
+}
+
+.gmail-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 991.98px) {
+    .verification-modal-dialog {
+        max-width: 700px;
+    }
+
+    .verification-illustration img {
+        max-width: 350px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .verification-modal-dialog {
+        max-width: 95%;
+        margin: 0.5rem;
+    }
+    .verification-modal-body {
+        padding: 30px 20px;
+    }
+
+    .verification-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .verification-illustration img {
+        max-width: 250px;
+    }
+
+    .verification-message {
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .verification-gmail-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        min-width: 140px;
+    }
+}
