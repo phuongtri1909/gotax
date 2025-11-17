@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Client\AuthController;
 use App\Http\Controllers\Client\HomeController;
+use App\Http\Controllers\Client\ContactController;
+use App\Http\Controllers\Client\FaqController;
 
 Route::get('clear-cache', function () {
     Artisan::call('cache:clear');
@@ -15,15 +17,11 @@ Route::get('clear-cache', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('contact', function () {
-    return view('client.pages.contact');
-})->name('contact');
+Route::get('contact', [ContactController::class, 'index'])->name('contact');
+Route::post('contact', [ContactController::class, 'store'])->name('contact.post');
+Route::get('contact/captcha', [ContactController::class, 'generateCaptcha'])->name('contact.captcha');
 
-Route::post('contact', [HomeController::class, 'contact'])->name('contact.post');
-
-Route::get('faqs', function () {
-    return view('client.pages.faqs');
-})->name('faqs');
+Route::get('faqs', [FaqController::class, 'index'])->name('faqs');
 
 Route::get('go-invoice', function () {
     return view('client.pages.tools.go-invoice');
@@ -57,6 +55,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('profile', function () {
         return view('client.pages.profile');
     })->name('profile');
+    Route::post('profile', [AuthController::class, 'updateProfile'])->name('profile.update');
+    Route::post('profile/avatar', [AuthController::class, 'uploadAvatar'])->name('profile.avatar.upload');
+    
     Route::get('account-settings', function () {
         return view('client.pages.account-settings');
     })->name('account-settings');
@@ -88,7 +89,7 @@ Route::group(['middleware' => 'guest'], function () {
 
     Route::post('resend-activation', [AuthController::class, 'resendActivationEmail'])->name('resend-activation.post');
 
-    Route::get('verify-account/{key}/{email}', [AuthController::class, 'verifyAccount'])->name('verify-account');
-    Route::get('verify-reset-password/{key}/{email}', [AuthController::class, 'verifyResetPassword'])->name('verify-reset-password');
-    Route::get('verify-change-password/{key}/{email}', [AuthController::class, 'verifyChangePassword'])->name('verify-change-password');
 });
+Route::get('verify-account/{key}/{email}', [AuthController::class, 'verifyAccount'])->name('verify-account');
+Route::get('verify-reset-password/{key}/{email}', [AuthController::class, 'verifyResetPassword'])->name('verify-reset-password');
+Route::get('verify-change-password/{key}/{email}', [AuthController::class, 'verifyChangePassword'])->name('verify-change-password');

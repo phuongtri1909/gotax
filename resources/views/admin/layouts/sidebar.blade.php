@@ -28,6 +28,38 @@
                         </a>
                     </li>
 
+                    <!-- Quản lý liên hệ -->
+                    <li
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.contacts.*', 'admin.contact-info.*']) ? 'open' : '' }}">
+                        <a href="#" class="submenu-toggle">
+                            <i class="fas fa-envelope"></i>
+                            <span>Quản lý liên hệ</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="{{ Route::currentRouteNamed('admin.contacts.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.contacts.index') }}">
+                                    <i class="fas fa-inbox"></i>
+                                    <span>Danh sách liên hệ</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.contact-info.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.contact-info.index') }}">
+                                    <i class="fas fa-address-card"></i>
+                                    <span>Thông tin liên hệ</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Quản lý FAQ -->
+                    <li class="{{ Route::currentRouteNamed('admin.faqs.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.faqs.index') }}">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Câu hỏi thường gặp</span>
+                        </a>
+                    </li>
+
                     <!-- Cấu hình hệ thống -->
                     <li
                         class="has-submenu {{ Route::currentRouteNamed(['admin.socials.*', 'admin.logo-site.*', 'admin.languages.*', 'admin.seo.*', 'admin.setting.*']) ? 'open' : '' }}">

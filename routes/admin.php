@@ -8,6 +8,9 @@ use App\Http\Controllers\Admin\LogoSiteController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\GoogleSettingController;
+use App\Http\Controllers\Admin\AdminContactController;
+use App\Http\Controllers\Admin\AdminContactInfoController;
+use App\Http\Controllers\Admin\AdminFaqController;
 
 Route::group(['as' => 'admin.'], function () {
     Route::get('/clear-cache', function () {
@@ -33,6 +36,19 @@ Route::group(['as' => 'admin.'], function () {
         Route::put('setting/google', [GoogleSettingController::class, 'updateGoogle'])->name('setting.update.google');
 
         Route::resource('seo', SeoController::class)->except(['show', 'create', 'store', 'destroy']);
+
+        // Contact Management
+        Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
+        Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
+        Route::post('contacts/{contact}/mark-read', [AdminContactController::class, 'markAsRead'])->name('contacts.mark-read');
+        Route::delete('contacts/{contact}', [AdminContactController::class, 'destroy'])->name('contacts.destroy');
+
+        // Contact Info Management
+        Route::get('contact-info', [AdminContactInfoController::class, 'index'])->name('contact-info.index');
+        Route::put('contact-info', [AdminContactInfoController::class, 'update'])->name('contact-info.update');
+
+        // FAQ Management
+        Route::resource('faqs', AdminFaqController::class)->except(['show']);
     });
 
     Route::group(['middleware' => 'guest'], function () {

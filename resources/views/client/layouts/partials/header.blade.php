@@ -170,7 +170,7 @@
                                     <ul class="user-menu text-md">
                                         @if (auth()->user())
                                             <li>
-                                                <a href="">
+                                                <a href="{{ route('admin.dashboard') }}">
                                                     <span class="text-lg">Quản trị viên</span>
                                                 </a>
                                             </li>
@@ -197,7 +197,7 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="">
+                                            <a href="{{ route('account-settings') }}">
                                                 <span class="text-lg">Thiết lập tài khoản</span>
                                             </a>
                                         </li>

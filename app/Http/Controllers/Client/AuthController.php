@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use App\Http\Controllers\Controller;
 use App\Mail\AccountActivationMail;
 use App\Mail\PasswordResetMail;
@@ -17,6 +20,30 @@ use App\Mail\PasswordChangeConfirmationMail;
 
 class AuthController extends Controller
 {
+    /**
+     * Tạo mã giới thiệu duy nhất
+     * 
+     * @return string
+     */
+    private function generateUniqueReferralCode()
+    {
+        $user = new User();
+        $maxAttempts = 100;
+        $attempts = 0;
+
+        do {
+            $referralCode = $user->generateReferralCode();
+            $exists = User::where('referral_code', $referralCode)->exists();
+            $attempts++;
+        } while ($exists && $attempts < $maxAttempts);
+
+        if ($attempts >= $maxAttempts) {
+            $referralCode = $user->generateReferralCode() . substr(time(), -4);
+        }
+
+        return $referralCode;
+    }
+
     /**
      * Kiểm tra rate limit cho việc gửi email
      * 
@@ -142,6 +169,8 @@ class AuthController extends Controller
 
             $activationKey = Str::random(60);
 
+            $referralCode = $this->generateUniqueReferralCode();
+
             $user = User::create([
                 'full_name' => $request->name,
                 'email' => $request->email,
@@ -150,6 +179,7 @@ class AuthController extends Controller
                 'role' => User::ROLE_USER,
                 'active' => User::ACTIVE_NO,
                 'key_active' => $activationKey,
+                'referral_code' => $referralCode,
             ]);
 
             $activationUrl = route('verify-account', ['key' => $activationKey, 'email' => $user->email]);
@@ -286,13 +316,10 @@ class AuthController extends Controller
 
             $changeKey = Str::random(60);
 
-            $request->session()->put('pending_password_change', [
-                'password' => $request->password,
-                'key' => $changeKey,
-                'user_id' => $user->id,
-            ]);
+            $hashedPassword = Hash::make($request->password);
 
             $user->key_change_password = $changeKey;
+            $user->temp_password_hash = $hashedPassword;
             $user->save();
 
             $confirmationUrl = route('verify-change-password', ['key' => $changeKey, 'email' => $user->email]);
@@ -410,6 +437,134 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Upload user avatar
+     */
+    public function uploadAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ], [
+            'avatar.required' => 'Vui lòng chọn ảnh đại diện.',
+            'avatar.image' => 'File phải là hình ảnh.',
+            'avatar.mimes' => 'Ảnh phải có định dạng: jpeg, png, jpg, gif.',
+            'avatar.max' => 'Kích thước ảnh không được vượt quá 5MB.',
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            if ($request->hasFile('avatar')) {
+                if ($user->avatar) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+
+                $avatarPath = $this->processAndSaveAvatar($request->file('avatar'));
+                
+                $user->avatar = $avatarPath;
+                $user->save();
+
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Đã cập nhật ảnh đại diện thành công!',
+                        'avatar_url' => Storage::url($avatarPath)
+                    ]);
+                }
+
+                return redirect()->route('profile')
+                    ->with('success', 'Đã cập nhật ảnh đại diện thành công!');
+            }
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy file ảnh.'
+                ], 400);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Không tìm thấy file ảnh.');
+        } catch (Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đã xảy ra lỗi khi upload ảnh. Vui lòng thử lại sau.'
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Đã xảy ra lỗi khi upload ảnh. Vui lòng thử lại sau.');
+        }
+    }
+
+    /**
+     * Process and save avatar
+     */
+    private function processAndSaveAvatar($imageFile)
+    {
+        $now = Carbon::now();
+        $yearMonth = $now->format('Y/m');
+        $timestamp = $now->format('YmdHis');
+        $randomString = Str::random(8);
+        $fileName = "{$timestamp}_{$randomString}";
+
+        Storage::disk('public')->makeDirectory("avatars/{$yearMonth}");
+
+        $avatarImage = Image::make($imageFile);
+        $avatarImage->fit(300, 300);
+        $avatarImage->encode('jpg', 85);
+        
+        $avatarPath = "avatars/{$yearMonth}/{$fileName}.jpg";
+        Storage::disk('public')->put($avatarPath, $avatarImage->stream());
+
+        return $avatarPath;
+    }
+
+    /**
+     * Update user profile (full_name and phone)
+     */
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+        ], [
+            'full_name.required' => 'Họ và tên không được để trống.',
+            'phone.required' => 'Số điện thoại không được để trống.',
+        ]);
+
+        try {
+            $user = Auth::user();
+            
+            $user->update([
+                'full_name' => $request->full_name,
+                'phone' => $request->phone,
+            ]);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã cập nhật thông tin thành công!'
+                ]);
+            }
+
+            return redirect()->route('profile')
+                ->with('success', 'Đã cập nhật thông tin thành công!');
+        } catch (Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại sau.'
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại sau.');
+        }
+    }
+
     public function verifyChangePassword(Request $request, $key, $email)
     {
         try {
@@ -421,21 +576,20 @@ class AuthController extends Controller
                 return redirect()->route('login')->with('error', 'Liên kết không hợp lệ hoặc đã hết hạn.');
             }
 
-            $pendingPassword = $request->session()->get('pending_password_change');
-
-            if (!$pendingPassword || $pendingPassword['key'] !== $key || $pendingPassword['user_id'] != $user->id) {
-                return redirect()->route('login')->with('error', 'Phiên làm việc đã hết hạn. Vui lòng thử lại.');
+            if (!$user->temp_password_hash) {
+                return redirect()->route('login')->with('error', 'Liên kết đã hết hạn. Vui lòng thử lại.');
             }
 
-            $user->password = Hash::make($pendingPassword['password']);
+            $user->password = $user->temp_password_hash;
             $user->key_change_password = null;
+            $user->temp_password_hash = null;
             $user->save();
 
-            $request->session()->forget('pending_password_change');
-
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            if (Auth::check() && Auth::id() == $user->id) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
 
             return redirect()->route('login')->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.');
         } catch (Exception $e) {
