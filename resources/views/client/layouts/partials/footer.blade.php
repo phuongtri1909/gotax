@@ -2,22 +2,21 @@
     $footerData = $footerData ?? [
         'description' => 'Đơn giản hoá công việc kế toán, kiểm tra rủi ro, tải tờ khai và đọc CCCD nhanh chóng.',
         'help_links' => [
-            ['text' => 'Tư Vấn', 'url' => '#'],
+            ['text' => 'Tư Vấn', 'url' => route('contact')],
             ['text' => 'Tài Liệu', 'url' => '#'],
             ['text' => 'Bảng Giá', 'url' => '#'],
             ['text' => 'Chính Sách', 'url' => '#'],
             ['text' => 'Câu Hỏi Thường Gặp', 'url' => route('faqs')],
         ],
         'tools_links' => [
-            ['text' => 'Go Invoice', 'url' => '#'],
-            ['text' => 'Go Bot', 'url' => '#'],
-            ['text' => 'Go Soft', 'url' => '#'],
-            ['text' => 'Go Quick', 'url' => '#'],
+            ['text' => 'Go Invoice', 'url' => route('tools.go-invoice')],
+            ['text' => 'Go Bot', 'url' => route('tools.go-bot')],
+            ['text' => 'Go Soft', 'url' => route('tools.go-soft')],
+            ['text' => 'Go Quick', 'url' => route('tools.go-quick')],
         ],
         'copyright' => 'Copyright © 2025 ketoanmoclan. All Rights Reserved.',
     ];
     
-    // Contact info được load từ ContactInfoServiceProvider
     $contactPhone = $contactInfo->phone ?? '0989 466 992';
     $contactEmail = $contactInfo->email ?? 'supportgotax@gmail.com';
     $contactAddress = $contactInfo->address ?? '2321 New Design Str, Lorem Ipsum10';
@@ -57,7 +56,25 @@
                     @if($contactAddress)
                     <p class="contact-item">
                         <span class="contact-label">Địa chỉ:</span>
-                        <span class="contact-value">{{ $contactAddress }}</span>
+                        @php
+                            $mapUrl = null;
+                            if (isset($contactInfo)) {
+                                if ($contactInfo->map_url) {
+                                    $mapUrl = $contactInfo->map_url;
+                                } elseif ($contactInfo->latitude && $contactInfo->longitude) {
+                                    $mapUrl = 'https://www.google.com/maps?q=' . $contactInfo->latitude . ',' . $contactInfo->longitude;
+                                } elseif ($contactAddress) {
+                                    $mapUrl = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($contactAddress);
+                                }
+                            } elseif ($contactAddress) {
+                                $mapUrl = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($contactAddress);
+                            }
+                        @endphp
+                        @if($mapUrl)
+                            <a href="{{ $mapUrl }}" target="_blank" rel="noopener noreferrer" class="contact-value">{{ $contactAddress }}</a>
+                        @else
+                            <span class="contact-value">{{ $contactAddress }}</span>
+                        @endif
                     </p>
                     @endif
                     @if($contactPhone)
