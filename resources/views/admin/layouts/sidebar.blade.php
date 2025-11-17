@@ -97,6 +97,12 @@
                     </li>
 
                     <li class="mt-4">
+                        <a href="{{ route('home') }}">
+                            <i class="fas fa-home"></i>
+                            <span>Trang chủ</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="{{ route('logout') }}">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Đăng xuất</span>
