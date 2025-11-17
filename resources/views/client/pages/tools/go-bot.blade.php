@@ -14,7 +14,7 @@
                     'subtitle' =>
                         'Đơn giản hoá công việc kế toán, kiểm tra rủi ro nhà cung cấp, tra MST cá nhân hàng loạt.',
                     'button_text' => 'Dùng Thử Miễn Phí',
-                    'button_link' => '#',
+                    'button_link' => route('tools.go-bot.overview'),
                     'image' => asset('images/d/tools/banner-bot.png'),
                     'overlay_opacity' => 0.2,
                 ],
@@ -28,7 +28,7 @@
                 description="Công cụ tra cứu MST hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ tra Rủi Ro MST DN hàng loạt!"
                 descriptionLeft="Tăng tốc quy trình tra cứu MST Doanh nghiệp và cá nhân. Công cụ thông minh, giao diện dễ dùng, hỗ trợ tra cứu mã số thuế nhanh chóng, chính xác và dễ dàng."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-invoice.trial') }}" :image="asset('images/d/tools/body-bot.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-bot.overview') }}" :image="asset('images/d/tools/body-bot.png')" />
 
             @php
                 $features = [

@@ -25,12 +25,12 @@
                                         <rect width="21" height="21" fill="white" />
                                     </clipPath>
                                 </defs>
-                            </svg>
-                        </button>
-                        <div class="modal-logo">
-                            <img src="{{ $logoPath }}" alt="GoTax Logo">
-                        </div>
-                    </div>
+                    </svg>
+                </button>
+                <div class="modal-logo">
+                    <img src="{{ $logoPath }}" alt="GoTax Logo">
+                </div>
+            </div>
                     <!-- Progress Steps -->
                     <div class="progress-steps mb-5">
                         <div class="step-item active">
@@ -53,15 +53,15 @@
                         </div>
 
                         <div class="step-item">
-                            <div class="step-line"></div>
+                        <div class="step-line"></div>
                             <div class="step-circle">
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path d="M16.6667 5L7.50004 14.1667L3.33337 10" stroke="white" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
-                            </div>
-                            <div class="step-line"></div>
+                        </div>
+                        <div class="step-line"></div>
                             <span class="step-label">Thành công</span>
 
                         </div>
@@ -73,7 +73,7 @@
                         <div class="col-12 col-lg-6 col-xxl-5">
                             <div class="package-summary-card">
                                 <h3 class="summary-title text-center">Công cụ đăng ký</h3>
-
+                                
                                 <div class="package-info" data-package-info>
                                     <div class="d-flex justify-content-between">
                                         <div class="package-icon me-2">
@@ -84,16 +84,16 @@
                                             <p class="package-desc" data-package-desc>
                                                 {{ $package->name ?? 'Basic' }} -
                                                 {{ $package->description ?? '1000 MST/ Năm' }}</p>
-                                        </div>
+                                    </div>
                                         <div
                                             class="package-price d-flex flex-column align-items-end justify-content-around">
                                             <span class="price-amount"
                                                 data-package-price>{{ $package->price ?? '200.000' }}đ</span>
                                             <span class="price-badge" data-package-badge style="display: none;"></span>
-                                        </div>
+                                    </div>
                                     </div>
                                     <div class="d-flex justify-content-end">
-                                        <button type="button" class="btn-remove" data-remove-package>
+                                    <button type="button" class="btn-remove" data-remove-package>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="14"
                                                 viewBox="0 0 13 14" fill="none">
                                                 <path
@@ -108,36 +108,36 @@
                                                 <path
                                                     d="M7.36968 7.88235C7.36968 7.03569 7.36799 6.1886 7.37095 5.34194C7.3718 5.08104 7.54545 4.87647 7.78772 4.83497C8.0537 4.78922 8.28707 4.92476 8.3811 5.17592C8.40609 5.24241 8.40778 5.31018 8.40778 5.37879C8.40778 7.05136 8.40863 8.7235 8.40736 10.3961C8.40736 10.7294 8.19643 10.9501 7.8864 10.9492C7.58145 10.9484 7.36968 10.7222 7.36926 10.3906C7.36884 9.55491 7.36968 8.71884 7.36968 7.88235Z"
                                                     fill="#505050" />
-                                            </svg>
-                                        </button>
+                                        </svg>
+                                    </button>
                                     </div>
                                 </div>
 
                                 <div class="ps-4 pt-3">
-                                    <div class="promo-code-section">
-                                        <label class="promo-label">Mã giới thiệu</label>
+                                <div class="promo-code-section">
+                                    <label class="promo-label">Mã giới thiệu</label>
                                         <div class="d-flex">
                                             <input type="text" class="form-control promo-input me-2 form-control-sm"
                                                 name="promo_code" placeholder="Code">
                                             <button class="btn btn-apply btn-sm" type="button">Sử dụng</button>
-                                        </div>
-                                    </div>
-
-                                    <div class="price-breakdown">
-                                        <div class="price-row">
-                                            <span class="price-label">Phí đăng ký</span>
-                                            <span class="price-value" data-registration-fee>200.000đ</span>
-                                        </div>
-                                        <div class="price-row discount">
-                                            <span class="price-label">Mã giảm giá</span>
-                                            <span class="price-value" data-discount>-50.000đ</span>
-                                        </div>
-                                        <div class="price-row total">
-                                            <span class="price-label">Tổng thanh toán</span>
-                                            <span class="price-value" data-total-amount>150.000đ</span>
-                                        </div>
                                     </div>
                                 </div>
+
+                                <div class="price-breakdown">
+                                    <div class="price-row">
+                                        <span class="price-label">Phí đăng ký</span>
+                                        <span class="price-value" data-registration-fee>200.000đ</span>
+                                    </div>
+                                    <div class="price-row discount">
+                                        <span class="price-label">Mã giảm giá</span>
+                                        <span class="price-value" data-discount>-50.000đ</span>
+                                    </div>
+                                    <div class="price-row total">
+                                        <span class="price-label">Tổng thanh toán</span>
+                                        <span class="price-value" data-total-amount>150.000đ</span>
+                                    </div>
+                                </div>
+                            </div>
                             </div>
                         </div>
 
@@ -150,7 +150,7 @@
                         <div class="col-12 col-lg-6 col-xxl-5">
                             <div class="registration-form-card" id="step-register-form">
                                 <h3 class="form-title text-center">Thông tin đăng ký</h3>
-
+                                
                                 <form id="registrationForm" class="registration-form">
                                     <div class="row g-3 content-registration-form">
                                         <div class="col-12 col-md-6">
@@ -367,8 +367,8 @@
                                         <div class="payment-timer-btn">
                                             <div class="payment-timer-number" id="timer-seconds">00</div>
                                             <div class="payment-timer-text">Giây</div>
-                                        </div>
-                                    </div>
+                        </div>
+                    </div>
                                 </div>
                             </div>
                         </div>
@@ -509,14 +509,14 @@
             const modal = document.getElementById('{{ $modalId }}');
 
             if (!modal) return;
-
+            
             modal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
-
+                
                 if (button && button.dataset.package) {
                     try {
-                        const packageData = JSON.parse(button.dataset.package);
-                        updatePackageInfo(packageData);
+                    const packageData = JSON.parse(button.dataset.package);
+                    updatePackageInfo(packageData);
                     } catch (e) {
                         console.error('Error parsing package data:', e);
                     }
@@ -529,7 +529,7 @@
                 const packageDescEl = modal.querySelector('[data-package-desc]');
                 const packagePriceEl = modal.querySelector('[data-package-price]');
                 const registrationFeeEl = modal.querySelector('[data-registration-fee]');
-
+                
                 // Get tool name from package data or detect from route
                 let toolName = packageData.tool_name || '';
                 if (!toolName) {
@@ -578,7 +578,7 @@
                 if (discountEl) {
                     discountEl.textContent = '0đ';
                 }
-
+                
                 calculateTotal();
             }
 
@@ -590,7 +590,7 @@
                 const registrationFee = parseFloat(registrationFeeText.replace(/[^\d]/g, '') || 0);
                 const discount = parseFloat(discountText.replace(/[^\d-]/g, '') || 0);
                 const total = Math.max(0, registrationFee + discount);
-
+                
                 const totalEl = modal.querySelector('[data-total-amount]');
                 if (totalEl) {
                     totalEl.textContent = total.toLocaleString('vi-VN') + 'đ';
@@ -601,42 +601,42 @@
             const applyButton = modal.querySelector('.btn-apply');
             if (applyButton) {
                 applyButton.addEventListener('click', function() {
-                    const promoInput = modal.querySelector('.promo-input');
-                    const promoCode = promoInput?.value.trim();
-
-                    if (promoCode) {
-                        // TODO: Call API to validate promo code
-                        console.log('Applying promo code:', promoCode);
-                        // Update discount amount based on API response
+                const promoInput = modal.querySelector('.promo-input');
+                const promoCode = promoInput?.value.trim();
+                
+                if (promoCode) {
+                    // TODO: Call API to validate promo code
+                    console.log('Applying promo code:', promoCode);
+                    // Update discount amount based on API response
                         // For now, just update UI
-                        // calculateTotal();
-                    }
-                });
+                    // calculateTotal();
+                }
+            });
             }
 
             // Handle form submission
             const form = modal.querySelector('#registrationForm');
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-
-                    const formData = new FormData(form);
-                    const data = Object.fromEntries(formData);
-
-                    // TODO: Call API to submit registration
-                    console.log('Form data:', data);
-
-                    // Move to next step (payment)
-                    // updateProgressStep(2);
-                });
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                
+                // TODO: Call API to submit registration
+                console.log('Form data:', data);
+                
+                // Move to next step (payment)
+                // updateProgressStep(2);
+            });
             }
 
             // Handle remove package
             const removeButton = modal.querySelector('[data-remove-package]');
             if (removeButton) {
                 removeButton.addEventListener('click', function() {
-                    // TODO: Handle package removal logic
-                    console.log('Remove package clicked');
+                // TODO: Handle package removal logic
+                console.log('Remove package clicked');
                     hideModal();
                 });
             }
