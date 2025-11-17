@@ -45,8 +45,15 @@ Route::get('go-invoice/trial', function () {
     return view('client.pages.tools.go-invoice-trial');
 })->name('tools.go-invoice.trial');
 
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth']], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('change-password', function () {
+        return view('client.pages.auth.change-password');
+    })->name('change-password');
+    
+    Route::post('change-password', [AuthController::class, 'changePassword'])->name('change-password.post');
+
     Route::get('profile', function () {
         return view('client.pages.profile');
     })->name('profile');
@@ -75,9 +82,13 @@ Route::group(['middleware' => 'guest'], function () {
 
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password.post');
 
-    Route::get('change-password', function () {
-        return view('client.pages.auth.change-password');
-    })->name('change-password');
+    Route::get('resend-activation', function () {
+        return view('client.pages.auth.resend-activation');
+    })->name('resend-activation');
 
-    Route::post('change-password', [AuthController::class, 'changePassword'])->name('change-password.post');
+    Route::post('resend-activation', [AuthController::class, 'resendActivationEmail'])->name('resend-activation.post');
+
+    Route::get('verify-account/{key}/{email}', [AuthController::class, 'verifyAccount'])->name('verify-account');
+    Route::get('verify-reset-password/{key}/{email}', [AuthController::class, 'verifyResetPassword'])->name('verify-reset-password');
+    Route::get('verify-change-password/{key}/{email}', [AuthController::class, 'verifyChangePassword'])->name('verify-change-password');
 });

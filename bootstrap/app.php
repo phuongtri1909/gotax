@@ -24,7 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web([
-          
+            \App\Http\Middleware\SecureFileUpload::class,
+            \App\Http\Middleware\CheckAccountActive::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

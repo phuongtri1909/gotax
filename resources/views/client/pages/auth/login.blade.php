@@ -88,13 +88,11 @@
 
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                // Change to eye-slash icon if exists, otherwise keep same
                 const eyeSlashPath = "{{ asset('/images/svg/eye-slash.svg') }}";
                 passwordIcon.src = eyeSlashPath;
                 passwordIcon.alt = 'Hide Password';
             } else {
                 passwordInput.type = 'password';
-                // Change back to eye icon
                 const eyePath = "{{ asset('/images/svg/eye.svg') }}";
                 passwordIcon.src = eyePath;
                 passwordIcon.alt = 'Show Password';

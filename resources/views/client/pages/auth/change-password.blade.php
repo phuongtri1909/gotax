@@ -16,13 +16,26 @@
         <div class="login-container">
             <div class="login-card">
                 <h2 class="login-title">Đổi Mật Khẩu</h2>
-                <p class="login-subtitle">Vui lòng nhập mật khẩu mới của bạn để tiến hành đăng nhập.</p>
+                <p class="login-subtitle">
+                    @if(session('reset_key') && session('reset_email'))
+                        Vui lòng nhập mật khẩu mới của bạn.
+                    @elseif(auth()->check())
+                        Vui lòng nhập mật khẩu mới. Chúng tôi sẽ gửi email xác nhận đến bạn.
+                    @else
+                        Vui lòng nhập mật khẩu mới của bạn để tiến hành đăng nhập.
+                    @endif
+                </p>
 
                 @include('components.toast-main')
                 @include('components.toast')
 
                 <form method="POST" action="{{ route('change-password.post') }}" class="login-form">
                     @csrf
+                    
+                    @if(session('reset_key') && session('reset_email'))
+                        <input type="hidden" name="key" value="{{ session('reset_key') }}">
+                        <input type="hidden" name="email" value="{{ session('reset_email') }}">
+                    @endif
 
                     <div class="form-group">
                         <label for="password" class="form-label">Mật khẩu mới</label>
@@ -56,25 +69,33 @@
                         @enderror
                     </div>
 
-                    <div class="form-options">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="remember" name="remember"
-                                {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="remember">Nhớ mật khẩu</label>
+                    @if(!session('reset_key'))
+                        <div class="form-options">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="remember" name="remember"
+                                    {{ old('remember') ? 'checked' : '' }}>
+                                <label class="form-check-label" for="remember">Nhớ mật khẩu</label>
+                            </div>
+                            <a href="{{ route('forgot-password') }}" class="forgot-password-link">Quên mật khẩu?</a>
                         </div>
-                        <a href="{{ route('forgot-password') }}" class="forgot-password-link">Quên mật khẩu?</a>
-                    </div>
+                    @endif
 
                     <button type="submit" class="login-button">
-                        Đăng nhập
+                        @if(session('reset_key'))
+                            Đặt Lại Mật Khẩu
+                        @else
+                            Đổi Mật Khẩu
+                        @endif
                     </button>
                 </form>
 
-                <div class="login-footer">
-                    <p class="signup-text">
-                        Bạn chưa có tài khoản? <a href="{{ route('register') }}" class="signup-link">Đăng ký</a>
-                    </p>
-                </div>
+                @if(!session('reset_key'))
+                    <div class="login-footer">
+                        <p class="signup-text">
+                            Bạn chưa có tài khoản? <a href="{{ route('register') }}" class="signup-link">Đăng ký</a>
+                        </p>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

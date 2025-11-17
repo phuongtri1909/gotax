@@ -65,11 +65,27 @@
                         <div class="password-input-wrapper">
                             <input type="password" class="form-control @error('password') is-invalid @enderror"
                                 id="password" name="password" placeholder="Mật khẩu" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePassword()">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password', 'password-icon')">
                                 <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye" class="eye-icon" id="password-icon">
                             </button>
                         </div>
                         @error('password')
+                            <div class="invalid-feedback d-block">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password_confirmation" class="form-label">Nhập lại mật khẩu</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" class="form-control @error('password_confirmation') is-invalid @enderror"
+                                id="password_confirmation" name="password_confirmation" placeholder="Nhập lại mật khẩu" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password_confirmation', 'password-confirmation-icon')">
+                                <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye" class="eye-icon" id="password-confirmation-icon">
+                            </button>
+                        </div>
+                        @error('password_confirmation')
                             <div class="invalid-feedback d-block">
                                 {{ $message }}
                             </div>
@@ -94,6 +110,9 @@
                     <p class="signup-text">
                         Bạn đã có tài khoản? <a href="{{ route('login') }}" class="signup-link">Đăng nhập</a>
                     </p>
+                    <p class="signup-text mt-2">
+                        Chưa nhận được email kích hoạt? <a href="{{ route('resend-activation') }}" class="signup-link">Gửi lại email</a>
+                    </p>
                 </div>
             </div>
         </div>
@@ -102,9 +121,9 @@
 
 @push('scripts')
     <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const passwordIcon = document.getElementById('password-icon');
+        function togglePassword(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const passwordIcon = document.getElementById(iconId);
 
             if (!passwordInput || !passwordIcon) {
                 return;
@@ -112,13 +131,11 @@
 
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                // Change to eye-slash icon if exists, otherwise keep same
                 const eyeSlashPath = "{{ asset('/images/svg/eye-slash.svg') }}";
                 passwordIcon.src = eyeSlashPath;
                 passwordIcon.alt = 'Hide Password';
             } else {
                 passwordInput.type = 'password';
-                // Change back to eye icon
                 const eyePath = "{{ asset('/images/svg/eye.svg') }}";
                 passwordIcon.src = eyePath;
                 passwordIcon.alt = 'Show Password';
