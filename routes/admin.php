@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\GoogleSettingController;
 use App\Http\Controllers\Admin\AdminContactController;
 use App\Http\Controllers\Admin\AdminContactInfoController;
 use App\Http\Controllers\Admin\AdminFaqController;
+use App\Http\Controllers\Admin\AdminTestimonialController;
 
 Route::group(['as' => 'admin.'], function () {
     Route::get('/clear-cache', function () {
@@ -49,6 +50,9 @@ Route::group(['as' => 'admin.'], function () {
 
         // FAQ Management
         Route::resource('faqs', AdminFaqController::class)->except(['show']);
+
+        // Testimonial Management
+        Route::resource('testimonials', AdminTestimonialController::class)->except(['show']);
     });
 
     Route::group(['middleware' => 'guest'], function () {

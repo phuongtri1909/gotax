@@ -6,6 +6,7 @@ use App\Http\Controllers\Client\AuthController;
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\ContactController;
 use App\Http\Controllers\Client\FaqController;
+use App\Http\Controllers\Client\TestimonialController;
 
 Route::get('clear-cache', function () {
     Artisan::call('cache:clear');
@@ -22,6 +23,8 @@ Route::post('contact', [ContactController::class, 'store'])->name('contact.post'
 Route::get('contact/captcha', [ContactController::class, 'generateCaptcha'])->name('contact.captcha');
 
 Route::get('faqs', [FaqController::class, 'index'])->name('faqs');
+
+Route::get('testimonials/load-more', [TestimonialController::class, 'loadMore'])->name('testimonials.load-more');
 
 Route::get('go-invoice', function () {
     return view('client.pages.tools.go-invoice');

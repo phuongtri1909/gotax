@@ -60,6 +60,14 @@
                         </a>
                     </li>
 
+                    <!-- Quản lý Đánh giá khách hàng -->
+                    <li class="{{ Route::currentRouteNamed('admin.testimonials.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.testimonials.index') }}">
+                            <i class="fas fa-star"></i>
+                            <span>Đánh giá khách hàng</span>
+                        </a>
+                    </li>
+
                     <!-- Cấu hình hệ thống -->
                     <li
                         class="has-submenu {{ Route::currentRouteNamed(['admin.socials.*', 'admin.logo-site.*', 'admin.languages.*', 'admin.seo.*', 'admin.setting.*']) ? 'open' : '' }}">
