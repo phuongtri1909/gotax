@@ -64,8 +64,11 @@
 
                                     <div class="form-group">
                                         <label for="port">Port</label>
-                                        <input type="text" id="port" name="port" class="form-control"
-                                            value="{{ $smtpSetting->port ?? '' }}" required>
+                                        <input type="number" id="port" name="port" class="form-control"
+                                            value="{{ $smtpSetting->port ?? '' }}" min="1" max="65535" required>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-info-circle"></i> Gmail: 587 (TLS) hoặc 465 (SSL). Outlook: 587 (TLS). Yahoo: 587 (TLS) hoặc 465 (SSL).
+                                        </small>
                                     </div>
 
                                     <div class="form-group">
@@ -77,7 +80,10 @@
                                     <div class="form-group">
                                         <label for="password">Password</label>
                                         <input type="password" id="password" name="password" class="form-control"
-                                            value="{{ $smtpSetting->password ?? '' }}" required>
+                                            placeholder="Nhập password mới hoặc để trống nếu không đổi">
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-info-circle"></i> Để trống nếu không muốn thay đổi password hiện tại. Bắt buộc khi tạo mới.
+                                        </small>
                                     </div>
 
                                     <div class="form-group">
@@ -85,10 +91,13 @@
                                         <select id="encryption" name="encryption" class="form-control">
                                             <option value="">None</option>
                                             <option value="tls"
-                                                {{ ($smtpSetting->encryption ?? '') == 'tls' ? 'selected' : '' }}>TLS</option>
+                                                {{ ($smtpSetting->encryption ?? '') == 'tls' ? 'selected' : '' }}>TLS (thường dùng port 587)</option>
                                             <option value="ssl"
-                                                {{ ($smtpSetting->encryption ?? '') == 'ssl' ? 'selected' : '' }}>SSL</option>
+                                                {{ ($smtpSetting->encryption ?? '') == 'ssl' ? 'selected' : '' }}>SSL (thường dùng port 465)</option>
                                         </select>
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-info-circle"></i> Gmail khuyến nghị: TLS với port 587 hoặc SSL với port 465.
+                                        </small>
                                     </div>
 
                                     <div class="form-group">
@@ -340,6 +349,29 @@
                 activateTab(tabId);
 
                 history.replaceState(null, null, '?tab=' + tabId);
+            });
+
+            $('#encryption').on('change', function() {
+                var encryption = $(this).val();
+                var portInput = $('#port');
+                var currentPort = portInput.val();
+
+                if (encryption === 'tls' && (!currentPort || currentPort === '465')) {
+                    portInput.val('587');
+                } else if (encryption === 'ssl' && (!currentPort || currentPort === '587')) {
+                    portInput.val('465');
+                }
+            });
+
+            $('#port').on('change', function() {
+                var port = parseInt($(this).val());
+                var encryption = $('#encryption').val();
+
+                if (port === 587 && encryption !== 'tls') {
+                    $('#encryption').val('tls');
+                } else if (port === 465 && encryption !== 'ssl') {
+                    $('#encryption').val('ssl');
+                }
             });
         });
     </script>

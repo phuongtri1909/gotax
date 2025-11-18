@@ -13,34 +13,34 @@
     <div class="testimonials-wrapper">
         <div class="testimonials-container-wrapper">
             <div class="testimonials-grid" id="testimonialsGrid">
-                @foreach ($testimonials as $testimonial)
-                    <div class="testimonial-card">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="quote-icon">
-                                <img src="{{ asset('images/svg/testimonials/quote.svg') }}" alt="Quote" class="quote-icon-img">
-                            </div>
-                            <div class="testimonial-rating">
+        @foreach ($testimonials as $testimonial)
+            <div class="testimonial-card">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="quote-icon">
+                        <img src="{{ asset('images/svg/testimonials/quote.svg') }}" alt="Quote" class="quote-icon-img">
+                    </div>
+                    <div class="testimonial-rating">
                                 @for ($i = 0; $i < ($testimonial['rating'] ?? 5); $i++)
-                                    <i class="fas fa-star"></i>
-                                @endfor
-                            </div>
-                        </div>
+                            <i class="fas fa-star"></i>
+                        @endfor
+                    </div>
+                </div>
                         <p class="testimonial-text mb-0">{{ $testimonial['text'] ?? '' }}</p>
-                        <hr class="mb-4 mt-0 divider-testimonials">
-                        <div class="testimonial-author">
+                <hr class="mb-4 mt-0 divider-testimonials">
+                <div class="testimonial-author">
                             <img src="{{ $testimonial['avatar'] ?? asset('images/default/avatar_default.jpg') }}" 
                                  alt="{{ $testimonial['name'] ?? '' }}" 
                                  class="author-avatar"
                                  onerror="this.src='{{ asset('images/default/avatar_default.jpg') }}'">
                             <span class="author-name">{{ $testimonial['name'] ?? '' }}</span>
-                        </div>
-                    </div>
-                @endforeach
+                </div>
             </div>
+        @endforeach
+    </div>
         </div>
         <div class="text-center">
             <button type="button" class="view-more-button-right" id="loadMoreTestimonials" data-offset="{{ $initialLimit }}" data-limit="{{ $loadMoreLimit }}">
-                Xem thêm <i class="fas fa-arrow-right"></i>
+            Xem thêm <i class="fas fa-arrow-right"></i>
             </button>
         </div>
     </div>

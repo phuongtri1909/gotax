@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\SMTPSetting;
+use App\Observers\SMTPSettingObserver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,18 +22,30 @@ class SMTPSettingsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        SMTPSetting::observe(SMTPSettingObserver::class);
+        $this->loadSMTPConfig();
+    }
+
+    /**
+     * Load SMTP configuration from database
+     */
+    public static function loadSMTPConfig(): void
+    {
         try {
             $smtpSettings = SMTPSetting::first();
 
             if ($smtpSettings) {
+                $port = (int) $smtpSettings->port;
+                $encryption = $smtpSettings->encryption ?: null;
+                
                 $config = [
                     'default' => 'smtp',
                     'mailers' => [
                         'smtp' => [
                             'transport' => 'smtp',
                             'host' => $smtpSettings->host,
-                            'port' => $smtpSettings->port,
-                            'encryption' => $smtpSettings->encryption,
+                            'port' => $port,
+                            'encryption' => $encryption,
                             'username' => $smtpSettings->username,
                             'password' => $smtpSettings->password,
                             'timeout' => null,
@@ -46,6 +59,8 @@ class SMTPSettingsServiceProvider extends ServiceProvider
                 ];
 
                 config(['mail' => array_merge(config('mail'), $config)]);
+            } else {
+                Log::warning('No SMTP settings found in database, using .env configuration');
             }
         } catch (\Exception $e) {
             Log::error('Failed to load SMTP settings from database', [
