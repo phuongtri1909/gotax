@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens(except: [
-
+            'purchase/casso/callback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

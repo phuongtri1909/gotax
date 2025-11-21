@@ -2,10 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\Client\FaqController;
 use App\Http\Controllers\Client\AuthController;
 use App\Http\Controllers\Client\HomeController;
+use App\Http\Controllers\Client\ToolController;
 use App\Http\Controllers\Client\ContactController;
-use App\Http\Controllers\Client\FaqController;
 use App\Http\Controllers\Client\TestimonialController;
 
 Route::get('clear-cache', function () {
@@ -15,6 +17,8 @@ Route::get('clear-cache', function () {
     Artisan::call('route:clear');
     return 'Cache cleared';
 })->name('clear.cache');
+
+Route::post('/purchase/casso/callback', [PurchaseController::class, 'cassoCallback'])->name('purchase.casso.callback');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -26,21 +30,10 @@ Route::get('faqs', [FaqController::class, 'index'])->name('faqs');
 
 Route::get('testimonials/load-more', [TestimonialController::class, 'loadMore'])->name('testimonials.load-more');
 
-Route::get('go-invoice', function () {
-    return view('client.pages.tools.go-invoice');
-})->name('tools.go-invoice');
-
-Route::get('go-bot', function () {
-    return view('client.pages.tools.go-bot');
-})->name('tools.go-bot');
-
-Route::get('go-soft', function () {
-    return view('client.pages.tools.go-soft');
-})->name('tools.go-soft');
-
-Route::get('go-quick', function () {
-    return view('client.pages.tools.go-quick');
-})->name('tools.go-quick');
+Route::get('go-invoice', [ToolController::class, 'goInvoice'])->name('tools.go-invoice');
+Route::get('go-bot', [ToolController::class, 'goBot'])->name('tools.go-bot');
+Route::get('go-soft', [ToolController::class, 'goSoft'])->name('tools.go-soft');
+Route::get('go-quick', [ToolController::class, 'goQuick'])->name('tools.go-quick');
 
 Route::get('go-invoice/trial', function () {
     return view('client.pages.tools.go-invoice-trial');
