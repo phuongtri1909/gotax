@@ -27,7 +27,7 @@
                 description="Công cụ đọc CCCD hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ Đọc CCCD hàng loạt!"
                 descriptionLeft="Đọc dữ liệu CCCD  nhanh chóng, chính xác, an toàn, hỗ trợ xử lý hàng loạt và xuất ra file Excel để quản lý thuận tiện."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-invoice.trial') }}" :image="asset('images/d/tools/body-quick.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-quick') }}" :image="asset('images/d/tools/body-quick.png')" />
 
             @php
                 $features = [

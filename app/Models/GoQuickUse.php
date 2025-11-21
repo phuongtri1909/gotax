@@ -24,6 +24,6 @@ class GoQuickUse extends Model
 
     public function package(): BelongsTo
     {
-        return $this->belongsTo(GoQuickPackage::class, 'package_id');
+        return $this->belongsTo(GoQuickPackage::class, 'package_id')->withDefault();
     }
 }

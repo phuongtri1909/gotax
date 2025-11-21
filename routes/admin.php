@@ -13,6 +13,8 @@ use App\Http\Controllers\Admin\AdminContactController;
 use App\Http\Controllers\Admin\GoogleSettingController;
 use App\Http\Controllers\Admin\AdminContactInfoController;
 use App\Http\Controllers\Admin\AdminTestimonialController;
+use App\Http\Controllers\Admin\TrialRegistrationController;
+use App\Http\Controllers\Admin\TrialController;
 
 Route::group(['as' => 'admin.'], function () {
     Route::get('/clear-cache', function () {
@@ -62,6 +64,18 @@ Route::group(['as' => 'admin.'], function () {
         Route::resource('go-bot-packages', \App\Http\Controllers\Admin\GoBotPackageController::class);
         Route::resource('go-soft-packages', \App\Http\Controllers\Admin\GoSoftPackageController::class);
         Route::resource('go-quick-packages', \App\Http\Controllers\Admin\GoQuickPackageController::class);
+
+        // Trial Registration Management
+        Route::get('trial-registrations', [TrialRegistrationController::class, 'index'])->name('trial-registrations.index');
+        Route::get('trial-registrations/{trialRegistration}', [TrialRegistrationController::class, 'show'])->name('trial-registrations.show');
+        Route::post('trial-registrations/{trialRegistration}/mark-read', [TrialRegistrationController::class, 'markAsRead'])->name('trial-registrations.mark-read');
+        Route::delete('trial-registrations/{trialRegistration}', [TrialRegistrationController::class, 'destroy'])->name('trial-registrations.destroy');
+
+        // Trial Configuration Management
+        Route::get('trials', [TrialController::class, 'index'])->name('trials.index');
+        Route::get('trials/{trial}', [TrialController::class, 'show'])->name('trials.show');
+        Route::get('trials/{trial}/edit', [TrialController::class, 'edit'])->name('trials.edit');
+        Route::put('trials/{trial}', [TrialController::class, 'update'])->name('trials.update');
     });
 
     Route::group(['middleware' => 'guest'], function () {

@@ -28,7 +28,7 @@
                         </a>
                     </li>
                     <li
-                        class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*']) ? 'open' : '' }}">
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*', 'admin.trials.*']) ? 'open' : '' }}">
                         <a href="#" class="submenu-toggle">
                             <i class="fas fa-money-bill"></i>
                             <span>Quản lý bán hàng</span>
@@ -65,13 +65,19 @@
                                     <span>Gói GoQuick</span>
                                 </a>
                             </li>
+                            <li class="{{ Route::currentRouteNamed('admin.trials.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.trials.index') }}">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Cấu hình dùng thử</span>
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     
 
                     <!-- Quản lý liên hệ -->
                     <li
-                        class="has-submenu {{ Route::currentRouteNamed(['admin.contacts.*', 'admin.contact-info.*']) ? 'open' : '' }}">
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.contacts.*', 'admin.contact-info.*', 'admin.trial-registrations.*']) ? 'open' : '' }}">
                         <a href="#" class="submenu-toggle">
                             <i class="fas fa-envelope"></i>
                             <span>Quản lý liên hệ</span>
@@ -88,6 +94,12 @@
                                 <a href="{{ route('admin.contact-info.index') }}">
                                     <i class="fas fa-address-card"></i>
                                     <span>Thông tin liên hệ</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.trial-registrations.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.trial-registrations.index') }}">
+                                    <i class="fas fa-user-check"></i>
+                                    <span>Đăng ký dùng thử</span>
                                 </a>
                             </li>
                         </ul>

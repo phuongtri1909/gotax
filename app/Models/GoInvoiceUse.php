@@ -26,6 +26,6 @@ class GoInvoiceUse extends Model
 
     public function package(): BelongsTo
     {
-        return $this->belongsTo(GoInvoicePackage::class, 'package_id');
+        return $this->belongsTo(GoInvoicePackage::class, 'package_id')->withDefault();
     }
 }

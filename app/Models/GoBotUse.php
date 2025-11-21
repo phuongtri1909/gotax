@@ -24,6 +24,6 @@ class GoBotUse extends Model
 
     public function package(): BelongsTo
     {
-        return $this->belongsTo(GoBotPackage::class, 'package_id');
+        return $this->belongsTo(GoBotPackage::class, 'package_id')->withDefault();
     }
 }

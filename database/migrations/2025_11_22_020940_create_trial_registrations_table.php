@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('go_bot_uses', function (Blueprint $table) {
+        Schema::create('trial_registrations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->nullable()->constrained('go_bot_packages')->nullOnDelete();
-            $table->integer('mst_limit')->default(0);
+            $table->string('tool_type'); // go-invoice, go-bot, go-soft, go-quick
+            $table->boolean('is_read')->default(false);
             $table->timestamps();
             
-            $table->unique('user_id');
+            $table->index(['user_id', 'tool_type']);
+            $table->index('is_read');
         });
     }
 
@@ -27,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('go_bot_uses');
+        Schema::dropIfExists('trial_registrations');
     }
 };

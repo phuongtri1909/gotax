@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('go_quick_uses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->constrained('go_quick_packages')->cascadeOnDelete();
+            $table->foreignId('package_id')->nullable()->constrained('go_quick_packages')->nullOnDelete();
             $table->integer('cccd_limit')->default(0);
             $table->timestamps();
             

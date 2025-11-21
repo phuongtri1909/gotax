@@ -10,6 +10,7 @@ use App\Http\Controllers\Client\ToolController;
 use App\Http\Controllers\Client\ContactController;
 use App\Http\Controllers\Client\TestimonialController;
 use App\Http\Controllers\Client\PaymentController;
+use App\Http\Controllers\Client\TrialController;
 
 Route::get('clear-cache', function () {
     Artisan::call('cache:clear');
@@ -36,9 +37,16 @@ Route::get('go-bot', [ToolController::class, 'goBot'])->name('tools.go-bot');
 Route::get('go-soft', [ToolController::class, 'goSoft'])->name('tools.go-soft');
 Route::get('go-quick', [ToolController::class, 'goQuick'])->name('tools.go-quick');
 
-Route::get('go-invoice/trial', function () {
-    return view('client.pages.tools.go-invoice-trial');
-})->name('tools.go-invoice.trial');
+// Trial routes - must be before other routes to avoid conflicts
+Route::get('go-invoice/trial', [TrialController::class, 'index'])->defaults('toolType', 'go-invoice')->name('tools.trial.go-invoice');
+Route::get('go-bot/trial', [TrialController::class, 'index'])->defaults('toolType', 'go-bot')->name('tools.trial.go-bot');
+Route::get('go-soft/trial', [TrialController::class, 'index'])->defaults('toolType', 'go-soft')->name('tools.trial.go-soft');
+Route::get('go-quick/trial', [TrialController::class, 'index'])->defaults('toolType', 'go-quick')->name('tools.trial.go-quick');
+
+// Trial verification route
+Route::get('trial/verify/{token}/{email}', [TrialController::class, 'verify'])->name('tools.trial.verify');
+
+
 
 Route::group(['middleware' => ['auth']], function () {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
@@ -58,6 +66,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('account-settings', function () {
         return view('client.pages.account-settings');
     })->name('account-settings');
+
+    Route::post('go-invoice/trial/register', [TrialController::class, 'register'])->defaults('toolType', 'go-invoice')->name('tools.trial.register.go-invoice');
+    Route::post('go-bot/trial/register', [TrialController::class, 'register'])->defaults('toolType', 'go-bot')->name('tools.trial.register.go-bot');
+    Route::post('go-soft/trial/register', [TrialController::class, 'register'])->defaults('toolType', 'go-soft')->name('tools.trial.register.go-soft');
+    Route::post('go-quick/trial/register', [TrialController::class, 'register'])->defaults('toolType', 'go-quick')->name('tools.trial.register.go-quick');
 
     // Payment routes
     Route::post('payment/go-invoice', [PaymentController::class, 'storeGoInvoice'])->name('payment.go-invoice.store');

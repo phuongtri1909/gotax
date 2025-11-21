@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('go_invoice_uses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->constrained('go_invoice_packages')->cascadeOnDelete();
+            $table->foreignId('package_id')->nullable()->constrained('go_invoice_packages')->nullOnDelete();
             $table->integer('mst_limit');
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();

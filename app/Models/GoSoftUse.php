@@ -26,7 +26,7 @@ class GoSoftUse extends Model
 
     public function package(): BelongsTo
     {
-        return $this->belongsTo(GoSoftPackage::class, 'package_id');
+        return $this->belongsTo(GoSoftPackage::class, 'package_id')->withDefault();
     }
     
 }

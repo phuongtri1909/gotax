@@ -28,7 +28,7 @@
                 description="Công cụ tra cứu MST hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ tra Rủi Ro MST DN hàng loạt!"
                 descriptionLeft="Tăng tốc quy trình tra cứu MST Doanh nghiệp và cá nhân. Công cụ thông minh, giao diện dễ dùng, hỗ trợ tra cứu mã số thuế nhanh chóng, chính xác và dễ dàng."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-invoice.trial') }}" :image="asset('images/d/tools/body-bot.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-bot') }}" :image="asset('images/d/tools/body-bot.png')" />
 
             @php
                 $features = [

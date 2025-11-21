@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Database\Seeders\AdminSeeder;
+use Database\Seeders\TrialSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder
             GoBotPackageSeeder::class,
             GoSoftPackageSeeder::class,
             GoQuickPackageSeeder::class,
+            TrialSeeder::class,
         ]);
     }
 }
