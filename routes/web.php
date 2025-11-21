@@ -9,6 +9,7 @@ use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\ToolController;
 use App\Http\Controllers\Client\ContactController;
 use App\Http\Controllers\Client\TestimonialController;
+use App\Http\Controllers\Client\PaymentController;
 
 Route::get('clear-cache', function () {
     Artisan::call('cache:clear');
@@ -45,7 +46,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('change-password', function () {
         return view('client.pages.auth.change-password');
     })->name('change-password');
-    
+
     Route::post('change-password', [AuthController::class, 'changePassword'])->name('change-password.post');
 
     Route::get('profile', function () {
@@ -53,10 +54,18 @@ Route::group(['middleware' => ['auth']], function () {
     })->name('profile');
     Route::post('profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::post('profile/avatar', [AuthController::class, 'uploadAvatar'])->name('profile.avatar.upload');
-    
+
     Route::get('account-settings', function () {
         return view('client.pages.account-settings');
     })->name('account-settings');
+
+    // Payment routes
+    Route::post('payment/go-invoice', [PaymentController::class, 'storeGoInvoice'])->name('payment.go-invoice.store');
+    Route::post('payment/go-bot', [PaymentController::class, 'storeGoBot'])->name('payment.go-bot.store');
+    Route::post('payment/go-soft', [PaymentController::class, 'storeGoSoft'])->name('payment.go-soft.store');
+    Route::post('payment/go-quick', [PaymentController::class, 'storeGoQuick'])->name('payment.go-quick.store');
+    Route::get('payment/info', [PaymentController::class, 'getPaymentInfo'])->name('payment.info');
+    Route::get('payment/sse', [PaymentController::class, 'sseTransactionUpdates'])->name('payment.sse');
 });
 
 
@@ -84,7 +93,6 @@ Route::group(['middleware' => 'guest'], function () {
     })->name('resend-activation');
 
     Route::post('resend-activation', [AuthController::class, 'resendActivationEmail'])->name('resend-activation.post');
-
 });
 Route::get('verify-account/{key}/{email}', [AuthController::class, 'verifyAccount'])->name('verify-account');
 Route::get('verify-reset-password/{key}/{email}', [AuthController::class, 'verifyResetPassword'])->name('verify-reset-password');

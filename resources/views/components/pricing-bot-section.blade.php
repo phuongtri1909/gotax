@@ -32,6 +32,8 @@
                             $pkg = is_array($package) ? (object) $package : $package;
                             $cleanPrice = str_replace(['.', ',', ' ', 'đ'], '', $pkg->price ?? '0');
                             $packageData = [
+                                'id' => $pkg->id ?? null,
+                                'package_id' => $pkg->id ?? null,
                                 'name' => $pkg->name ?? '',
                                 'description' => ($pkg->mst ?? '') . ' MST / năm',
                                 'price' => $cleanPrice,

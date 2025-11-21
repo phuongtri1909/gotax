@@ -59,47 +59,6 @@
 
             <x-features-section title="Giải Pháp Tối Ưu Công Việc Của Bạn" :features="$features" />
 
-            @php
-                $botFeatures = [
-                    'Hỗ trợ tải ảnh CCCD lên để đọc dữ liệu tự động',
-                    'Quét và trích xuất thông tin CCCD hàng loạt ',
-                    'Hỗ trợ đọc đa dạng file: PDF, Excel, Folder chứa ảnh',
-                    'Xử lý linh hoạt phân loại mặt trước, mặt sau CCCD',
-                    'Tự động nhận diện thông tin khi nhập link ảnh',
-                    'Trích xuất dữ liệu hàng loạt ra file Excel ',
-                ];
-
-                $botPackages = [
-                    (object) [
-                        'name' => 'Basic',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '1000',
-                        'price' => '200.000',
-                        'discount' => 'Ưu đãi',
-                    ],
-                    (object) [
-                        'name' => 'Standard',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '5000',
-                        'price' => '600.000',
-                        'discount' => 'Giảm 40%',
-                    ],
-                    (object) [
-                        'name' => 'Advanced',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '10.000',
-                        'price' => '1.000.000',
-                        'discount' => 'Giảm 50%',
-                    ],
-                    (object) [
-                        'name' => 'Pro',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '20.000',
-                        'price' => '1.500.000',
-                        'discount' => 'Giảm 60%',
-                    ],
-                ];
-            @endphp
 
             <x-pricing-bot-section :features="$botFeatures" :packages="$botPackages" />
         </div>

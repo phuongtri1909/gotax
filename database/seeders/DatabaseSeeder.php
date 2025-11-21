@@ -16,6 +16,10 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             SeoSettingSeeder::class,
             TestimonialSeeder::class,
+            GoInvoicePackageSeeder::class,
+            GoBotPackageSeeder::class,
+            GoSoftPackageSeeder::class,
+            GoQuickPackageSeeder::class,
         ]);
     }
 }

@@ -2,15 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Admin\SeoController;
+use App\Http\Controllers\Admin\BankController;
 use App\Http\Controllers\Admin\SocialController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\AdminFaqController;
 use App\Http\Controllers\Admin\LogoSiteController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\SeoController;
-use App\Http\Controllers\Admin\GoogleSettingController;
 use App\Http\Controllers\Admin\AdminContactController;
+use App\Http\Controllers\Admin\GoogleSettingController;
 use App\Http\Controllers\Admin\AdminContactInfoController;
-use App\Http\Controllers\Admin\AdminFaqController;
 use App\Http\Controllers\Admin\AdminTestimonialController;
 
 Route::group(['as' => 'admin.'], function () {
@@ -53,6 +54,14 @@ Route::group(['as' => 'admin.'], function () {
 
         // Testimonial Management
         Route::resource('testimonials', AdminTestimonialController::class)->except(['show']);
+
+        Route::resource('banks', BankController::class)->except(['create', 'store', 'destroy']);
+
+        // Package Management
+        Route::resource('go-invoice-packages', \App\Http\Controllers\Admin\GoInvoicePackageController::class);
+        Route::resource('go-bot-packages', \App\Http\Controllers\Admin\GoBotPackageController::class);
+        Route::resource('go-soft-packages', \App\Http\Controllers\Admin\GoSoftPackageController::class);
+        Route::resource('go-quick-packages', \App\Http\Controllers\Admin\GoQuickPackageController::class);
     });
 
     Route::group(['middleware' => 'guest'], function () {

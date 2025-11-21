@@ -27,6 +27,47 @@
                             <i class="fas fa-chevron-down submenu-arrow"></i>
                         </a>
                     </li>
+                    <li
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*']) ? 'open' : '' }}">
+                        <a href="#" class="submenu-toggle">
+                            <i class="fas fa-money-bill"></i>
+                            <span>Quản lý bán hàng</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="{{ Route::currentRouteNamed('admin.banks.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.banks.index') }}">
+                                    <i class="fas fa-bank"></i>
+                                    <span>Ngân hàng</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-invoice-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-invoice-packages.index') }}">
+                                    <i class="fas fa-file-invoice"></i>
+                                    <span>Gói GoInvoice</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-bot-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-bot-packages.index') }}">
+                                    <i class="fas fa-robot"></i>
+                                    <span>Gói GoBot</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-soft-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-soft-packages.index') }}">
+                                    <i class="fas fa-laptop-code"></i>
+                                    <span>Gói GoSoft</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-quick-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-quick-packages.index') }}">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>Gói GoQuick</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
 
                     <!-- Quản lý liên hệ -->
                     <li
