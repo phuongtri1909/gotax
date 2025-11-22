@@ -64,22 +64,20 @@ class PurchaseController extends Controller
         
         DB::beginTransaction();
         try {
-            // Extract transaction code từ description (GO-INVOICE, GO-BOT, GO-SOFT, GO-QUICK + 6 số)
             $transactionCode = null;
             $toolType = null;
             
-            // Format: GO-INVOICE123456, GO-BOT123456, etc.
-            if (preg_match('/(GO-INVOICE\d{6})/i', $description, $matches)) {
-                $transactionCode = strtoupper($matches[1]);
+            if (preg_match_all('/(GOINVOICE\d{6})/i', $description, $matches)) {
+                $transactionCode = strtoupper($matches[1][0]);
                 $toolType = 'go-invoice';
-            } elseif (preg_match('/(GO-BOT\d{6})/i', $description, $matches)) {
-                $transactionCode = strtoupper($matches[1]);
+            } elseif (preg_match_all('/(GOBOT\d{6})/i', $description, $matches)) {
+                $transactionCode = strtoupper($matches[1][0]);
                 $toolType = 'go-bot';
-            } elseif (preg_match('/(GO-SOFT\d{6})/i', $description, $matches)) {
-                $transactionCode = strtoupper($matches[1]);
+            } elseif (preg_match_all('/(GOSOFT\d{6})/i', $description, $matches)) {
+                $transactionCode = strtoupper($matches[1][0]);
                 $toolType = 'go-soft';
-            } elseif (preg_match('/(GO-QUICK\d{6})/i', $description, $matches)) {
-                $transactionCode = strtoupper($matches[1]);
+            } elseif (preg_match_all('/(GOQUICK\d{6})/i', $description, $matches)) {
+                $transactionCode = strtoupper($matches[1][0]);
                 $toolType = 'go-quick';
             }
             
@@ -91,7 +89,6 @@ class PurchaseController extends Controller
                 return response()->json(['success' => false, 'message' => 'Không tìm thấy mã giao dịch hợp lệ'], 404);
             }
             
-            // Get purchase by transaction code
             $purchase = $this->getPurchaseByTransactionCode($transactionCode, $toolType);
             
             if (!$purchase) {

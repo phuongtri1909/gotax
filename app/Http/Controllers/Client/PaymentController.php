@@ -186,7 +186,7 @@ class PaymentController extends Controller
      */
     private function generateTransactionCode($toolType)
     {
-        $prefix = strtoupper(str_replace('go-', 'GO-', $toolType));
+        $prefix = strtoupper(str_replace('-', '', $toolType));
         $random = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         return $prefix . $random;
     }
