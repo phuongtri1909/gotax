@@ -11,6 +11,10 @@ use App\Http\Controllers\Client\ContactController;
 use App\Http\Controllers\Client\TestimonialController;
 use App\Http\Controllers\Client\PaymentController;
 use App\Http\Controllers\Client\TrialController;
+use App\Http\Controllers\Client\SitemapController;
+
+Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 Route::get('clear-cache', function () {
     Artisan::call('cache:clear');
@@ -57,15 +61,11 @@ Route::group(['middleware' => ['auth']], function () {
 
     Route::post('change-password', [AuthController::class, 'changePassword'])->name('change-password.post');
 
-    Route::get('profile', function () {
-        return view('client.pages.profile');
-    })->name('profile');
+    Route::get('profile', [AuthController::class, 'showProfile'])->name('profile');
     Route::post('profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     Route::post('profile/avatar', [AuthController::class, 'uploadAvatar'])->name('profile.avatar.upload');
 
-    Route::get('account-settings', function () {
-        return view('client.pages.account-settings');
-    })->name('account-settings');
+    Route::get('account-settings', [AuthController::class, 'showAccountSettings'])->name('account-settings');
 
     Route::post('go-invoice/trial/register', [TrialController::class, 'register'])->defaults('toolType', 'go-invoice')->name('tools.trial.register.go-invoice');
     Route::post('go-bot/trial/register', [TrialController::class, 'register'])->defaults('toolType', 'go-bot')->name('tools.trial.register.go-bot');
@@ -83,21 +83,15 @@ Route::group(['middleware' => ['auth']], function () {
 
 
 Route::group(['middleware' => 'guest'], function () {
-    Route::get('login', function () {
-        return view('client.pages.auth.login');
-    })->name('login');
+    Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 
     Route::post('login', [AuthController::class, 'login'])->name('login.post');
 
-    Route::get('register', function () {
-        return view('client.pages.auth.register');
-    })->name('register');
+    Route::get('register', [AuthController::class, 'showRegister'])->name('register');
 
     Route::post('register', [AuthController::class, 'register'])->name('register.post');
 
-    Route::get('forgot-password', function () {
-        return view('client.pages.auth.forgot-password');
-    })->name('forgot-password');
+    Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot-password');
 
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password.post');
 

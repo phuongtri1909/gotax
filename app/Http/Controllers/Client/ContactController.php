@@ -2,15 +2,62 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Models\Contact;
+use App\Models\SeoSetting;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Contact;
 use Illuminate\Support\Facades\Cache;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Artesaos\SEOTools\Facades\SEOTools;
+use Artesaos\SEOTools\Facades\SEOMeta;
 
 class ContactController extends Controller
 {
     public function index()
     {
+        // Load SEO settings from database for contact page
+        $seoSetting = SeoSetting::getByPageKey('contact');
+        
+        if ($seoSetting) {
+            SEOTools::setTitle($seoSetting->title);
+            SEOTools::setDescription($seoSetting->description);
+            SEOMeta::setKeywords($seoSetting->keywords);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($seoSetting->title);
+            OpenGraph::setDescription($seoSetting->description);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+            if ($seoSetting->thumbnail) {
+                OpenGraph::addImage($seoSetting->thumbnail_url);
+            }
+
+            TwitterCard::setTitle($seoSetting->title);
+            TwitterCard::setDescription($seoSetting->description);
+            TwitterCard::setType('summary_large_image');
+            if ($seoSetting->thumbnail) {
+                TwitterCard::addImage($seoSetting->thumbnail_url);
+            }
+        } else {
+            // Fallback SEO
+            SEOTools::setTitle('Liên hệ - ' . config('app.name'));
+            SEOTools::setDescription('Liên hệ với ' . config('app.name') . ' để được tư vấn và hỗ trợ.');
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle('Liên hệ - ' . config('app.name'));
+            OpenGraph::setDescription('Liên hệ với ' . config('app.name') . ' để được tư vấn và hỗ trợ.');
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+
+            TwitterCard::setTitle('Liên hệ - ' . config('app.name'));
+            TwitterCard::setType('summary_large_image');
+        }
+
         return view('client.pages.contact');
     }
 

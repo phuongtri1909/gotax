@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Trial;
+use App\Models\SeoSetting;
 use App\Models\TrialRegistration;
 use App\Models\GoInvoiceUse;
 use App\Models\GoBotUse;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\TrialVerificationMail;
 use Carbon\Carbon;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Artesaos\SEOTools\Facades\SEOTools;
+use Artesaos\SEOTools\Facades\SEOMeta;
 
 class TrialController extends Controller
 {
@@ -65,9 +70,64 @@ class TrialController extends Controller
             Trial::TOOL_QUICK => 'Go Quick',
         ];
 
+        $toolName = $toolNames[$toolType] ?? 'Tool';
+        
+        // Set SEO based on tool type
+        $pageKeyMap = [
+            Trial::TOOL_INVOICE => 'go-invoice-trial',
+            Trial::TOOL_BOT => 'go-bot-trial',
+            Trial::TOOL_SOFT => 'go-soft-trial',
+            Trial::TOOL_QUICK => 'go-quick-trial',
+        ];
+        
+        $pageKey = $pageKeyMap[$toolType] ?? 'go-invoice-trial';
+        $seoSetting = SeoSetting::getByPageKey($pageKey);
+        
+        if ($seoSetting) {
+            SEOTools::setTitle($seoSetting->title);
+            SEOTools::setDescription($seoSetting->description);
+            SEOMeta::setKeywords($seoSetting->keywords);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($seoSetting->title);
+            OpenGraph::setDescription($seoSetting->description);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+            if ($seoSetting->thumbnail) {
+                OpenGraph::addImage($seoSetting->thumbnail_url);
+            }
+
+            TwitterCard::setTitle($seoSetting->title);
+            TwitterCard::setDescription($seoSetting->description);
+            TwitterCard::setType('summary_large_image');
+            if ($seoSetting->thumbnail) {
+                TwitterCard::addImage($seoSetting->thumbnail_url);
+            }
+        } else {
+            // Fallback SEO
+            $fallbackTitle = "Đăng ký dùng thử {$toolName} - " . config('app.name');
+            $fallbackDescription = "Đăng ký dùng thử {$toolName} miễn phí. Trải nghiệm công cụ chuyên nghiệp ngay hôm nay.";
+            
+            SEOTools::setTitle($fallbackTitle);
+            SEOTools::setDescription($fallbackDescription);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($fallbackTitle);
+            OpenGraph::setDescription($fallbackDescription);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+
+            TwitterCard::setTitle($fallbackTitle);
+            TwitterCard::setType('summary_large_image');
+        }
+
         return view('client.pages.tools.trial', [
             'toolType' => $toolType,
-            'toolName' => $toolNames[$toolType] ?? 'Tool',
+            'toolName' => $toolName,
             'trial' => $trial,
             'user' => $user,
             'hasTrial' => $hasTrial,

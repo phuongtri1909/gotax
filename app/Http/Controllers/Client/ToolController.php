@@ -7,12 +7,66 @@ use App\Models\GoInvoicePackage;
 use App\Models\GoBotPackage;
 use App\Models\GoSoftPackage;
 use App\Models\GoQuickPackage;
+use App\Models\SeoSetting;
 use Illuminate\Http\Request;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Artesaos\SEOTools\Facades\SEOTools;
+use Artesaos\SEOTools\Facades\SEOMeta;
 
 class ToolController extends Controller
 {
+    private function setSeoForTool($pageKey, $fallbackTitle, $fallbackDescription)
+    {
+        $seoSetting = SeoSetting::getByPageKey($pageKey);
+        
+        if ($seoSetting) {
+            SEOTools::setTitle($seoSetting->title);
+            SEOTools::setDescription($seoSetting->description);
+            SEOMeta::setKeywords($seoSetting->keywords);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($seoSetting->title);
+            OpenGraph::setDescription($seoSetting->description);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+            if ($seoSetting->thumbnail) {
+                OpenGraph::addImage($seoSetting->thumbnail_url);
+            }
+
+            TwitterCard::setTitle($seoSetting->title);
+            TwitterCard::setDescription($seoSetting->description);
+            TwitterCard::setType('summary_large_image');
+            if ($seoSetting->thumbnail) {
+                TwitterCard::addImage($seoSetting->thumbnail_url);
+            }
+        } else {
+            // Fallback SEO
+            SEOTools::setTitle($fallbackTitle);
+            SEOTools::setDescription($fallbackDescription);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($fallbackTitle);
+            OpenGraph::setDescription($fallbackDescription);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+
+            TwitterCard::setTitle($fallbackTitle);
+            TwitterCard::setType('summary_large_image');
+        }
+    }
+
     public function goInvoice()
     {
+        $this->setSeoForTool(
+            'go-invoice',
+            'Go Invoice - Hóa đơn điện tử - ' . config('app.name'),
+            'Go Invoice - Công cụ quản lý và tạo hóa đơn điện tử chuyên nghiệp.'
+        );
         $packages = GoInvoicePackage::where('status', 'active')
             ->ordered()
             ->get()
@@ -36,6 +90,12 @@ class ToolController extends Controller
 
     public function goBot()
     {
+        $this->setSeoForTool(
+            'go-bot',
+            'Go Bot - Tra cứu MST hàng loạt - ' . config('app.name'),
+            'Go Bot - Công cụ tra cứu mã số thuế (MST) hàng loạt tự động.'
+        );
+
         $botFeatures = [
             'Tra hàng loạt MST cá nhân cũ → MST cá nhân mới',
             'Tra hàng loạt CCCD → MST cá nhân và doanh nghiệp',
@@ -64,6 +124,12 @@ class ToolController extends Controller
 
     public function goSoft()
     {
+        $this->setSeoForTool(
+            'go-soft',
+            'Go Soft - Tải tờ khai thuế - ' . config('app.name'),
+            'Go Soft - Công cụ tải tờ khai, giấy nộp tiền và thông báo thuế hàng loạt.'
+        );
+
         $commonFeatures = [
             'Tải tờ khai, giấy nộp tiền, thông báo hàng loạt.',
             'Thời gian tải: Tháng - Quý - Năm.',
@@ -96,6 +162,12 @@ class ToolController extends Controller
 
     public function goQuick()
     {
+        $this->setSeoForTool(
+            'go-quick',
+            'Go Quick - Đọc CCCD tự động - ' . config('app.name'),
+            'Go Quick - Công cụ đọc và trích xuất thông tin từ CCCD tự động.'
+        );
+
         $botFeatures = [
             'Hỗ trợ tải ảnh CCCD lên để đọc dữ liệu tự động',
             'Quét và trích xuất thông tin CCCD hàng loạt ',

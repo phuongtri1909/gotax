@@ -20,14 +20,6 @@
                     </li>
 
                     <li
-                        class="has-submenu {{ Route::currentRouteNamed(['admin.banner-homes.*', 'admin.image-homes.*', 'admin.general-introductions.*', 'admin.intro-features.*', 'admin.intro-locations.*', 'admin.slide-locations.*', 'admin.intro-images.*']) ? 'open' : '' }}">
-                        <a href="#" class="submenu-toggle">
-                            <i class="fas fa-home"></i>
-                            <span>Trang chủ</span>
-                            <i class="fas fa-chevron-down submenu-arrow"></i>
-                        </a>
-                    </li>
-                    <li
                         class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*', 'admin.trials.*']) ? 'open' : '' }}">
                         <a href="#" class="submenu-toggle">
                             <i class="fas fa-money-bill"></i>
@@ -136,12 +128,12 @@
                                     <span>Mạng xã hội</span>
                                 </a>
                             </li>
-                            <li class="{{ Route::currentRouteNamed('admin.logo-site.edit') ? 'active' : '' }}">
+                            {{-- <li class="{{ Route::currentRouteNamed('admin.logo-site.edit') ? 'active' : '' }}">
                                 <a href="{{ route('admin.logo-site.edit') }}">
                                     <i class="fas fa-image"></i>
                                     <span>Logo Site</span>
                                 </a>
-                            </li>
+                            </li> --}}
                             <li class="{{ Route::currentRouteNamed('admin.setting.*') ? 'active' : '' }}">
                                 <a href="{{ route('admin.setting.index') }}">
                                     <i class="fas fa-cog"></i>

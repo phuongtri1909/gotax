@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use Exception;
 use App\Models\User;
+use App\Models\SeoSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +18,10 @@ use App\Http\Controllers\Controller;
 use App\Mail\AccountActivationMail;
 use App\Mail\PasswordResetMail;
 use App\Mail\PasswordChangeConfirmationMail;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Artesaos\SEOTools\Facades\SEOTools;
+use Artesaos\SEOTools\Facades\SEOMeta;
 
 class AuthController extends Controller
 {
@@ -42,6 +47,123 @@ class AuthController extends Controller
         }
 
         return $referralCode;
+    }
+
+    /**
+     * Set SEO for a page
+     */
+    private function setSeoForPage($pageKey, $fallbackTitle, $fallbackDescription)
+    {
+        $seoSetting = SeoSetting::getByPageKey($pageKey);
+        
+        if ($seoSetting) {
+            SEOTools::setTitle($seoSetting->title);
+            SEOTools::setDescription($seoSetting->description);
+            SEOMeta::setKeywords($seoSetting->keywords);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($seoSetting->title);
+            OpenGraph::setDescription($seoSetting->description);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+            if ($seoSetting->thumbnail) {
+                OpenGraph::addImage($seoSetting->thumbnail_url);
+            }
+
+            TwitterCard::setTitle($seoSetting->title);
+            TwitterCard::setDescription($seoSetting->description);
+            TwitterCard::setType('summary_large_image');
+            if ($seoSetting->thumbnail) {
+                TwitterCard::addImage($seoSetting->thumbnail_url);
+            }
+        } else {
+            // Fallback SEO
+            SEOTools::setTitle($fallbackTitle);
+            SEOTools::setDescription($fallbackDescription);
+            SEOTools::setCanonical(url()->current());
+
+            OpenGraph::setTitle($fallbackTitle);
+            OpenGraph::setDescription($fallbackDescription);
+            OpenGraph::setUrl(url()->current());
+            OpenGraph::setSiteName(config('app.name'));
+            OpenGraph::addProperty('type', 'website');
+            OpenGraph::addProperty('locale', 'vi_VN');
+
+            TwitterCard::setTitle($fallbackTitle);
+            TwitterCard::setType('summary_large_image');
+        }
+    }
+
+    /**
+     * Show login page
+     */
+    public function showLogin()
+    {
+        $this->setSeoForPage(
+            'login',
+            'Đăng nhập - ' . config('app.name'),
+            'Đăng nhập vào tài khoản ' . config('app.name') . ' để sử dụng các công cụ kế toán và quản lý thuế chuyên nghiệp.'
+        );
+        
+        return view('client.pages.auth.login');
+    }
+
+    /**
+     * Show register page
+     */
+    public function showRegister()
+    {
+        $this->setSeoForPage(
+            'register',
+            'Đăng ký tài khoản - ' . config('app.name'),
+            'Đăng ký tài khoản miễn phí trên ' . config('app.name') . ' để sử dụng các công cụ kế toán và quản lý thuế chuyên nghiệp.'
+        );
+        
+        return view('client.pages.auth.register');
+    }
+
+    /**
+     * Show forgot password page
+     */
+    public function showForgotPassword()
+    {
+        $this->setSeoForPage(
+            'forgot-password',
+            'Quên mật khẩu - ' . config('app.name'),
+            'Khôi phục mật khẩu tài khoản ' . config('app.name') . '. Nhập email để nhận liên kết đặt lại mật khẩu.'
+        );
+        
+        return view('client.pages.auth.forgot-password');
+    }
+
+    /**
+     * Show profile page
+     */
+    public function showProfile()
+    {
+        $this->setSeoForPage(
+            'profile',
+            'Hồ sơ cá nhân - ' . config('app.name'),
+            'Quản lý hồ sơ cá nhân, cập nhật thông tin tài khoản và avatar trên ' . config('app.name') . '.'
+        );
+        
+        return view('client.pages.profile');
+    }
+
+    /**
+     * Show account settings page
+     */
+    public function showAccountSettings()
+    {
+        $this->setSeoForPage(
+            'account-settings',
+            'Thiết lập tài khoản - ' . config('app.name'),
+            'Thiết lập và quản lý tài khoản trên ' . config('app.name') . '. Đổi mật khẩu và cập nhật thông tin tài khoản.'
+        );
+        
+        return view('client.pages.account-settings');
     }
 
     /**
