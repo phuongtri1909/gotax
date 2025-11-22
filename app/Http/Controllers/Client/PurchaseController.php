@@ -147,7 +147,7 @@ class PurchaseController extends Controller
             
             DB::commit();
             
-            return response()->json(['success' => true], 200);
+            return response()->json(['success' => true,'message' => 'Xử lý giao dịch thành công'], 200);
             
         } catch (\Exception $e) {
             DB::rollBack();
