@@ -15,7 +15,6 @@ class GoQuickPurchase extends Model
         'amount',
         'cccd_limit',
         'status',
-        'payment_status',
         'note',
         'processed_at',
         'casso_response',
@@ -36,13 +35,10 @@ class GoQuickPurchase extends Model
         'expires_at' => 'datetime',
     ];
 
-    const STATUS_ACTIVE = 'active';
-    const STATUS_EXPIRED = 'expired';
+    const STATUS_PENDING = 'pending';
+    const STATUS_SUCCESS = 'success';
+    const STATUS_FAILED = 'failed';
     const STATUS_CANCELLED = 'cancelled';
-
-    const PAYMENT_STATUS_PENDING = 'pending';
-    const PAYMENT_STATUS_PAID = 'paid';
-    const PAYMENT_STATUS_FAILED = 'failed';
 
     public function bank(): BelongsTo
     {
@@ -59,20 +55,18 @@ class GoQuickPurchase extends Model
         return $this->belongsTo(GoQuickPackage::class, 'package_id');
     }
 
-    public function scopeActive($query)
+    public function scopeSuccess($query)
     {
-        return $query->where('status', self::STATUS_ACTIVE);
+        return $query->where('status', self::STATUS_SUCCESS);
     }
 
-    public function scopePaid($query)
+    public function scopePending($query)
     {
-        return $query->where('payment_status', self::PAYMENT_STATUS_PAID);
+        return $query->where('status', self::STATUS_PENDING);
     }
 
-    public function isActive(): bool
+    public function isSuccess(): bool
     {
-        return $this->status === self::STATUS_ACTIVE 
-            && $this->payment_status === self::PAYMENT_STATUS_PAID
-            && $this->end_date >= now();
+        return $this->status === self::STATUS_SUCCESS;
     }
 }

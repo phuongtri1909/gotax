@@ -182,7 +182,7 @@ class PurchaseController extends Controller
                     ->first();
             case 'go-quick':
                 return GoQuickPurchase::where('transaction_code', $transactionCode)
-                    ->where('payment_status', GoQuickPurchase::PAYMENT_STATUS_PENDING)
+                    ->where('status', GoQuickPurchase::STATUS_PENDING)
                     ->first();
             default:
                 return null;
@@ -202,7 +202,7 @@ class PurchaseController extends Controller
             case 'go-soft':
                 return GoSoftPurchase::STATUS_SUCCESS;
             case 'go-quick':
-                return GoQuickPurchase::PAYMENT_STATUS_PAID;
+                return GoQuickPurchase::STATUS_SUCCESS;
             default:
                 return null;
         }
@@ -221,7 +221,7 @@ class PurchaseController extends Controller
             case 'go-soft':
                 return GoSoftPurchase::STATUS_FAILED;
             case 'go-quick':
-                return GoQuickPurchase::PAYMENT_STATUS_FAILED;
+                return GoQuickPurchase::STATUS_FAILED;
             default:
                 return null;
         }
@@ -245,14 +245,7 @@ class PurchaseController extends Controller
             $updateData['casso_transaction_id'] = $cassoTransactionId;
         }
         
-        if ($toolType === 'go-quick') {
-            $updateData['payment_status'] = $status;
-            if ($status === GoQuickPurchase::PAYMENT_STATUS_PAID) {
-                $updateData['status'] = GoQuickPurchase::STATUS_ACTIVE;
-            }
-        } else {
-            $updateData['status'] = $status;
-        }
+        $updateData['status'] = $status;
         
         $purchase->update($updateData);
     }

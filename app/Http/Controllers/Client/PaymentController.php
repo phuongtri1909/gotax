@@ -145,8 +145,7 @@ class PaymentController extends Controller
                 $purchaseData['expires_tool'] = Carbon::now()->addYear();
             } elseif ($toolType === 'go-quick') {
                 $purchaseData['cccd_limit'] = $package->cccd_limit;
-                $purchaseData['payment_status'] = GoQuickPurchase::PAYMENT_STATUS_PENDING;
-                $purchaseData['status'] = GoQuickPurchase::STATUS_CANCELLED;
+                $purchaseData['status'] = GoQuickPurchase::STATUS_PENDING;
             }
 
             // Create purchase

@@ -19,8 +19,7 @@ return new class extends Migration
             $table->string('transaction_code')->unique();
             $table->decimal('amount', 10, 2);
             $table->integer('cccd_limit');
-            $table->string('status')->default('cancelled');
-            $table->string('payment_status')->default('pending');
+            $table->string('status')->default('pending');
             $table->text('note')->nullable();
             $table->timestamp('processed_at')->nullable();
             $table->json('casso_response')->nullable();
