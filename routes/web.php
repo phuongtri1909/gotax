@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\Client\PurchaseController;
 use App\Http\Controllers\Client\FaqController;
 use App\Http\Controllers\Client\AuthController;
 use App\Http\Controllers\Client\HomeController;
