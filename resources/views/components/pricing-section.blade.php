@@ -35,7 +35,7 @@
 
                             @if (route::currentRouteName() == 'tools.go-invoice')
                                 <div class="pricing-copyright">
-                                    <p class="copyright-fee mb-0">Phí bản quyền: 500.000₫</p>
+                                    <p class="copyright-fee mb-0">Phí bản quyền: 500.000đ</p>
                                     <p class="copyright-note">(Thanh toán 1 lần duy nhất / tài khoản)</p>
                                 </div>
                             @endif
@@ -57,6 +57,8 @@
                             @php
                                 $cleanPrice = str_replace(['.', ',', ' ', 'đ'], '', $pkg->price ?? '0');
                                 $packageData = [
+                                    'id' => $pkg->id ?? null,
+                                    'package_id' => $pkg->id ?? null,
                                     'name' => $pkg->name ?? '',
                                     'description' => ($pkg->mst ?? '') . ' MST / năm',
                                     'price' => $cleanPrice,

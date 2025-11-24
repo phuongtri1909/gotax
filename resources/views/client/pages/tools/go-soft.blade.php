@@ -28,7 +28,7 @@
                 description="Công cụ tra cứu tờ khai hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ tra cứu tờ khai DN hàng loạt!"
                 descriptionLeft="Đơn giản hóa quy trình tra cứu và tải tờ khai. Giao diện dễ dùng, tốc độ xử lý cao, chính xác phù hợp cho kế toán, doanh nghiệp và dịch vụ hành chính."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-invoice.trial') }}" :image="asset('images/d/tools/body-soft.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-soft') }}" :image="asset('images/d/tools/body-soft.png')" />
 
             @php
                 $features = [
@@ -57,83 +57,6 @@
 
             <x-features-section title="Giải Pháp Tối Ưu Công Việc Của Bạn" :features="$features" />
 
-            @php
-                $commonFeatures = [
-                    'Tải tờ khai, giấy nộp tiền, thông báo hàng loạt.',
-                    'Thời gian tải: Tháng - Quý - Năm.',
-                    'Chuyển file XML thành file Excel.',
-                    'Tải về dữ liệu dưới dạng XML.',
-                    'Không giới hạn số lượng tra cứu.',
-                    'Không giới hạn thiết bị truy cập.',
-                ];
-
-                // Convert arrays to objects
-                $packages = [
-                    (object) [
-                        'name' => 'Basic',
-                        'price' => '200.000',
-                        'mst' => '1',
-                        'discount' => 'Ưu đãi',
-                        'badge' => null,
-                        'features' => $commonFeatures,
-                        'button_text' => 'Đăng ký',
-                        'button_link' => '#',
-                    ],
-                    (object) [
-                        'name' => 'Standard',
-                        'price' => '800.000',
-                        'mst' => '5',
-                        'discount' => 'Giảm 20%',
-                        'badge' => null,
-                        'features' => $commonFeatures,
-                        'button_text' => 'Đăng ký',
-                        'button_link' => '#',
-                    ],
-                    (object) [
-                        'name' => 'Advanced',
-                        'price' => '1.200.000',
-                        'mst' => '10',
-                        'discount' => 'Giảm 40%',
-                        'badge' => 'Most Popular',
-                        'badge_type' => 'popular',
-                        'features' => $commonFeatures,
-                        'button_text' => 'Đăng ký',
-                        'button_link' => '#',
-                    ],
-                    (object) [
-                        'name' => 'Pro',
-                        'price' => '1.500.000',
-                        'mst' => '20',
-                        'discount' => 'Giảm 60%',
-                        'badge' => null,
-                        'features' => $commonFeatures,
-                        'button_text' => 'Đăng ký',
-                        'button_link' => '#',
-                    ],
-                    (object) [
-                        'name' => 'Premium',
-                        'price' => '1.800.000',
-                        'mst' => '30',
-                        'discount' => 'Giảm 70%',
-                        'badge' => 'Most Popular',
-                        'badge_type' => 'popular',
-                        'features' => $commonFeatures,
-                        'button_text' => 'Đăng ký',
-                        'button_link' => '#',
-                    ],
-                    (object) [
-                        'name' => 'Enterprise',
-                        'price' => '2.000.000',
-                        'mst' => '50',
-                        'discount' => 'Giảm 80%',
-                        'badge' => 'Best Choice',
-                        'badge_type' => 'choice',
-                        'features' => $commonFeatures,
-                        'button_text' => 'Đăng ký',
-                        'button_link' => '#',
-                    ],
-                ];
-            @endphp
 
             <x-pricing-section :packages="$packages" />
         </div>

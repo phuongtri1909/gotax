@@ -56,11 +56,21 @@ class SeoSetting extends Model
     {
         return [
             'home' => 'Trang chủ',
-            'about' => 'Trang giới thiệu',
             'contact' => 'Trang liên hệ',
-            'gallery' => 'Trang hình ảnh',
-            'news' => 'Trang tin tức',
-            'projects' => 'Trang dự án'
+            'faqs' => 'Câu hỏi thường gặp',
+            'go-invoice' => 'Go Invoice - Hóa đơn điện tử',
+            'go-bot' => 'Go Bot - Tra cứu MST hàng loạt',
+            'go-soft' => 'Go Soft - Tải tờ khai thuế',
+            'go-quick' => 'Go Quick - Đọc CCCD tự động',
+            'go-invoice-trial' => 'Đăng ký dùng thử Go Invoice',
+            'go-bot-trial' => 'Đăng ký dùng thử Go Bot',
+            'go-soft-trial' => 'Đăng ký dùng thử Go Soft',
+            'go-quick-trial' => 'Đăng ký dùng thử Go Quick',
+            'profile' => 'Hồ sơ cá nhân',
+            'login' => 'Đăng nhập',
+            'register' => 'Đăng ký tài khoản',
+            'forgot-password' => 'Quên mật khẩu',
+            'account-settings' => 'Thiết lập tài khoản',
         ];
     }
 

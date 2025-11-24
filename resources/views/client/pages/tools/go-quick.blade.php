@@ -27,7 +27,7 @@
                 description="Công cụ đọc CCCD hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ Đọc CCCD hàng loạt!"
                 descriptionLeft="Đọc dữ liệu CCCD  nhanh chóng, chính xác, an toàn, hỗ trợ xử lý hàng loạt và xuất ra file Excel để quản lý thuận tiện."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-invoice.trial') }}" :image="asset('images/d/tools/body-quick.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-quick') }}" :image="asset('images/d/tools/body-quick.png')" />
 
             @php
                 $features = [
@@ -59,47 +59,6 @@
 
             <x-features-section title="Giải Pháp Tối Ưu Công Việc Của Bạn" :features="$features" />
 
-            @php
-                $botFeatures = [
-                    'Hỗ trợ tải ảnh CCCD lên để đọc dữ liệu tự động',
-                    'Quét và trích xuất thông tin CCCD hàng loạt ',
-                    'Hỗ trợ đọc đa dạng file: PDF, Excel, Folder chứa ảnh',
-                    'Xử lý linh hoạt phân loại mặt trước, mặt sau CCCD',
-                    'Tự động nhận diện thông tin khi nhập link ảnh',
-                    'Trích xuất dữ liệu hàng loạt ra file Excel ',
-                ];
-
-                $botPackages = [
-                    (object) [
-                        'name' => 'Basic',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '1000',
-                        'price' => '200.000',
-                        'discount' => 'Ưu đãi',
-                    ],
-                    (object) [
-                        'name' => 'Standard',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '5000',
-                        'price' => '600.000',
-                        'discount' => 'Giảm 40%',
-                    ],
-                    (object) [
-                        'name' => 'Advanced',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '10.000',
-                        'price' => '1.000.000',
-                        'discount' => 'Giảm 50%',
-                    ],
-                    (object) [
-                        'name' => 'Pro',
-                        'title' => 'Số lượng CCCD',
-                        'mst' => '20.000',
-                        'price' => '1.500.000',
-                        'discount' => 'Giảm 60%',
-                    ],
-                ];
-            @endphp
 
             <x-pricing-bot-section :features="$botFeatures" :packages="$botPackages" />
         </div>

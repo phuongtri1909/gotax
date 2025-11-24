@@ -3,6 +3,22 @@
     'package' => null,
 ])
 
+@php
+    $user = auth()->user();
+    $userFullName = $user ? $user->full_name : '';
+    $userEmail = $user ? $user->email : '';
+    $userPhone = $user ? $user->phone : '';
+    
+    // Parse full_name to first_name and last_name
+    $firstName = '';
+    $lastName = '';
+    if ($userFullName) {
+        $nameParts = explode(' ', $userFullName);
+        $lastName = array_pop($nameParts);
+        $firstName = implode(' ', $nameParts);
+    }
+@endphp
+
 <!-- Modal -->
 <div class="modal fade register-modal" id="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label"
     aria-hidden="true">
@@ -25,12 +41,12 @@
                                         <rect width="21" height="21" fill="white" />
                                     </clipPath>
                                 </defs>
-                    </svg>
-                </button>
-                <div class="modal-logo">
-                    <img src="{{ $logoPath }}" alt="GoTax Logo">
-                </div>
-            </div>
+                            </svg>
+                        </button>
+                        <div class="modal-logo">
+                            <img src="{{ $logoPath }}" alt="GoTax Logo">
+                        </div>
+                    </div>
                     <!-- Progress Steps -->
                     <div class="progress-steps mb-5">
                         <div class="step-item active">
@@ -53,15 +69,15 @@
                         </div>
 
                         <div class="step-item">
-                        <div class="step-line"></div>
+                            <div class="step-line"></div>
                             <div class="step-circle">
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path d="M16.6667 5L7.50004 14.1667L3.33337 10" stroke="white" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
-                        </div>
-                        <div class="step-line"></div>
+                            </div>
+                            <div class="step-line"></div>
                             <span class="step-label">Thành công</span>
 
                         </div>
@@ -73,7 +89,7 @@
                         <div class="col-12 col-lg-6 col-xxl-5">
                             <div class="package-summary-card">
                                 <h3 class="summary-title text-center">Công cụ đăng ký</h3>
-                                
+
                                 <div class="package-info" data-package-info>
                                     <div class="d-flex justify-content-between">
                                         <div class="package-icon me-2">
@@ -84,16 +100,16 @@
                                             <p class="package-desc" data-package-desc>
                                                 {{ $package->name ?? 'Basic' }} -
                                                 {{ $package->description ?? '1000 MST/ Năm' }}</p>
-                                    </div>
+                                        </div>
                                         <div
                                             class="package-price d-flex flex-column align-items-end justify-content-around">
                                             <span class="price-amount"
                                                 data-package-price>{{ $package->price ?? '200.000' }}đ</span>
                                             <span class="price-badge" data-package-badge style="display: none;"></span>
-                                    </div>
+                                        </div>
                                     </div>
                                     <div class="d-flex justify-content-end">
-                                    <button type="button" class="btn-remove" data-remove-package>
+                                        <button type="button" class="btn-remove" data-remove-package>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="14"
                                                 viewBox="0 0 13 14" fill="none">
                                                 <path
@@ -108,36 +124,36 @@
                                                 <path
                                                     d="M7.36968 7.88235C7.36968 7.03569 7.36799 6.1886 7.37095 5.34194C7.3718 5.08104 7.54545 4.87647 7.78772 4.83497C8.0537 4.78922 8.28707 4.92476 8.3811 5.17592C8.40609 5.24241 8.40778 5.31018 8.40778 5.37879C8.40778 7.05136 8.40863 8.7235 8.40736 10.3961C8.40736 10.7294 8.19643 10.9501 7.8864 10.9492C7.58145 10.9484 7.36968 10.7222 7.36926 10.3906C7.36884 9.55491 7.36968 8.71884 7.36968 7.88235Z"
                                                     fill="#505050" />
-                                        </svg>
-                                    </button>
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div class="ps-4 pt-3">
-                                <div class="promo-code-section">
-                                    <label class="promo-label">Mã giới thiệu</label>
+                                    <div class="promo-code-section">
+                                        <label class="promo-label">Mã giới thiệu</label>
                                         <div class="d-flex">
                                             <input type="text" class="form-control promo-input me-2 form-control-sm"
                                                 name="promo_code" placeholder="Code">
                                             <button class="btn btn-apply btn-sm" type="button">Sử dụng</button>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="price-breakdown">
-                                    <div class="price-row">
-                                        <span class="price-label">Phí đăng ký</span>
-                                        <span class="price-value" data-registration-fee>200.000đ</span>
-                                    </div>
-                                    <div class="price-row discount">
-                                        <span class="price-label">Mã giảm giá</span>
-                                        <span class="price-value" data-discount>-50.000đ</span>
-                                    </div>
-                                    <div class="price-row total">
-                                        <span class="price-label">Tổng thanh toán</span>
-                                        <span class="price-value" data-total-amount>150.000đ</span>
+                                    <div class="price-breakdown">
+                                        <div class="price-row">
+                                            <span class="price-label">Phí đăng ký</span>
+                                            <span class="price-value" data-registration-fee>200.000đ</span>
+                                        </div>
+                                        <div class="price-row discount">
+                                            <span class="price-label">Mã giảm giá</span>
+                                            <span class="price-value" data-discount>-50.000đ</span>
+                                        </div>
+                                        <div class="price-row total">
+                                            <span class="price-label">Tổng thanh toán</span>
+                                            <span class="price-value" data-total-amount>150.000đ</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                             </div>
                         </div>
 
@@ -150,23 +166,27 @@
                         <div class="col-12 col-lg-6 col-xxl-5">
                             <div class="registration-form-card" id="step-register-form">
                                 <h3 class="form-title text-center">Thông tin đăng ký</h3>
-                                
+
                                 <form id="registrationForm" class="registration-form">
                                     <div class="row g-3 content-registration-form">
+                                        <input type="hidden" name="package_id" id="package_id_input">
                                         <div class="col-12 col-md-6">
                                             <label class="form-label">Họ<span
                                                     class="text-danger-form">*</span></label>
-                                            <input type="text" class="form-control" name="first_name" required>
+                                            <input type="text" class="form-control" name="first_name" 
+                                                   value="{{ $firstName }}" required>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label class="form-label">Tên<span
                                                     class="text-danger-form">*</span></label>
-                                            <input type="text" class="form-control" name="last_name" required>
+                                            <input type="text" class="form-control" name="last_name" 
+                                                   value="{{ $lastName }}" required>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label">Email<span
                                                     class="text-danger-form">*</span></label>
-                                            <input type="email" class="form-control" name="email" required>
+                                            <input type="email" class="form-control" name="email" 
+                                                   value="{{ $userEmail }}" required>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label">Số điện thoại<span
@@ -178,7 +198,7 @@
                                                     <option value="+44">+ 44</option>
                                                 </select>
                                                 <input type="tel" class="form-control phone-number"
-                                                    name="phone" required>
+                                                    name="phone" value="{{ $userPhone }}" required>
                                             </div>
                                         </div>
                                         <div class="col-12">
@@ -354,7 +374,7 @@
 
                                 <div class="payment-order-amount-row">
                                     <div class="payment-order-label">Số tiền</div>
-                                    <div class="payment-order-value" id="payment-amount">150.000₫</div>
+                                    <div class="payment-order-value" id="payment-amount">150.000đ</div>
                                 </div>
 
                                 <div class="payment-timer-box">
@@ -367,8 +387,8 @@
                                         <div class="payment-timer-btn">
                                             <div class="payment-timer-number" id="timer-seconds">00</div>
                                             <div class="payment-timer-text">Giây</div>
-                        </div>
-                    </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -387,13 +407,6 @@
                                     <span>Mở ứng dụng ngân hàng để Quét Mã QR</span>
                                 </div>
 
-                                <!-- Demo buttons (fake result) -->
-                                <div class="d-flex gap-2 justify-content-center mt-3">
-                                    <button type="button" class="btn btn-success btn-sm px-3"
-                                        id="btn-demo-success">Giả lập thành công</button>
-                                    <button type="button" class="btn btn-outline-danger btn-sm px-3"
-                                        id="btn-demo-fail">Giả lập thất bại</button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -448,7 +461,7 @@
                             </div>
                             <div class="text-center mt-4">
                                 <button type="button" class="btn color-primary btn-success-custom px-5"
-                                    data-result-close>Hoàn
+                                    id="btn-payment-success-close">Hoàn
                                     thành</button>
                             </div>
                         </div>
@@ -486,7 +499,7 @@
                             <p class="result-message">Rất tiếc, chúng tôi gặp sự cố với khoản thanh toán của bạn, vui
                                 lòng thử lại sau.</p>
                             <div class="text-center mt-4">
-                                <button type="button" class="btn color-primary btn-success-custom px-5" data-result-close>Thử
+                                <button type="button" class="btn color-primary btn-success-custom px-5" id="btn-payment-failed-close">Thử
                                     lại</button>
                             </div>
                         </div>
@@ -509,14 +522,38 @@
             const modal = document.getElementById('{{ $modalId }}');
 
             if (!modal) return;
-            
+
+            let currentPackageData = null;
+            let currentToolType = 'go-invoice';
+            let currentTransactionCode = null;
+            let sseEventSource = null;
+
             modal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
-                
+
                 if (button && button.dataset.package) {
                     try {
-                    const packageData = JSON.parse(button.dataset.package);
-                    updatePackageInfo(packageData);
+                        const packageData = JSON.parse(button.dataset.package);
+                        currentPackageData = packageData;
+                        updatePackageInfo(packageData);
+                        
+                        // Set package_id - check both package_id and id
+                        const packageIdInput = document.getElementById('package_id_input');
+                        if (packageIdInput) {
+                            const packageId = packageData.package_id || packageData.id || null;
+                            if (packageId) {
+                                packageIdInput.value = packageId;
+                            } else {
+                                console.error('Package ID not found in package data:', packageData);
+                            }
+                        }
+                        
+                        // Detect tool type
+                        const path = window.location.pathname;
+                        if (path.includes('go-invoice')) currentToolType = 'go-invoice';
+                        else if (path.includes('go-soft')) currentToolType = 'go-soft';
+                        else if (path.includes('go-quick')) currentToolType = 'go-quick';
+                        else if (path.includes('go-bot')) currentToolType = 'go-bot';
                     } catch (e) {
                         console.error('Error parsing package data:', e);
                     }
@@ -529,7 +566,7 @@
                 const packageDescEl = modal.querySelector('[data-package-desc]');
                 const packagePriceEl = modal.querySelector('[data-package-price]');
                 const registrationFeeEl = modal.querySelector('[data-registration-fee]');
-                
+
                 // Get tool name from package data or detect from route
                 let toolName = packageData.tool_name || '';
                 if (!toolName) {
@@ -578,7 +615,7 @@
                 if (discountEl) {
                     discountEl.textContent = '0đ';
                 }
-                
+
                 calculateTotal();
             }
 
@@ -590,7 +627,7 @@
                 const registrationFee = parseFloat(registrationFeeText.replace(/[^\d]/g, '') || 0);
                 const discount = parseFloat(discountText.replace(/[^\d-]/g, '') || 0);
                 const total = Math.max(0, registrationFee + discount);
-                
+
                 const totalEl = modal.querySelector('[data-total-amount]');
                 if (totalEl) {
                     totalEl.textContent = total.toLocaleString('vi-VN') + 'đ';
@@ -601,42 +638,27 @@
             const applyButton = modal.querySelector('.btn-apply');
             if (applyButton) {
                 applyButton.addEventListener('click', function() {
-                const promoInput = modal.querySelector('.promo-input');
-                const promoCode = promoInput?.value.trim();
-                
-                if (promoCode) {
-                    // TODO: Call API to validate promo code
-                    console.log('Applying promo code:', promoCode);
-                    // Update discount amount based on API response
+                    const promoInput = modal.querySelector('.promo-input');
+                    const promoCode = promoInput?.value.trim();
+
+                    if (promoCode) {
+                        // TODO: Call API to validate promo code
+                        console.log('Applying promo code:', promoCode);
+                        // Update discount amount based on API response
                         // For now, just update UI
-                    // calculateTotal();
-                }
-            });
+                        // calculateTotal();
+                    }
+                });
             }
 
-            // Handle form submission
-            const form = modal.querySelector('#registrationForm');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(form);
-                const data = Object.fromEntries(formData);
-                
-                // TODO: Call API to submit registration
-                console.log('Form data:', data);
-                
-                // Move to next step (payment)
-                // updateProgressStep(2);
-            });
-            }
+            // Handle form submission - moved to below
 
             // Handle remove package
             const removeButton = modal.querySelector('[data-remove-package]');
             if (removeButton) {
                 removeButton.addEventListener('click', function() {
-                // TODO: Handle package removal logic
-                console.log('Remove package clicked');
+                    // TODO: Handle package removal logic
+                    console.log('Remove package clicked');
                     hideModal();
                 });
             }
@@ -766,11 +788,6 @@
                 });
             }
 
-            modal.addEventListener('hidden.bs.modal', function() {
-                showInfoStep();
-                const formEl = modal.querySelector('#registrationForm');
-                if (formEl) formEl.reset();
-            });
 
             document.getElementById('registrationForm')?.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -809,17 +826,199 @@
             });
 
             // Khi nhấn nút "Thanh toán"
-            document.querySelector('.btn-confirm')?.addEventListener('click', function() {
-                // Lấy thông tin từ form confirm
-                const totalAmount = document.getElementById('confirm_total')?.textContent || '150.000đ';
+            document.querySelector('.btn-confirm')?.addEventListener('click', async function() {
+                const btn = this;
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
 
-                // Cập nhật thông tin thanh toán
-                const paymentAmountEl = document.getElementById('payment-amount');
-                if (paymentAmountEl) paymentAmountEl.textContent = totalAmount;
+                try {
+                    // Lấy dữ liệu từ form
+                    const form = document.getElementById('registrationForm');
+                    const formData = new FormData(form);
+                    
+                    // Thêm package_id - check both package_id and id
+                    const packageIdInput = document.getElementById('package_id_input');
+                    let packageId = null;
+                    
+                    if (packageIdInput && packageIdInput.value) {
+                        packageId = packageIdInput.value;
+                    } else if (currentPackageData) {
+                        packageId = currentPackageData.package_id || currentPackageData.id;
+                    }
+                    
+                    if (!packageId) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Không tìm thấy thông tin gói. Vui lòng thử lại.',
+                            confirmButtonColor: '#3085d6'
+                        });
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        return;
+                    }
+                    
+                    formData.append('package_id', packageId);
+                    
+                    // Xử lý phone
+                    const countryCode = formData.get('country_code');
+                    const phone = formData.get('phone');
+                    formData.set('phone', countryCode + phone);
+                    
+                    // Xử lý export_vat_invoice
+                    if (formData.get('export_vat_invoice') === 'on') {
+                        formData.set('export_vat_invoice', '1');
+                    } else {
+                        formData.set('export_vat_invoice', '0');
+                    }
 
-                // Ẩn step 1, hiện step 2
-                showPaymentStep();
+                    // Gọi API tạo purchase
+                    const routeMap = {
+                        'go-invoice': '{{ route("payment.go-invoice.store") }}',
+                        'go-bot': '{{ route("payment.go-bot.store") }}',
+                        'go-soft': '{{ route("payment.go-soft.store") }}',
+                        'go-quick': '{{ route("payment.go-quick.store") }}',
+                    };
+                    
+                    const response = await fetch(routeMap[currentToolType], {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        currentTransactionCode = result.transaction_code;
+                        // Load payment info
+                        await loadPaymentInfo(result.transaction_code);
+                        // Ẩn step 1, hiện step 2
+                        showPaymentStep();
+                    } else {
+                        // Handle validation errors
+                        let errorMessage = result.message || 'Có lỗi xảy ra khi tạo đơn hàng.';
+                        if (result.errors) {
+                            const errorList = Object.values(result.errors).flat().join('<br>');
+                            errorMessage = errorList || errorMessage;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            html: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Có lỗi xảy ra khi tạo đơn hàng.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
             });
+
+            // Load payment info
+            async function loadPaymentInfo(transactionCode) {
+                try {
+                    const response = await fetch(`{{ route('payment.info') }}?transaction_code=${transactionCode}&tool_type=${currentToolType}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update bank info
+                        document.getElementById('payment-supplier').textContent = result.bank.account_name;
+                        document.getElementById('payment-account').textContent = result.bank.account_number;
+                        document.getElementById('payment-bank').textContent = result.bank.name;
+                        document.getElementById('payment-content').textContent = result.content;
+                        document.getElementById('payment-amount').textContent = result.amount;
+                        
+                        // Update QR code
+                        const qrImg = document.querySelector('.payment-qr-box img');
+                        if (qrImg && result.qr_code) {
+                            qrImg.src = result.qr_code;
+                        }
+                        
+                        // Start SSE
+                        startSSE(transactionCode);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: result.message || 'Không thể tải thông tin thanh toán.',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading payment info:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Có lỗi xảy ra khi tải thông tin thanh toán.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            }
+
+            // Start SSE to check transaction status
+            function startSSE(transactionCode) {
+                // Close existing SSE if any
+                if (sseEventSource) {
+                    sseEventSource.close();
+                }
+
+                const sseUrl = `{{ route('payment.sse') }}?transaction_code=${transactionCode}&tool_type=${currentToolType}`;
+                sseEventSource = new EventSource(sseUrl);
+
+                sseEventSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'close') {
+                            sseEventSource.close();
+                            return;
+                        }
+
+                        if (data.status === 'success') {
+                            stopPaymentTimer();
+                            markSuccessStep();
+                            closeAllOverlays();
+                            if (successOverlay) {
+                                successOverlay.classList.remove('d-none');
+                                // Update success info
+                                document.getElementById('success_fullname').textContent = document.getElementById('confirm_fullname').textContent;
+                                document.getElementById('success_phone').textContent = document.getElementById('confirm_phone').textContent;
+                                document.getElementById('success_email').textContent = document.getElementById('confirm_email').textContent;
+                                document.getElementById('success_order').textContent = transactionCode;
+                                document.getElementById('success_amount').textContent = document.getElementById('payment-amount').textContent;
+                            }
+                            sseEventSource.close();
+                        } else if (data.status === 'expired') {
+                            stopPaymentTimer();
+                            markErrorStep();
+                            closeAllOverlays();
+                            if (failedOverlay) {
+                                failedOverlay.classList.remove('d-none');
+                            }
+                            sseEventSource.close();
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE data:', e);
+                    }
+                };
+
+                sseEventSource.onerror = function(error) {
+                    console.error('SSE error:', error);
+                    // SSE will auto-reconnect
+                };
+            }
 
             // Timer function
             function startPaymentTimer() {
@@ -834,6 +1033,15 @@
                     if (seconds === 0) {
                         if (minutes === 0) {
                             stopPaymentTimer();
+                            // Timer expired - show failed
+                            markErrorStep();
+                            closeAllOverlays();
+                            if (failedOverlay) {
+                                failedOverlay.classList.remove('d-none');
+                            }
+                            if (sseEventSource) {
+                                sseEventSource.close();
+                            }
                             return;
                         }
                         minutes--;
@@ -847,9 +1055,6 @@
                 }, 1000);
             }
 
-            // Demo buttons
-            const demoSuccessBtn = document.getElementById('btn-demo-success');
-            const demoFailBtn = document.getElementById('btn-demo-fail');
             const successOverlay = document.getElementById('paymentSuccess');
             const failedOverlay = document.getElementById('paymentFailed');
 
@@ -860,7 +1065,8 @@
 
             function setupOverlayClose(overlay) {
                 overlay?.addEventListener('click', function(e) {
-                    if (e.target === overlay || e.target.closest('[data-result-close]')) {
+                    // Chỉ đóng khi click vào overlay background hoặc nút close X, không đóng khi click vào button
+                    if (e.target === overlay || (e.target.closest('[data-result-close]') && !e.target.closest('button.btn'))) {
                         overlay.classList.add('d-none');
                     }
                 });
@@ -868,6 +1074,23 @@
 
             setupOverlayClose(successOverlay);
             setupOverlayClose(failedOverlay);
+
+            // Xử lý button "Hoàn thành" - reload trang
+            const btnSuccessClose = document.getElementById('btn-payment-success-close');
+            if (btnSuccessClose) {
+                btnSuccessClose.addEventListener('click', function() {
+                    window.location.reload();
+                });
+            }
+
+            // Xử lý button "Thử lại" - tắt modal
+            const btnFailedClose = document.getElementById('btn-payment-failed-close');
+            if (btnFailedClose) {
+                btnFailedClose.addEventListener('click', function() {
+                    closeAllOverlays();
+                    hideModal();
+                });
+            }
 
             function markSuccessStep() {
                 // clear error
@@ -888,15 +1111,17 @@
                 currentStep = 'payment';
             }
 
-            demoSuccessBtn?.addEventListener('click', function() {
-                closeAllOverlays();
-                markSuccessStep();
-                if (successOverlay) successOverlay.classList.remove('d-none');
-            });
-            demoFailBtn?.addEventListener('click', function() {
-                closeAllOverlays();
-                markErrorStep();
-                if (failedOverlay) failedOverlay.classList.remove('d-none');
+            // Close SSE when modal closes
+            modal.addEventListener('hidden.bs.modal', function() {
+                if (sseEventSource) {
+                    sseEventSource.close();
+                    sseEventSource = null;
+                }
+                stopPaymentTimer();
+                showInfoStep();
+                const formEl = modal.querySelector('#registrationForm');
+                if (formEl) formEl.reset();
+                currentTransactionCode = null;
             });
         });
     </script>

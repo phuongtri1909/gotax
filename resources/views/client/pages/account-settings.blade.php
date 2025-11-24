@@ -15,54 +15,69 @@
                 <div class="col-12 col-lg-9">
                     <div class="card account-settings-card">
                         <div class="card-body">
-                            <form id="accountSettingsForm">
+                            @include('components.toast-main')
+                            @include('components.toast')
+
+                            <form id="accountSettingsForm" method="POST" action="{{ route('change-password.post') }}">
+                                @csrf
                                 <div class="mb-4">
                                     <label for="email" class="form-label text-1lg account-settings-label">
                                         Email
                                     </label>
                                     <input type="email" class="form-control form-control-lg form-account-settings"
-                                        id="email" value="Thuyduong123@gmail.com" readonly disabled>
+                                        id="email" value="{{ auth()->user()->email }}" readonly disabled>
                                 </div>
 
                                 <!-- Change Password Section -->
                                 <div class="border-top pt-4 mb-4">
                                     <label class="text-1lg mb-1 account-settings-label">Đổi mật khẩu</label>
+                                    <p class="text-muted small mb-3">Vui lòng nhập mật khẩu mới. Chúng tôi sẽ gửi email xác nhận đến bạn.</p>
 
                                     <!-- New Password Field -->
                                     <div class="mb-3">
-                                        <label for="newPassword" class="form-label color-primary-13">
+                                        <label for="password" class="form-label color-primary-13">
                                             Mật khẩu mới
                                         </label>
                                         <div class="position-relative password-input-wrapper">
                                             <input type="password"
-                                                class="form-control form-control-lg form-account-settings" id="newPassword"
-                                                name="new_password" placeholder="Mật khẩu">
+                                                class="form-control form-control-lg form-account-settings @error('password') is-invalid @enderror" 
+                                                id="password" name="password" placeholder="Mật khẩu" required>
                                             <button type="button"
                                                 class="btn btn-link position-absolute top-50 end-0 translate-middle-y password-toggle-btn"
-                                                onclick="togglePassword('newPassword', 'newPassword-icon')">
+                                                onclick="togglePassword('password', 'password-icon')">
                                                 <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye"
-                                                    class="eye-icon" id="newPassword-icon" width="20" height="20">
+                                                    class="eye-icon" id="password-icon" width="20" height="20">
                                             </button>
                                         </div>
+                                        @error('password')
+                                            <div class="invalid-feedback d-block">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
                                     </div>
 
                                     <!-- Confirm Password Field -->
                                     <div class="mb-4">
-                                        <label for="confirmPassword" class="form-label color-primary-13">
+                                        <label for="password_confirmation" class="form-label color-primary-13">
                                             Nhập lại
                                         </label>
                                         <div class="position-relative password-input-wrapper">
                                             <input type="password"
-                                                class="form-control form-control-lg form-account-settings"
-                                                id="confirmPassword" name="confirm_password" placeholder="Mật khẩu">
+                                                class="form-control form-control-lg form-account-settings @error('password_confirmation') is-invalid @enderror"
+                                                id="password_confirmation" name="password_confirmation" placeholder="Mật khẩu" required>
                                             <button type="button"
                                                 class="btn btn-link position-absolute top-50 end-0 translate-middle-y password-toggle-btn"
-                                                onclick="togglePassword('confirmPassword', 'confirmPassword-icon')">
+                                                onclick="togglePassword('password_confirmation', 'password-confirmation-icon')">
                                                 <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye"
-                                                    class="eye-icon" id="confirmPassword-icon" width="20"
+                                                    class="eye-icon" id="password-confirmation-icon" width="20"
                                                     height="20">
                                             </button>
                                         </div>
+                                        @error('password_confirmation')
+                                            <div class="invalid-feedback d-block">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
                                     </div>
                                 </div>
 
@@ -121,27 +136,5 @@
         function resetForm() {
             document.getElementById('accountSettingsForm').reset();
         }
-
-        // Handle form submit
-        document.getElementById('accountSettingsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (newPassword !== confirmPassword) {
-                alert('Mật khẩu mới và nhập lại không khớp!');
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                alert('Mật khẩu phải có ít nhất 6 ký tự!');
-                return;
-            }
-
-            // Handle form submission here
-            alert('Đã lưu thay đổi mật khẩu!');
-            this.reset();
-        });
     </script>
 @endpush

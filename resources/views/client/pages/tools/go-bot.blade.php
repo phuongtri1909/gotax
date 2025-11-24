@@ -28,7 +28,7 @@
                 description="Công cụ tra cứu MST hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ tra Rủi Ro MST DN hàng loạt!"
                 descriptionLeft="Tăng tốc quy trình tra cứu MST Doanh nghiệp và cá nhân. Công cụ thông minh, giao diện dễ dùng, hỗ trợ tra cứu mã số thuế nhanh chóng, chính xác và dễ dàng."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.go-bot.overview') }}" :image="asset('images/d/tools/body-bot.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-bot') }}" :image="asset('images/d/tools/body-bot.png')" />
 
             @php
                 $features = [
@@ -60,47 +60,6 @@
 
             <x-features-section title="Giải Pháp Tối Ưu Công Việc Của Bạn" :features="$features" />
 
-            @php
-                $botFeatures = [
-                    'Tra hàng loạt MST cá nhân cũ → MST cá nhân mới',
-                    'Tra hàng loạt CCCD → MST cá nhân và doanh nghiệp',
-                    'Tra cứu rủi ro nhà cung cấp hàng loạt',
-                    'Tra địa chỉ Doanh nghiệp sau sáp nhập chuẩn xác từ TCT',
-                    'Hỗ trợ tra cứu file Excel và TXT nhanh chóng',
-                    'Trích xuất dữ liệu hàng loạt ra file Excel',
-                ];
-
-                $botPackages = [
-                    (object) [
-                        'name' => 'Basic',
-                        'title' => 'Số lượng MST',
-                        'mst' => '1000',
-                        'price' => '200.000',
-                        'discount' => 'Ưu đãi',
-                    ],
-                    (object) [
-                        'name' => 'Standard',
-                        'title' => 'Số lượng MST',
-                        'mst' => '5000',
-                        'price' => '600.000',
-                        'discount' => 'Giảm 40%',
-                    ],
-                    (object) [
-                        'name' => 'Advanced',
-                        'title' => 'Số lượng MST',
-                        'mst' => '10.000',
-                        'price' => '1.000.000',
-                        'discount' => 'Giảm 50%',
-                    ],
-                    (object) [
-                        'name' => 'Pro',
-                        'title' => 'Số lượng MST',
-                        'mst' => '20.000',
-                        'price' => '1.500.000',
-                        'discount' => 'Giảm 60%',
-                    ],
-                ];
-            @endphp
 
             <x-pricing-bot-section :features="$botFeatures" :packages="$botPackages" />
         </div>

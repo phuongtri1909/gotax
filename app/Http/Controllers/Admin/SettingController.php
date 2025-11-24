@@ -8,6 +8,7 @@ use App\Models\OrderSetting;
 use App\Models\SMTPSetting;
 use App\Models\GoogleSetting;
 use App\Models\PaypalSetting;
+use App\Providers\SMTPSettingsServiceProvider;
 
 class SettingController extends Controller
 {
@@ -25,22 +26,43 @@ class SettingController extends Controller
         $request->validate([
             'mailer' => 'required|string',
             'host' => 'required|string',
-            'port' => 'required|string',
+            'port' => 'required|integer|min:1|max:65535',
             'username' => 'required|string',
-            'password' => 'required|string',
-            'encryption' => 'nullable|string',
+            'password' => 'nullable|string',
+            'encryption' => 'nullable|string|in:tls,ssl',
             'from_address' => 'required|email',
             'from_name' => 'nullable|string',
             'admin_email' => 'required|email',
+        ], [
+            'port.required' => 'Port không được để trống.',
+            'port.integer' => 'Port phải là số nguyên.',
+            'port.min' => 'Port phải lớn hơn 0.',
+            'port.max' => 'Port không được vượt quá 65535.',
+            'encryption.in' => 'Encryption phải là TLS hoặc SSL.',
         ]);
 
         $smtpSetting = SMTPSetting::first();
-        if (!$smtpSetting) {
+        $isNew = !$smtpSetting;
+        
+        if ($isNew) {
             $smtpSetting = new SMTPSetting();
+            $request->validate([
+                'password' => 'required|string',
+            ], [
+                'password.required' => 'Password là bắt buộc khi tạo mới cài đặt SMTP.',
+            ]);
         }
 
-        $smtpSetting->fill($request->all());
+        $data = $request->all();
+        
+        if (empty($data['password']) && !$isNew) {
+            unset($data['password']);
+        }
+
+        $smtpSetting->fill($data);
         $smtpSetting->save();
+
+        SMTPSettingsServiceProvider::loadSMTPConfig();
 
         return redirect()->route('admin.setting.index', ['tab' => 'smtp'])
             ->with('success', 'Cài đặt SMTP đã được cập nhật thành công.');

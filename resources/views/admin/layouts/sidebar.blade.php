@@ -20,11 +20,96 @@
                     </li>
 
                     <li
-                        class="has-submenu {{ Route::currentRouteNamed(['admin.banner-homes.*', 'admin.image-homes.*', 'admin.general-introductions.*', 'admin.intro-features.*', 'admin.intro-locations.*', 'admin.slide-locations.*', 'admin.intro-images.*']) ? 'open' : '' }}">
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*', 'admin.trials.*']) ? 'open' : '' }}">
                         <a href="#" class="submenu-toggle">
-                            <i class="fas fa-home"></i>
-                            <span>Trang chủ</span>
+                            <i class="fas fa-money-bill"></i>
+                            <span>Quản lý bán hàng</span>
                             <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="{{ Route::currentRouteNamed('admin.banks.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.banks.index') }}">
+                                    <i class="fas fa-bank"></i>
+                                    <span>Ngân hàng</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-invoice-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-invoice-packages.index') }}">
+                                    <i class="fas fa-file-invoice"></i>
+                                    <span>Gói GoInvoice</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-bot-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-bot-packages.index') }}">
+                                    <i class="fas fa-robot"></i>
+                                    <span>Gói GoBot</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-soft-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-soft-packages.index') }}">
+                                    <i class="fas fa-laptop-code"></i>
+                                    <span>Gói GoSoft</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.go-quick-packages.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.go-quick-packages.index') }}">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>Gói GoQuick</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.trials.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.trials.index') }}">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Cấu hình dùng thử</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+
+                    <!-- Quản lý liên hệ -->
+                    <li
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.contacts.*', 'admin.contact-info.*', 'admin.trial-registrations.*']) ? 'open' : '' }}">
+                        <a href="#" class="submenu-toggle">
+                            <i class="fas fa-envelope"></i>
+                            <span>Quản lý liên hệ</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="{{ Route::currentRouteNamed('admin.contacts.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.contacts.index') }}">
+                                    <i class="fas fa-inbox"></i>
+                                    <span>Danh sách liên hệ</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.contact-info.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.contact-info.index') }}">
+                                    <i class="fas fa-address-card"></i>
+                                    <span>Thông tin liên hệ</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.trial-registrations.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.trial-registrations.index') }}">
+                                    <i class="fas fa-user-check"></i>
+                                    <span>Đăng ký dùng thử</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Quản lý FAQ -->
+                    <li class="{{ Route::currentRouteNamed('admin.faqs.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.faqs.index') }}">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Câu hỏi thường gặp</span>
+                        </a>
+                    </li>
+
+                    <!-- Quản lý Đánh giá khách hàng -->
+                    <li class="{{ Route::currentRouteNamed('admin.testimonials.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.testimonials.index') }}">
+                            <i class="fas fa-star"></i>
+                            <span>Đánh giá khách hàng</span>
                         </a>
                     </li>
 
@@ -43,12 +128,12 @@
                                     <span>Mạng xã hội</span>
                                 </a>
                             </li>
-                            <li class="{{ Route::currentRouteNamed('admin.logo-site.edit') ? 'active' : '' }}">
+                            {{-- <li class="{{ Route::currentRouteNamed('admin.logo-site.edit') ? 'active' : '' }}">
                                 <a href="{{ route('admin.logo-site.edit') }}">
                                     <i class="fas fa-image"></i>
                                     <span>Logo Site</span>
                                 </a>
-                            </li>
+                            </li> --}}
                             <li class="{{ Route::currentRouteNamed('admin.setting.*') ? 'active' : '' }}">
                                 <a href="{{ route('admin.setting.index') }}">
                                     <i class="fas fa-cog"></i>
@@ -65,6 +150,12 @@
                     </li>
 
                     <li class="mt-4">
+                        <a href="{{ route('home') }}">
+                            <i class="fas fa-home"></i>
+                            <span>Trang chủ</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="{{ route('logout') }}">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Đăng xuất</span>

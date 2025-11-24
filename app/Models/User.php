@@ -3,9 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Str;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
@@ -20,12 +21,16 @@ class User extends Authenticatable
     protected $fillable = [
         'full_name',
         'email',
+        'phone',
+        'referral_code',
         'password',
         'role',
         'avatar',
         'active',
         'key_active',
         'key_reset_password',
+        'key_change_password',
+        'temp_password_hash',
         'reset_password_at',
     ];
 
@@ -34,6 +39,11 @@ class User extends Authenticatable
 
     const ACTIVE_YES = 1;
     const ACTIVE_NO = 0;
+
+    public function generateReferralCode()
+    {
+        return Str::random(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    }
 
 
     protected $casts = [
