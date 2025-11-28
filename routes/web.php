@@ -143,11 +143,14 @@ Route::group(['middleware' => ['auth']], function () {
 
 
     Route::prefix('go-quick')->group(function () {
-        Route::get('/health', [GoQuickController::class, 'healthCheck']);
-        Route::post('/process-cccd', [GoQuickController::class, 'processCCCD']);
-        Route::post('/process-pdf', [GoQuickController::class, 'processPDF']);
-        Route::post('/process-excel', [GoQuickController::class, 'processExcel']);
-        Route::post('/process', [GoQuickController::class, 'process']);
+        Route::get('/health', [GoQuickController::class, 'healthCheck'])->name('tools.go-quick.health');
+        Route::post('/process-cccd', [GoQuickController::class, 'processCCCD'])->name('tools.go-quick.process-cccd');
+        Route::post('/process-cccd-images', [GoQuickController::class, 'processCCCDImages'])->name('tools.go-quick.process-cccd-images');
+        Route::post('/process-cccd-multiple-images', [GoQuickController::class, 'processCCCDMultipleImages'])->name('tools.go-quick.process-cccd-multiple-images');
+        Route::post('/process-pdf', [GoQuickController::class, 'processPDF'])->name('tools.go-quick.process-pdf');
+        Route::post('/process-excel', [GoQuickController::class, 'processExcel'])->name('tools.go-quick.process-excel');
+        Route::post('/export-excel', [GoQuickController::class, 'exportExcel'])->name('tools.go-quick.export-excel');
+        Route::post('/process', [GoQuickController::class, 'process'])->name('tools.go-quick.process');
     });
 });
 

@@ -7,13 +7,11 @@
 @section('content')
     <section class="go-quick-upload-section">
         <div class="container">
-            <!-- Header -->
             <div class="upload-header text-center">
                 <h1 class="upload-title mb-0">Go Quick</h1>
                 <p class="upload-subtitle">Đọc CCCD Hàng Loạt</p>
             </div>
 
-            <!-- Tab Navigation -->
             <div class="d-flex justify-content-center">
                 <div class="upload-tabs">
                     <button class="tab-button active" data-tab="single">Đọc nhanh</button>
@@ -21,7 +19,6 @@
                 </div>
             </div>
 
-            <!-- Single Upload (Đọc nhanh) -->
             <div id="singleUploadTab" class="tab-content">
                 <div class="upload-content row">
                     <div class="row g-4 col-10 offset-1 mt-0">
@@ -56,7 +53,6 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload (Hàng loạt) -->
             <div id="bulkUploadTab" class="tab-content d-none">
                 <div class="bulk-upload-area" id="bulkUploadArea">
                     <div class="bulk-upload-box" id="bulkUploadBox">
@@ -98,15 +94,14 @@
                             </button>
                         </div>
 
-                        <input type="file" id="bulkFileInput" accept=".pdf,.xlsx,.xls" hidden>
+                        <input type="file" id="bulkFileInput" accept=".pdf,.xlsx,.xls,.zip" hidden>
                         <input type="file" id="bulkFolderInput" accept="image/*" multiple hidden>
                     </div>
 
-                    <!-- Progress Section -->
                     <div class="bulk-progress-section d-none" id="bulkProgressSection">
                         <div class="bulk-file-card">
                             <div class="bulk-file-info">
-                                <img src="{{ asset('images/svg/pdf-icon.svg') }}" alt="PDF" class="bulk-file-thumb">
+                                <img src="{{ asset('images/d/go-quick/pdf.png') }}" alt="PDF" class="bulk-file-thumb">
                                 <div class="w-100">
                                     <div class="bulk-file-details">
                                         <p class="bulk-file-name" id="bulkFileName">file-cccd.pdf</p>
@@ -135,7 +130,6 @@
                     </div>
                 </div>
 
-                <!-- Bulk Info Section -->
                 <div class="upload-back">
                     <a href="{{ route('tools.go-quick') }}" class="btn btn-back-link">
                         <img src="{{ asset('images/svg/arrow-left.svg') }}" alt="">
@@ -144,16 +138,13 @@
                 </div>
             </div>
 
-            <!-- Upload Section -->
             <div id="uploadSection">
-                <!-- Upload Info -->
                 <div class="upload-info text-center">
                     <h3 class="info-title" id="infoTitle">Tải lên ảnh CCCD ở đây!</h3>
                     <p class="info-description" id="infoDescription">Vui lòng tải ảnh rõ nét</p>
                     <p class="info-limit">Kích thước tối đa của một tập tin là <strong>5 MB</strong></p>
                 </div>
 
-                <!-- Upload Button -->
                 <div class="upload-actions text-center">
                     <button type="button" class="btn btn-upload" id="uploadButton">
                         <svg class="btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"
@@ -170,7 +161,6 @@
                     </button>
                 </div>
 
-                <!-- Back Button -->
                 <div class="upload-back">
                     <a href="{{ route('tools.go-quick') }}" class="btn btn-back-link">
                         <img src="{{ asset('images/svg/arrow-left.svg') }}" alt="">
@@ -179,7 +169,6 @@
                 </div>
             </div>
 
-            <!-- Bulk Download Section (After Success) -->
             <div id="bulkDownloadSection" class="d-none">
                 <h2 class="download-title text-center">
                     File Của Bạn đã Trích Xuất thành công
@@ -233,7 +222,6 @@
                     <img src="{{ asset('images/svg/exchange.png') }}" alt="">
                 </button>
 
-                <!-- Promo Banner -->
                 <div class="promo-banner" id="promoBanner">
                     <button class="promo-banner-close" id="promoBannerClose">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -256,12 +244,10 @@
                 </div>
             </div>
 
-            <!-- Result Section (Initially Hidden) -->
             <div id="resultSection" class="d-none">
                 <h2 class="result-title text-center">Kết quả trích Xuất</h2>
                 <div class="row g-4 result-row-equal">
                     <div class="col-12 col-md-9">
-                        <!-- Result fields will be populated by JS -->
                         <div id="resultFields"></div>
                     </div>
                     <div class="col-12 col-md-3">
@@ -311,7 +297,6 @@
         </div>
     </section>
 
-    <!-- Success Modal -->
     <div class="bulk-modal" id="bulkSuccessModal">
         <div class="bulk-modal-content">
             <div class="bulk-modal-icon success">
@@ -327,7 +312,6 @@
         </div>
     </div>
 
-    <!-- Failed Modal -->
     <div class="bulk-modal" id="bulkFailedModal">
         <div class="bulk-modal-content">
             <div class="bulk-modal-icon failed">
@@ -356,18 +340,15 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Tab switching with localStorage
             const tabButtons = document.querySelectorAll('.tab-button');
             const singleUploadTab = document.getElementById('singleUploadTab');
             const bulkUploadTab = document.getElementById('bulkUploadTab');
             const uploadSection = document.getElementById('uploadSection');
 
-            // Load saved tab from localStorage
             const savedTab = localStorage.getItem('goQuickActiveTab') || 'single';
             switchTab(savedTab);
 
             function switchTab(tabName) {
-                // Update button active state
                 tabButtons.forEach(btn => {
                     if (btn.dataset.tab === tabName) {
                         btn.classList.add('active');
@@ -376,7 +357,6 @@
                     }
                 });
 
-                // Show/hide tab content
                 if (tabName === 'single') {
                     singleUploadTab.classList.remove('d-none');
                     bulkUploadTab.classList.add('d-none');
@@ -387,7 +367,6 @@
                     uploadSection.classList.add('d-none');
                 }
 
-                // Save to localStorage
                 localStorage.setItem('goQuickActiveTab', tabName);
             }
 
@@ -398,7 +377,6 @@
                 });
             });
 
-            // File upload handling
             const uploadInputs = document.querySelectorAll('.upload-input');
             const uploadBoxes = document.querySelectorAll('.upload-box');
 
@@ -410,13 +388,11 @@
                     if (files.length > 0) {
                         handleFileUpload(files, uploadBox);
                     } else {
-                        // If file is removed, update button
                         updateUploadButton();
                     }
                 });
             });
 
-            // Drag and drop
             uploadBoxes.forEach(box => {
                 box.addEventListener('dragover', function(e) {
                     e.preventDefault();
@@ -438,7 +414,6 @@
                 });
             });
 
-            // Clear error state
             function clearErrorState() {
                 uploadBoxes.forEach(box => {
                     box.classList.remove('has-error');
@@ -452,13 +427,10 @@
                 if (infoDescription) {
                     infoDescription.textContent = 'Vui lòng tải ảnh rõ nét';
                 }
-                // Update button text
                 updateUploadButton();
             }
 
-            // Show error state
             function showErrorState() {
-                // Only show error on boxes without uploaded images
                 uploadBoxes.forEach(box => {
                     const uploadType = box.dataset.upload;
                     const hasImage = (uploadType === 'front' && uploadedFrontImage) ||
@@ -481,7 +453,6 @@
                 }
             }
 
-            // Update button text based on file status
             function updateUploadButton() {
                 const frontInput = document.getElementById('frontUpload');
                 const backInput = document.getElementById('backUpload');
@@ -493,7 +464,6 @@
 
                 if (hasFiles && buttonText) {
                     buttonText.textContent = 'TRÍCH XUẤT';
-                    // Replace icon with extract icon (star icon as placeholder - user will replace)
                     const extractIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     extractIcon.setAttribute('class', 'btn-icon');
                     extractIcon.setAttribute('width', '20');
@@ -509,7 +479,6 @@
                     }
                 } else if (buttonText) {
                     buttonText.textContent = 'PHOTO CCCD';
-                    // Restore upload icon
                     const uploadIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     uploadIcon.setAttribute('class', 'btn-icon');
                     uploadIcon.setAttribute('width', '20');
@@ -526,17 +495,13 @@
                 }
             }
 
-            // Store uploaded images
             let uploadedFrontImage = null;
             let uploadedBackImage = null;
 
-            // Handle file upload
             function handleFileUpload(files, uploadBox) {
-                // Clear error state when new file is selected
                 clearErrorState();
 
-                // Validate file size (5MB)
-                const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                const maxSize = 5 * 1024 * 1024;
                 let hasError = false;
 
                 for (let file of files) {
@@ -547,7 +512,6 @@
                 }
 
                 if (hasError) {
-                    // Show error state (no alert)
                     showErrorState();
                     return;
                 }
@@ -556,7 +520,6 @@
                     uploadBox.classList.remove('has-error');
                     uploadBox.classList.add('has-file');
 
-                    // Preview first image
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         uploadBox.style.backgroundImage = `url(${e.target.result})`;
@@ -564,7 +527,6 @@
                         uploadBox.style.backgroundPosition = 'center';
                         uploadBox.style.backgroundRepeat = 'no-repeat';
 
-                        // Store image data
                         const uploadType = uploadBox.dataset.upload;
                         if (uploadType === 'front') {
                             uploadedFrontImage = e.target.result;
@@ -574,24 +536,163 @@
                     };
                     reader.readAsDataURL(files[0]);
 
-                    // Update button text
                     updateUploadButton();
 
                     console.log('Files uploaded:', files);
                 }
             }
 
-            // Show result section with fake data
-            function showResultSection() {
-                // Hide upload section
+            function showResultSectionWithData(data) {
                 document.getElementById('uploadSection').classList.add('d-none');
                 document.querySelector('.upload-content').classList.add('d-none');
 
-                // Show result section
                 const resultSection = document.getElementById('resultSection');
                 resultSection.classList.remove('d-none');
 
-                // Populate fake data
+                const customers = data.customer || [];
+                if (customers.length === 0) {
+                    showBulkFailed('Không tìm thấy dữ liệu CCCD trong ảnh. Vui lòng kiểm tra lại ảnh.', false);
+                    resetUploadButton();
+                    return;
+                }
+
+                const customer = customers[0];
+
+                const resultFields = document.getElementById('resultFields');
+                resultFields.innerHTML = `
+                    <div class="result-field-group">
+                        <div class="result-field">
+                            <label class="result-label">Số</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.id_card || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.id_card || ''}">
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <label class="result-label">Họ và tên</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.name || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.name || ''}">
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <label class="result-label">Ngày sinh</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.birth_date || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.birth_date || ''}">
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <div class="result-field">
+                                <label class="result-label">Giới tính</label>
+                                <div class="result-input-wrapper">
+                                    <input type="text" class="result-input" value="${customer.gender || ''}" readonly>
+                                    <button class="result-copy-btn" data-value="${customer.gender || ''}">
+                                        <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="result-field">
+                                <label class="result-label">Quốc tịch</label>
+                                <div class="result-input-wrapper">
+                                    <input type="text" class="result-input" value="${customer.nationality || 'Việt Nam'}" readonly>
+                                    <button class="result-copy-btn" data-value="${customer.nationality || 'Việt Nam'}">
+                                        <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <label class="result-label">Quê quán</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.hometown || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.hometown || ''}">
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <label class="result-label">Nơi thường trú</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.address || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.address || ''}">   
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <label class="result-label">Ngày cấp</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.created_date || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.created_date || ''}">
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="result-field">
+                            <label class="result-label">Nơi cấp</label>
+                            <div class="result-input-wrapper">
+                                <input type="text" class="result-input" value="${customer.place_created || ''}" readonly>
+                                <button class="result-copy-btn" data-value="${customer.place_created || ''}">
+                                    <img src="{{ asset('images/svg/copy.svg') }}" alt="Copy">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.querySelectorAll('.result-copy-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const value = this.dataset.value;
+                        navigator.clipboard.writeText(value).then(() => {
+                            console.log('Copied:', value);
+                        });
+                    });
+                });
+
+                const frontImg = document.getElementById('resultFrontImg');
+                const backImg = document.getElementById('resultBackImg');
+                const frontPlaceholder = document.getElementById('resultFrontPlaceholder');
+                const backPlaceholder = document.getElementById('resultBackPlaceholder');
+                const frontBox = document.querySelector('.result-upload-box[data-upload="front"]');
+                const backBox = document.querySelector('.result-upload-box[data-upload="back"]');
+
+                if (uploadedFrontImage) {
+                    frontImg.src = uploadedFrontImage;
+                    frontImg.style.display = 'block';
+                    if (frontPlaceholder) frontPlaceholder.style.display = 'none';
+                    if (frontBox) frontBox.classList.add('has-file');
+                } else {
+                    frontImg.style.display = 'none';
+                    if (frontPlaceholder) frontPlaceholder.style.display = 'flex';
+                    if (frontBox) frontBox.classList.remove('has-file');
+                }
+
+                if (uploadedBackImage) {
+                    backImg.src = uploadedBackImage;
+                    backImg.style.display = 'block';
+                    if (backPlaceholder) backPlaceholder.style.display = 'none';
+                    if (backBox) backBox.classList.add('has-file');
+                } else {
+                    backImg.style.display = 'none';
+                    if (backPlaceholder) backPlaceholder.style.display = 'flex';
+                    if (backBox) backBox.classList.remove('has-file');
+                }
+            }
+
+            function showResultSection() {
+                document.getElementById('uploadSection').classList.add('d-none');
+                document.querySelector('.upload-content').classList.add('d-none');
+
+                const resultSection = document.getElementById('resultSection');
+                resultSection.classList.remove('d-none');
+
                 const resultFields = document.getElementById('resultFields');
                 resultFields.innerHTML = `
                     <div class="result-field-group">
@@ -681,18 +782,15 @@
                     </div>
                 `;
 
-                // Add copy functionality
                 document.querySelectorAll('.result-copy-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const value = this.dataset.value;
                         navigator.clipboard.writeText(value).then(() => {
-                            // Optional: show toast notification
                             console.log('Copied:', value);
                         });
                     });
                 });
 
-                // Set images
                 const frontImg = document.getElementById('resultFrontImg');
                 const backImg = document.getElementById('resultBackImg');
                 const frontPlaceholder = document.getElementById('resultFrontPlaceholder');
@@ -723,29 +821,23 @@
                 }
             }
 
-            // Upload button click
-            document.getElementById('uploadButton').addEventListener('click', function() {
+            document.getElementById('uploadButton').addEventListener('click', async function() {
                 const frontInput = document.getElementById('frontUpload');
                 const backInput = document.getElementById('backUpload');
                 const uploadButton = this;
                 const buttonText = uploadButton.querySelector('.btn-text');
 
-                // Check if button is in "Trích xuất" state
                 if (buttonText && buttonText.textContent === 'TRÍCH XUẤT') {
-                    // Validate: must have both front and back images
-                    if (!uploadedFrontImage || !uploadedBackImage) {
+                    if (!frontInput.files[0] || !backInput.files[0]) {
                         showErrorState();
                         return;
                     }
 
-                    // Show processing state
                     uploadButton.disabled = true;
                     uploadButton.classList.add('processing');
 
-                    // Clear all content first
                     uploadButton.innerHTML = '';
 
-                    // Add processing elements with spinner
                     const spinnerIcon = document.createElement('span');
                     spinnerIcon.className = 'spinner-border spinner-border-sm processing-rotate';
 
@@ -756,43 +848,125 @@
                     uploadButton.appendChild(spinnerIcon);
                     uploadButton.appendChild(processingText);
 
-                    // Simulate extraction process
-                    setTimeout(() => {
-                        // Show result section
-                        showResultSection();
-                    }, 2000);
+                    try {
+                        const formData = new FormData();
+                        formData.append('mt', frontInput.files[0]);
+                        formData.append('ms', backInput.files[0]);
+
+                        const response = await fetch('{{ route("tools.go-quick.process-cccd-images") }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        });
+
+                        if (response.status === 401 || response.status === 403) {
+                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                        }
+
+                        if (response.status === 302 || response.redirected) {
+                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                        }
+
+                        if (!response.ok) {
+                            const contentType = response.headers.get('content-type');
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorResult = await response.json();
+                                throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                            } else {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                        }
+
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                            const text = await response.text();
+                            console.error('Non-JSON response:', text);
+                            if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
+                                throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                            }
+                            throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                        }
+
+                        const result = await response.json();
+
+                        if (result.status === 'success') {
+                            const data = result.data || result;
+                            showResultSectionWithData(data);
+                        } else {
+                            showErrorState();
+                            showBulkFailed(result.message || 'Có lỗi xảy ra khi xử lý', false);
+                            resetUploadButton();
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showErrorState();
+                        showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server. Vui lòng thử lại sau.', false);
+                        resetUploadButton();
+                    }
                     return;
                 }
             });
 
-            // Reload button - refresh data
+            function resetUploadButton() {
+                const uploadButton = document.getElementById('uploadButton');
+                uploadButton.disabled = false;
+                uploadButton.classList.remove('processing');
+                uploadButton.innerHTML = '';
+                
+                const extractIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                extractIcon.setAttribute('class', 'btn-icon');
+                extractIcon.setAttribute('width', '20');
+                extractIcon.setAttribute('height', '20');
+                extractIcon.setAttribute('viewBox', '0 0 20 20');
+                extractIcon.setAttribute('fill', 'none');
+                extractIcon.innerHTML =
+                    '<path d="M12.892 7.73299L8.625 12L7.17049 10.5455M9.75 0.75C4.77944 0.75 0.75 4.77944 0.75 9.75C0.75 14.7206 4.77944 18.75 9.75 18.75C14.7206 18.75 18.75 14.7206 18.75 9.75C18.75 4.77944 14.7206 0.75 9.75 0.75Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+                
+                const buttonText = document.createElement('span');
+                buttonText.className = 'btn-text';
+                buttonText.textContent = 'TRÍCH XUẤT';
+                
+                uploadButton.appendChild(extractIcon);
+                uploadButton.appendChild(buttonText);
+                
+                const frontInput = document.getElementById('frontUpload');
+                const backInput = document.getElementById('backUpload');
+                if (frontInput) frontInput.value = '';
+                if (backInput) backInput.value = '';
+            }
+
             document.getElementById('reloadButton').addEventListener('click', function() {
-                // Simulate reload - just show alert for demo
-                alert('Dữ liệu đã được làm mới!');
+                location.reload();
             });
 
-            // Change image button - go back to upload
             document.getElementById('changeImageBtn').addEventListener('click', function() {
-                // Show upload sections
+                const frontInput = document.getElementById('frontUpload');
+                const backInput = document.getElementById('backUpload');
+                if (frontInput) frontInput.value = '';
+                if (backInput) backInput.value = '';
+                
+                uploadedFrontImage = null;
+                uploadedBackImage = null;
+                
+                clearErrorState();
+                
                 document.getElementById('uploadSection').classList.remove('d-none');
                 document.querySelector('.upload-content').classList.remove('d-none');
 
-                // Hide result section
                 document.getElementById('resultSection').classList.add('d-none');
 
-                // Reset upload button state
                 const uploadButton = document.getElementById('uploadButton');
                 uploadButton.disabled = false;
                 uploadButton.classList.remove('processing');
 
-                // Clear and rebuild button
                 uploadButton.innerHTML = '';
 
-                // Check if we have files to determine button state
                 const hasFiles = uploadedFrontImage && uploadedBackImage;
 
                 if (hasFiles) {
-                    // Create extract icon and text
                     const extractIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     extractIcon.setAttribute('class', 'btn-icon');
                     extractIcon.setAttribute('width', '20');
@@ -809,7 +983,6 @@
                     uploadButton.appendChild(extractIcon);
                     uploadButton.appendChild(buttonText);
                 } else {
-                    // Create upload icon and text
                     const uploadIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     uploadIcon.setAttribute('class', 'btn-icon');
                     uploadIcon.setAttribute('width', '20');
@@ -828,7 +1001,6 @@
                 }
             });
 
-            // ===== BULK UPLOAD LOGIC =====
             const bulkUploadBox = document.getElementById('bulkUploadBox');
             const bulkUploadArea = document.getElementById('bulkUploadArea');
             const bulkFileInput = document.getElementById('bulkFileInput');
@@ -841,8 +1013,8 @@
             let currentBulkFile = null;
             let uploadProgress = 0;
             let uploadInterval = null;
+            let currentAbortController = null;
 
-            // Bulk upload buttons
             document.querySelectorAll('.bulk-upload-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const type = this.dataset.type;
@@ -854,7 +1026,6 @@
                 });
             });
 
-            // Bulk file input change
             bulkFileInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
@@ -865,11 +1036,22 @@
             bulkFolderInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
-                    handleBulkFileUpload(files[0]);
+                    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+                    const nonImageFiles = files.filter(f => !f.type.startsWith('image/'));
+                    
+                    if (nonImageFiles.length > 0) {
+                        showBulkError(nonImageFiles[0], 'Folder chỉ chấp nhận file ảnh. Vui lòng chọn file ảnh hoặc dùng nút FILE EXCEL/PDF để upload file Excel/PDF.');
+                        return;
+                    }
+                    
+                    if (imageFiles.length > 0) {
+                        handleMultipleImagesUpload(imageFiles);
+                    } else {
+                        showBulkError(files[0], 'Vui lòng chọn file ảnh hoặc dùng nút FILE EXCEL/PDF để upload file Excel/PDF.');
+                    }
                 }
             });
 
-            // Drag and drop for bulk
             bulkUploadBox.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 this.classList.add('dragover');
@@ -889,41 +1071,42 @@
                 }
             });
 
-            // Handle bulk file upload
             function handleBulkFileUpload(file) {
-                // Validate file
-                const maxSize = 10 * 1024 * 1024; // 10MB
+                const maxSize = 10 * 1024 * 1024;
                 const allowedTypes = ['application/pdf', 'application/vnd.ms-excel',
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/zip', 'application/x-zip-compressed'
                 ];
 
-                // Clear error state
                 bulkUploadBox.classList.remove('has-error');
                 const existingError = bulkUploadBox.querySelector('.bulk-error-file');
                 if (existingError) existingError.remove();
 
-                // Check file size
                 if (file.size > maxSize) {
                     showBulkError(file, 'File vượt quá 10MB');
                     return;
                 }
 
-                // Check file type
-                if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|xlsx|xls)$/i)) {
-                    showBulkError(file, 'Loại tệp tin không đúng!');
+                const fileName = file.name.toLowerCase();
+                const isPDF = fileName.endsWith('.pdf') || file.type === 'application/pdf';
+                const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                               file.type.includes('spreadsheet') || file.type.includes('excel');
+                const isZip = fileName.endsWith('.zip') || file.type === 'application/zip' || 
+                             file.type === 'application/x-zip-compressed';
+                const isImage = file.type.startsWith('image/');
+
+                if (!isPDF && !isExcel && !isZip && !isImage) {
+                    showBulkError(file, 'Loại tệp tin không đúng! Vui lòng chọn PDF, Excel, ZIP hoặc ảnh');
                     return;
                 }
 
-                // File is valid - show progress
                 currentBulkFile = file;
                 startBulkUpload(file);
             }
 
-            // Show bulk error
             function showBulkError(file, message) {
                 bulkUploadBox.classList.add('has-error');
 
-                // Change title
                 const title = bulkUploadBox.querySelector('.bulk-upload-title');
                 const subtitle = bulkUploadBox.querySelector('.bulk-upload-subtitle');
                 if (title) title.textContent = message;
@@ -954,15 +1137,12 @@
                 }
             }
 
-            // Get file icon from bulk-upload-btn based on file type
             function getFileIcon(file) {
                 const fileName = file.name.toLowerCase();
                 const fileType = file.type;
 
-                // Check if Excel file
                 if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') ||
                     fileType.includes('spreadsheet') || fileType.includes('excel')) {
-                    // Get icon from Excel button
                     const excelBtn = document.querySelector('.bulk-upload-btn[data-type="excel"]');
                     if (excelBtn) {
                         const excelIcon = excelBtn.querySelector('.btn-file-icon');
@@ -973,9 +1153,7 @@
                     return '{{ asset('images/d/go-quick/excel.png') }}';
                 }
 
-                // Check if PDF file
                 if (fileName.endsWith('.pdf') || fileType === 'application/pdf') {
-                    // Get icon from PDF button
                     const pdfBtn = document.querySelector('.bulk-upload-btn[data-type="pdf"]');
                     if (pdfBtn) {
                         const pdfIcon = pdfBtn.querySelector('.btn-file-icon');
@@ -986,7 +1164,6 @@
                     return '{{ asset('images/d/go-quick/pdf.png') }}';
                 }
 
-                // Default to PDF icon
                 const pdfBtn = document.querySelector('.bulk-upload-btn[data-type="pdf"]');
                 if (pdfBtn) {
                     const pdfIcon = pdfBtn.querySelector('.btn-file-icon');
@@ -997,47 +1174,119 @@
                 return '{{ asset('images/d/go-quick/pdf.png') }}';
             }
 
-            // Start bulk upload with progress
-            function startBulkUpload(file) {
-                // Hide upload box, show progress
+            async function startBulkUpload(file) {
                 bulkUploadBox.classList.add('d-none');
                 bulkProgressSection.classList.remove('d-none');
 
-                // Set file info
                 document.getElementById('bulkFileName').textContent = file.name;
                 document.getElementById('bulkFileSize').textContent = `${(file.size / 1024).toFixed(2)} KB`;
 
-                // Update thumbnail based on file type - use icon from button
                 const thumbnailElement = document.querySelector('.bulk-file-thumb');
                 if (thumbnailElement) {
                     thumbnailElement.src = getFileIcon(file);
                 }
 
-                // Simulate upload progress
                 uploadProgress = 0;
                 updateBulkProgress(0);
 
                 uploadInterval = setInterval(() => {
-                    uploadProgress += Math.random() * 15;
-                    if (uploadProgress >= 100) {
-                        uploadProgress = 100;
+                    uploadProgress += Math.random() * 10;
+                    if (uploadProgress >= 90) {
+                        uploadProgress = 90;
                         clearInterval(uploadInterval);
-
-                        // Fake API call result (50% success)
-                        setTimeout(() => {
-                            const isSuccess = Math.random() > 0.5;
-                            if (isSuccess) {
-                                showBulkSuccess();
-                            } else {
-                                showBulkFailed();
-                            }
-                        }, 500);
                     }
                     updateBulkProgress(uploadProgress);
                 }, 200);
+
+                try {
+                    const fileName = file.name.toLowerCase();
+                    const isPDF = fileName.endsWith('.pdf') || file.type === 'application/pdf';
+                    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                                   file.type.includes('spreadsheet') || file.type.includes('excel');
+                    const isZip = fileName.endsWith('.zip') || file.type === 'application/zip' || 
+                                 file.type === 'application/x-zip-compressed';
+
+                    let apiUrl = '';
+                    if (isPDF) {
+                        apiUrl = '{{ route("tools.go-quick.process-pdf") }}';
+                    } else if (isExcel) {
+                        apiUrl = '{{ route("tools.go-quick.process-excel") }}';
+                    } else if (isZip) {
+                        apiUrl = '{{ route("tools.go-quick.process-cccd") }}';
+                    } else {
+                        throw new Error('Vui lòng chọn file PDF, Excel hoặc ZIP');
+                    }
+
+                    currentAbortController = new AbortController();
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json' 
+                        },
+                        body: formData,
+                        redirect: 'follow',
+                        signal: currentAbortController.signal
+                    });
+
+                    clearInterval(uploadInterval);
+                    uploadProgress = 100;
+                    updateBulkProgress(100);
+
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                    }
+
+                    if (!response.ok) {
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const errorResult = await response.json();
+                            throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                        } else {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('Non-JSON response:', text);
+                        if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
+                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                        }
+                        throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                    }
+
+                    const result = await response.json();
+
+                    if (currentAbortController && currentAbortController.signal.aborted) {
+                        return;
+                    }
+
+                    if (result.status === 'success') {
+                        window.bulkResult = result.data || result;
+                        showBulkSuccess();
+                    } else {
+                        showBulkFailed(result.message || 'Xử lý thất bại');
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
+                        console.log('Request đã được hủy');
+                        return;
+                    }
+                    
+                    console.error('Error:', error);
+                    clearInterval(uploadInterval);
+                    showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
+                } finally {
+                    currentAbortController = null;
+                }
             }
 
-            // Update progress bar
             function updateBulkProgress(percent) {
                 const fill = document.getElementById('bulkProgressFill');
                 const text = document.getElementById('bulkProgressPercent');
@@ -1045,47 +1294,162 @@
                 if (text) text.textContent = Math.round(percent) + '%';
             }
 
-            // Cancel upload
             document.getElementById('bulkCancelBtn').addEventListener('click', function() {
+                if (currentAbortController) {
+                    currentAbortController.abort();
+                    currentAbortController = null;
+                }
+                
                 if (uploadInterval) {
                     clearInterval(uploadInterval);
+                    uploadInterval = null;
                 }
-                // Reset to upload box
+                
                 bulkProgressSection.classList.add('d-none');
                 bulkUploadBox.classList.remove('d-none');
                 resetBulkUpload();
             });
 
-            // Show success modal
-            function showBulkSuccess() {
+            function showBulkSuccess(message, showDownloadSection = true) {
+                const modalMessage = bulkSuccessModal.querySelector('.bulk-modal-message');
+                if (modalMessage && message) {
+                    modalMessage.textContent = message;
+                } else if (modalMessage && !message) {
+                    modalMessage.textContent = 'File của bạn đã trích xuất dữ liệu thành công!';
+                }
+
                 bulkSuccessModal.classList.add('show');
 
-                // Hide modal after 2 seconds and show download section
                 setTimeout(() => {
                     bulkSuccessModal.classList.remove('show');
 
-                    // Hide bulk upload, show download section
-                    bulkUploadTab.classList.add('d-none');
-                    bulkDownloadSection.classList.remove('d-none');
+                    if (showDownloadSection) {
+                        bulkUploadTab.classList.add('d-none');
+                        bulkDownloadSection.classList.remove('d-none');
+                    }
                 }, 2000);
             }
 
-            // Show failed modal
-            function showBulkFailed() {
+            async function handleMultipleImagesUpload(imageFiles) {
+                try {
+                    bulkUploadBox.classList.add('d-none');
+                    bulkProgressSection.classList.remove('d-none');
+
+                    document.getElementById('bulkFileName').textContent = `${imageFiles.length} ảnh`;
+                    document.getElementById('bulkFileSize').textContent = `${(imageFiles.reduce((sum, f) => sum + f.size, 0) / 1024).toFixed(2)} KB`;
+
+                    const thumbnailElement = document.querySelector('.bulk-file-thumb');
+                    if (thumbnailElement) {
+                        thumbnailElement.src = '{{ asset("images/d/go-quick/folder.png") }}';
+                    }
+
+                    const formData = new FormData();
+                    imageFiles.forEach((file) => {
+                        formData.append('images[]', file);
+                    });
+
+                    uploadProgress = 0;
+                    updateBulkProgress(0);
+
+                    currentAbortController = new AbortController();
+
+                    const progressInterval = setInterval(() => {
+                        uploadProgress += Math.random() * 10;
+                        if (uploadProgress >= 90) {
+                            uploadProgress = 90;
+                            clearInterval(progressInterval);
+                        }
+                        updateBulkProgress(uploadProgress);
+                    }, 200);
+
+                    const response = await fetch('{{ route("tools.go-quick.process-cccd-multiple-images") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json' 
+                        },
+                        body: formData,
+                        signal: currentAbortController.signal
+                    });
+
+                    clearInterval(progressInterval);
+                    uploadProgress = 100;
+                    updateBulkProgress(100);
+
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                    }
+
+                    if (response.status === 302 || response.redirected) {
+                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                    }
+
+                    if (!response.ok) {
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const errorResult = await response.json();
+                            throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                        } else {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('Non-JSON response:', text);
+                        if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
+                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                        }
+                        throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                    }
+
+                    const result = await response.json();
+
+                    if (currentAbortController && currentAbortController.signal.aborted) {
+                        return;
+                    }
+
+                    if (result.status === 'success') {
+                        window.bulkResult = result.data || result;
+                        showBulkSuccess();
+                    } else {
+                        showBulkFailed(result.message || 'Xử lý thất bại');
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
+                        return;
+                    }
+                    
+                    console.error('Error:', error);
+                    clearInterval(progressInterval);
+                    showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
+                } finally {
+                    currentAbortController = null;
+                }
+            }
+
+            function showBulkFailed(message, resetUpload = true) {
+                const modalMessage = bulkFailedModal.querySelector('.bulk-modal-message');
+                if (modalMessage && message) {
+                    modalMessage.innerHTML = `Trích xuất dữ liệu thất bại!<br>${message}`;
+                } else if (modalMessage && !message) {
+                    modalMessage.innerHTML = 'Trích xuất dữ liệu thất bại!<br>Vui lòng kiểm tra lại file';
+                }
+
                 bulkFailedModal.classList.add('show');
 
-                // Hide modal after 2 seconds and reset
                 setTimeout(() => {
                     bulkFailedModal.classList.remove('show');
 
-                    // Reset to upload box
-                    bulkProgressSection.classList.add('d-none');
-                    bulkUploadBox.classList.remove('d-none');
-                    resetBulkUpload();
+                    if (resetUpload) {
+                        bulkProgressSection.classList.add('d-none');
+                        bulkUploadBox.classList.remove('d-none');
+                        resetBulkUpload();
+                    }
                 }, 2000);
             }
 
-            // Reset bulk upload
             function resetBulkUpload() {
                 const title = bulkUploadBox.querySelector('.bulk-upload-title');
                 const subtitle = bulkUploadBox.querySelector('.bulk-upload-subtitle');
@@ -1095,7 +1459,6 @@
                 bulkUploadBox.classList.remove('has-error');
                 const existingError = bulkUploadBox.querySelector('.bulk-error-file');
 
-                // Restore icon if it was replaced
                 if (existingError && bulkUploadBox.dataset.iconHtml) {
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = bulkUploadBox.dataset.iconHtml;
@@ -1106,41 +1469,102 @@
                     existingError.remove();
                 }
 
+                if (bulkFileInput) {
+                    bulkFileInput.value = '';
+                }
+                if (bulkFolderInput) {
+                    bulkFolderInput.value = '';
+                }
+
                 currentBulkFile = null;
                 uploadProgress = 0;
+                
+                if (currentAbortController) {
+                    currentAbortController.abort();
+                    currentAbortController = null;
+                }
+                
+                if (uploadInterval) {
+                    clearInterval(uploadInterval);
+                    uploadInterval = null;
+                }
             }
 
-            // Reload download button - go back to bulk upload
             document.getElementById('reloadDownloadBtn').addEventListener('click', function() {
-                // Hide download section
                 bulkDownloadSection.classList.add('d-none');
-                // Hide progress section if visible
                 bulkProgressSection.classList.add('d-none');
-                // Show upload box
                 bulkUploadBox.classList.remove('d-none');
-                // Show bulk upload tab
                 bulkUploadTab.classList.remove('d-none');
-                // Reset bulk upload
                 resetBulkUpload();
             });
 
-            // Download file button
-            document.getElementById('downloadFileBtn').addEventListener('click', function() {
-                alert('Tải file thành công! (Demo)');
+            document.getElementById('downloadFileBtn').addEventListener('click', async function() {
+                if (window.bulkResult && window.bulkResult.customer) {
+                    const customers = window.bulkResult.customer;
+                    const downloadBtn = this;
+                    
+                    downloadBtn.disabled = true;
+                    const originalText = downloadBtn.innerHTML;
+                    downloadBtn.innerHTML = '<span>Đang tạo file...</span>';
+
+                    try {
+                        const response = await fetch('{{ route("tools.go-quick.export-excel") }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                            },
+                            body: JSON.stringify({
+                                customers: customers
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Không thể tạo file Excel');
+                        }
+
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        
+                        const contentDisposition = response.headers.get('content-disposition');
+                        let fileName = 'cccd_data_' + new Date().getTime() + '.xlsx';
+                        if (contentDisposition) {
+                            const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                            if (fileNameMatch) {
+                                fileName = fileNameMatch[1];
+                            }
+                        }
+                        
+                        link.download = fileName;
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showBulkFailed('Không thể tải xuống file Excel. Vui lòng thử lại.', false);
+                    } finally {
+                        downloadBtn.disabled = false;
+                        downloadBtn.innerHTML = originalText;
+                    }
+                } else {
+                    showBulkFailed('Không có dữ liệu để tải xuống', false);
+                }
             });
 
-            // Promo banner close button
             const promoBanner = document.getElementById('promoBanner');
             const promoBannerClose = document.getElementById('promoBannerClose');
             
             if (promoBannerClose && promoBanner) {
                 promoBannerClose.addEventListener('click', function() {
                     promoBanner.style.display = 'none';
-                    // Save to localStorage to hide permanently
                     localStorage.setItem('promoBannerHidden', 'true');
                 });
 
-                // Check if banner was previously hidden
                 if (localStorage.getItem('promoBannerHidden') === 'true') {
                     promoBanner.style.display = 'none';
                 }

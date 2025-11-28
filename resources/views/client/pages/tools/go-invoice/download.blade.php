@@ -50,7 +50,7 @@
                 
                 <div class="download-file-item">
                     <div class="download-file-icon">
-                        <img src="{{ asset('images/svg/pdf-icon.svg') }}" alt="PDF" class="file-type-icon">
+                        <img src="{{ asset('images/d/go-invoice/pdf.png') }}" alt="PDF" class="file-type-icon">
                         <p class="file-type-label">PDF</p>
                     </div>
                     <button class="btn-download-item">
@@ -65,7 +65,7 @@
                 
                 <div class="download-file-item">
                     <div class="download-file-icon">
-                        <img src="{{ asset('images/svg/pdf-icon.svg') }}" alt="PDF" class="file-type-icon">
+                        <img src="{{ asset('images/d/go-invoice/pdf.png') }}" alt="PDF" class="file-type-icon">
                         <p class="file-type-label">PDF</p>
                     </div>
                     <button class="btn-download-item btn-download-premium">

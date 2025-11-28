@@ -15,6 +15,10 @@ class SecureFileUpload
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->is('go-quick/*')) {
+            return $next($request);
+        }
+
         // Kiểm tra nếu có file upload
         if ($request->hasFile('image') || $request->hasFile('avatar') || $request->hasFile('file')) {
             $files = $request->allFiles();

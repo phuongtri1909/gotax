@@ -11,10 +11,14 @@ class GoQuickUse extends Model
         'user_id',
         'package_id',
         'cccd_limit',
+        'total_used',
+        'total_cccd_extracted',
     ];
 
     protected $casts = [
         'cccd_limit' => 'integer',
+        'total_used' => 'integer',
+        'total_cccd_extracted' => 'integer',
     ];
 
     public function user(): BelongsTo
