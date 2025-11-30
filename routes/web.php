@@ -7,6 +7,7 @@ use App\Http\Controllers\Client\FaqController;
 use App\Http\Controllers\Client\AuthController;
 use App\Http\Controllers\Client\HomeController;
 use App\Http\Controllers\Client\GoQuickController;
+use App\Http\Controllers\Client\GoSoftController;
 use App\Http\Controllers\Client\ToolController;
 use App\Http\Controllers\Client\ContactController;
 use App\Http\Controllers\Client\TestimonialController;
@@ -96,10 +97,6 @@ Route::get('go-soft/support', function () {
     return view('client.pages.tools.go-soft.support');
 })->name('tools.go-soft.support');
 
-Route::get('go-soft/download', function () {
-    return view('client.pages.tools.go-soft.download');
-})->name('tools.go-soft.download');
-
 Route::get('go-quick/tools', function () {
     return view('client.pages.tools.go-quick.go-quick-tools');
 })->name('tools.go-quick.tools');
@@ -151,6 +148,20 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('/process-excel', [GoQuickController::class, 'processExcel'])->name('tools.go-quick.process-excel');
         Route::post('/export-excel', [GoQuickController::class, 'exportExcel'])->name('tools.go-quick.export-excel');
         Route::post('/process', [GoQuickController::class, 'process'])->name('tools.go-quick.process');
+    });
+
+    Route::prefix('go-soft')->group(function () {
+        Route::post('/session/create', [GoSoftController::class, 'createSession'])->name('tools.go-soft.session.create');
+        Route::get('/session/status', [GoSoftController::class, 'checkSessionStatus'])->name('tools.go-soft.session.status');
+        Route::post('/session/close', [GoSoftController::class, 'closeSession'])->name('tools.go-soft.session.close');
+        Route::post('/login/init', [GoSoftController::class, 'initLogin'])->name('tools.go-soft.login.init');
+        Route::post('/login/submit', [GoSoftController::class, 'submitLogin'])->name('tools.go-soft.login.submit');
+        Route::get('/tokhai/types', [GoSoftController::class, 'getTokhaiTypes'])->name('tools.go-soft.tokhai.types');
+        Route::post('/crawl/tokhai', [GoSoftController::class, 'crawlTokhai'])->name('tools.go-soft.crawl.tokhai');
+        Route::post('/crawl/tokhai/info', [GoSoftController::class, 'crawlTokhaiInfo'])->name('tools.go-soft.crawl.tokhai.info');
+        Route::post('/crawl/tokhai/download', [GoSoftController::class, 'downloadTokhaiFiles'])->name('tools.go-soft.crawl.tokhai.download');
+        Route::post('/crawl/thongbao', [GoSoftController::class, 'crawlThongbao'])->name('tools.go-soft.crawl.thongbao');
+        Route::post('/crawl/giaynoptien', [GoSoftController::class, 'crawlGiayNopTien'])->name('tools.go-soft.crawl.giaynoptien');
     });
 });
 

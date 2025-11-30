@@ -294,7 +294,6 @@ class GoQuickController extends Controller
                 // Gửi file ZIP qua API process-cccd
                 try {
                     $apiUrl = $this->getApiUrl() . '/process-cccd';
-                    Log::info('Calling API: ' . $apiUrl);
                     
                     $response = Http::timeout(600)
                         ->attach('file', file_get_contents($zipPath), 'images.zip')
@@ -563,12 +562,28 @@ class GoQuickController extends Controller
             return;
         }
 
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir . '/' . $file;
-            is_dir($path) ? $this->deleteDirectory($path) : unlink($path);
+        try {
+            $files = array_diff(scandir($dir), ['.', '..']);
+            foreach ($files as $file) {
+                $path = $dir . '/' . $file;
+                try {
+                    if (is_dir($path)) {
+                        $this->deleteDirectory($path);
+                    } else {
+                        if (file_exists($path) && is_writable($path)) {
+                            @unlink($path);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    continue;
+                }
+            }
+            
+            if (is_dir($dir) && is_writable($dir)) {
+                @rmdir($dir);
+            }
+        } catch (\Exception $e) {
         }
-        rmdir($dir);
     }
 
     /**

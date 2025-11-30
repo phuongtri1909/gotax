@@ -357,6 +357,17 @@
                     }
                 });
 
+                // Ẩn tất cả các section kết quả khi chuyển tab
+                const resultSection = document.getElementById('resultSection');
+                const bulkDownloadSection = document.getElementById('bulkDownloadSection');
+                
+                if (resultSection) {
+                    resultSection.classList.add('d-none');
+                }
+                if (bulkDownloadSection) {
+                    bulkDownloadSection.classList.add('d-none');
+                }
+
                 if (tabName === 'single') {
                     singleUploadTab.classList.remove('d-none');
                     bulkUploadTab.classList.add('d-none');
@@ -537,8 +548,6 @@
                     reader.readAsDataURL(files[0]);
 
                     updateUploadButton();
-
-                    console.log('Files uploaded:', files);
                 }
             }
 
@@ -852,18 +861,48 @@
                         const formData = new FormData();
                         formData.append('mt', frontInput.files[0]);
                         formData.append('ms', backInput.files[0]);
+                        
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                        formData.append('_token', csrfToken);
 
                         const response = await fetch('{{ route("tools.go-quick.process-cccd-images") }}', {
                             method: 'POST',
                             headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json'
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
                             },
+                            credentials: 'same-origin',
                             body: formData
                         });
 
                         if (response.status === 401 || response.status === 403) {
-                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                            let errorMessage = 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.';
+                            try {
+                                const responseClone = response.clone();
+                                const contentType = response.headers.get('content-type');
+                                
+                                if (contentType && contentType.includes('application/json')) {
+                                    const errorResult = await responseClone.json();
+                                    if (errorResult && errorResult.message) {
+                                        errorMessage = errorResult.message;
+                                    }
+                                } else {
+                                    const text = await responseClone.text();
+                                    if (text) {
+                                        try {
+                                            const errorResult = JSON.parse(text);
+                                            if (errorResult && errorResult.message) {
+                                                errorMessage = errorResult.message;
+                                            }
+                                        } catch (e) {
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                
+                            }
+                            throw new Error(errorMessage);
                         }
 
                         if (response.status === 302 || response.redirected) {
@@ -901,7 +940,6 @@
                             resetUploadButton();
                         }
                     } catch (error) {
-                        console.error('Error:', error);
                         showErrorState();
                         showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server. Vui lòng thử lại sau.', false);
                         resetUploadButton();
@@ -1221,13 +1259,18 @@
 
                     const formData = new FormData();
                     formData.append('file', file);
+                    
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                    formData.append('_token', csrfToken);
 
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json' 
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
+                        credentials: 'same-origin',
                         body: formData,
                         redirect: 'follow',
                         signal: currentAbortController.signal
@@ -1238,7 +1281,32 @@
                     updateBulkProgress(100);
 
                     if (response.status === 401 || response.status === 403) {
-                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                        let errorMessage = 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.';
+                        try {
+                            const responseClone = response.clone();
+                            const contentType = response.headers.get('content-type');
+                            
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorResult = await responseClone.json();
+                                if (errorResult && errorResult.message) {
+                                    errorMessage = errorResult.message;
+                                }
+                            } else {
+                                const text = await responseClone.text();
+                                if (text) {
+                                    try {
+                                        const errorResult = JSON.parse(text);
+                                        if (errorResult && errorResult.message) {
+                                            errorMessage = errorResult.message;
+                                        }
+                                    } catch (e) {
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            
+                        }
+                        throw new Error(errorMessage);
                     }
 
                     if (!response.ok) {
@@ -1275,11 +1343,9 @@
                     }
                 } catch (error) {
                     if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
-                        console.log('Request đã được hủy');
                         return;
                     }
                     
-                    console.error('Error:', error);
                     clearInterval(uploadInterval);
                     showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
                 } finally {
@@ -1331,6 +1397,7 @@
             }
 
             async function handleMultipleImagesUpload(imageFiles) {
+                let progressInterval = null;
                 try {
                     bulkUploadBox.classList.add('d-none');
                     bulkProgressSection.classList.remove('d-none');
@@ -1347,17 +1414,22 @@
                     imageFiles.forEach((file) => {
                         formData.append('images[]', file);
                     });
+                    
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                    formData.append('_token', csrfToken);
 
                     uploadProgress = 0;
                     updateBulkProgress(0);
 
                     currentAbortController = new AbortController();
 
-                    const progressInterval = setInterval(() => {
+                    progressInterval = setInterval(() => {
                         uploadProgress += Math.random() * 10;
                         if (uploadProgress >= 90) {
                             uploadProgress = 90;
-                            clearInterval(progressInterval);
+                            if (progressInterval) {
+                                clearInterval(progressInterval);
+                            }
                         }
                         updateBulkProgress(uploadProgress);
                     }, 200);
@@ -1365,19 +1437,49 @@
                     const response = await fetch('{{ route("tools.go-quick.process-cccd-multiple-images") }}', {
                         method: 'POST',
                         headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json' 
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
+                        credentials: 'same-origin',
                         body: formData,
                         signal: currentAbortController.signal
                     });
 
-                    clearInterval(progressInterval);
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
                     uploadProgress = 100;
                     updateBulkProgress(100);
 
                     if (response.status === 401 || response.status === 403) {
-                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                        let errorMessage = 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.';
+                        try {
+                            const responseClone = response.clone();
+                            const contentType = response.headers.get('content-type');
+                            
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorResult = await responseClone.json();
+                                if (errorResult && errorResult.message) {
+                                    errorMessage = errorResult.message;
+                                }
+                            } else {
+                                const text = await responseClone.text();
+                                if (text) {
+                                    try {
+                                        const errorResult = JSON.parse(text);
+                                        if (errorResult && errorResult.message) {
+                                            errorMessage = errorResult.message;
+                                        }
+                                    } catch (e) {
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            
+                        }
+                        throw new Error(errorMessage);
                     }
 
                     if (response.status === 302 || response.redirected) {
@@ -1421,10 +1523,16 @@
                         return;
                     }
                     
-                    console.error('Error:', error);
-                    clearInterval(progressInterval);
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
                     showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
                 } finally {
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
                     currentAbortController = null;
                 }
             }
@@ -1545,7 +1653,6 @@
                         document.body.removeChild(link);
                         window.URL.revokeObjectURL(url);
                     } catch (error) {
-                        console.error('Error:', error);
                         showBulkFailed('Không thể tải xuống file Excel. Vui lòng thử lại.', false);
                     } finally {
                         downloadBtn.disabled = false;
