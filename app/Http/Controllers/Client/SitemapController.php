@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\Document;
+use App\Models\Policy;
 
 class SitemapController extends Controller
 {
@@ -35,6 +37,52 @@ class SitemapController extends Controller
             'changefreq' => 'weekly',
             'priority' => '0.8'
         ];
+
+        // Pricing page
+        $urls[] = [
+            'loc' => route('pricing'),
+            'lastmod' => now()->toAtomString(),
+            'changefreq' => 'weekly',
+            'priority' => '0.9'
+        ];
+
+        // Documentation index page
+        $urls[] = [
+            'loc' => route('documentation.index'),
+            'lastmod' => now()->toAtomString(),
+            'changefreq' => 'weekly',
+            'priority' => '0.8'
+        ];
+
+        // Documentation detail pages
+        $documents = Document::active()->get();
+        foreach ($documents as $document) {
+            $urls[] = [
+                'loc' => route('documentation.show', $document->slug),
+                'lastmod' => $document->updated_at->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.7'
+            ];
+        }
+
+        // Policy index page
+        $urls[] = [
+            'loc' => route('policy.index'),
+            'lastmod' => now()->toAtomString(),
+            'changefreq' => 'weekly',
+            'priority' => '0.8'
+        ];
+
+        // Policy detail pages
+        $policies = Policy::active()->get();
+        foreach ($policies as $policy) {
+            $urls[] = [
+                'loc' => route('policy.show', $policy->slug),
+                'lastmod' => $policy->updated_at->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.7'
+            ];
+        }
 
         // Tool pages
         $toolPages = [
