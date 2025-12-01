@@ -23,7 +23,7 @@
                     {{ $descriptionLeft }}
                 </p>
                 <div class="d-flex gap-3 flex-wrap">
-                    <a href="{{ $primaryLink }}" class="btn tool-hero-btn-primary">
+                    <a href="{{ $primaryLink }}" class="btn tool-hero-btn-primary" data-scroll-to-pricing>
                         {{ $primaryText }}
                     </a>
                     <a href="{{ $secondaryLink }}" class="btn tool-hero-btn-secondary">
@@ -47,4 +47,31 @@
 
 @push('styles')
     @vite('resources/assets/frontend/css/components/tool-hero.css')
+@endpush
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerBtn = document.querySelector('[data-scroll-to-pricing]');
+            if (registerBtn) {
+                registerBtn.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href === '#' || href === '') {
+                        e.preventDefault();
+                        const pricingSection = document.getElementById('pricing-section');
+                        if (pricingSection) {
+                            const headerOffset = 100;
+                            const elementPosition = pricingSection.getBoundingClientRect().top;
+                            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 @endpush

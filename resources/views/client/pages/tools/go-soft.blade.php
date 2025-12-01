@@ -13,7 +13,7 @@
                     'title' => '- Giải Pháp Tra Cứu Tờ Khai',
                     'subtitle' => 'Đơn giản hoá công việc kế toán, tải tờ khai hàng loạt.',
                     'button_text' => 'Dùng Thử Miễn Phí',
-                    'button_link' => '#',
+                    'button_link' => route('tools.trial.go-soft'),
                     'image' => asset('images/d/tools/banner-soft.png'),
                     'overlay_opacity' => 0.2,
                 ],
@@ -28,7 +28,7 @@
                 description="Công cụ tra cứu tờ khai hàng loạt – Nhanh, Chính xác, Bảo mật"
                 titleLeft="công cụ tra cứu tờ khai DN hàng loạt!"
                 descriptionLeft="Đơn giản hóa quy trình tra cứu và tải tờ khai. Giao diện dễ dùng, tốc độ xử lý cao, chính xác phù hợp cho kế toán, doanh nghiệp và dịch vụ hành chính."
-                primaryText="Đăng Ký Ngay!" primaryLink="#" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-soft') }}" :image="asset('images/d/tools/body-soft.png')" />
+                primaryText="Đăng Ký Ngay!" primaryLink="#pricing-section" secondaryText="Dùng Thử" secondaryLink="{{ route('tools.trial.go-soft') }}" :image="asset('images/d/tools/body-soft.png')" />
 
             @php
                 $features = [

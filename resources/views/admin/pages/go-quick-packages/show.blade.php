@@ -84,6 +84,94 @@
                     @endif
                 </div>
 
+                <div class="detail-section" style="margin-top: 30px;">
+                    <h6 style="margin-bottom: 20px; color: #495057; font-weight: 600;">
+                        <i class="fas fa-shopping-cart"></i> Danh sách gói đã bán ({{ $purchases->total() }})
+                    </h6>
+                    
+                    @if($purchases->isEmpty())
+                        <div class="empty-state" style="padding: 40px; text-align: center;">
+                            <i class="fas fa-shopping-cart" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                            <p class="text-muted">Chưa có gói nào được bán</p>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="column-small">STT</th>
+                                        <th class="column-medium">Mã giao dịch</th>
+                                        <th class="column-medium">Khách hàng</th>
+                                        <th class="column-small text-center">Số tiền</th>
+                                        <th class="column-small text-center">Giới hạn CCCD</th>
+                                        <th class="column-small text-center">Trạng thái</th>
+                                        <th class="column-medium">Ngày tạo</th>
+                                        <th class="column-small text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($purchases as $index => $purchase)
+                                        <tr>
+                                            <td class="text-center">
+                                                {{ ($purchases->currentPage() - 1) * $purchases->perPage() + $index + 1 }}
+                                            </td>
+                                            <td>
+                                                <strong>{{ $purchase->transaction_code }}</strong>
+                                            </td>
+                                            <td>
+                                                @if($purchase->user)
+                                                    <div>
+                                                        <strong>{{ $purchase->user->full_name ?? 'N/A' }}</strong><br>
+                                                        <small class="text-muted">{{ $purchase->email ?? 'N/A' }}</small>
+                                                    </div>
+                                                @else
+                                                    <span class="text-muted">N/A</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="price-badge">{{ number_format($purchase->amount, 0, ',', '.') }} đ</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="limit-badge">{{ number_format($purchase->cccd_limit ?? 0) }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if($purchase->status === 'success')
+                                                    <span class="status-badge active">Thành công</span>
+                                                @elseif($purchase->status === 'pending')
+                                                    <span class="status-badge pending">Chờ xử lý</span>
+                                                @elseif($purchase->status === 'failed')
+                                                    <span class="status-badge inactive">Thất bại</span>
+                                                @else
+                                                    <span class="status-badge cancelled">Đã hủy</span>
+                                                @endif
+                                            </td>
+                                            <td class="category-date">{{ $purchase->created_at->format('d/m/Y H:i') }}</td>
+                                            <td>
+                                                <div class="action-buttons-wrapper">
+                                                    <a href="{{ route('admin.purchases.show', ['toolType' => 'go-quick', 'id' => $purchase->id]) }}"
+                                                        class="action-icon view-icon text-decoration-none" title="Xem chi tiết">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="pagination-wrapper">
+                            <div class="pagination-info">
+                                Hiển thị {{ $purchases->firstItem() ?? 0 }} đến {{ $purchases->lastItem() ?? 0 }} của
+                                {{ $purchases->total() }} gói đã bán
+                            </div>
+                            <div class="pagination-controls">
+                                {{ $purchases->links('components.paginate') }}
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
                 <div class="detail-actions">
                     <a href="{{ route('admin.go-quick-packages.index') }}" class="back-button">
                         <i class="fas fa-arrow-left"></i> Quay lại
@@ -141,6 +229,16 @@
         .status-badge.inactive {
             background: #ffebee;
             color: #c62828;
+        }
+
+        .status-badge.pending {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #856404;
+        }
+
+        .status-badge.cancelled {
+            background-color: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
         }
     </style>
 @endpush

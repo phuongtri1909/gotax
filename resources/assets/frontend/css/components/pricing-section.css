@@ -3,7 +3,7 @@
     background-color: #ffffff;
 }
 
-.pricing-card {
+.pricing-section .pricing-card {
     border-radius: 10px;
     background: var(--White, #FFF);
     box-shadow: 0 4px 8px -2px rgba(16, 24, 40, 0.10), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
@@ -15,12 +15,12 @@
     position: relative;
 }
 
-.pricing-card:hover {
+.pricing-section .pricing-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12);
 }
 
-.pricing-header {
+.pricing-section .pricing-header {
     padding: 25px 20px 10px 20px;
     position: relative;
     display: flex;
@@ -28,7 +28,7 @@
     justify-content: center;
 }
 
-.pricing-badge {
+.pricing-section .pricing-badge {
     position: absolute;
     top: 12px;
     left: 20px;
@@ -39,17 +39,17 @@
     z-index: 2;
 }
 
-.pricing-badge-popular {
+.pricing-section .pricing-badge-popular {
     background: var(--primary-color);
     color: #FFFFFF;
 }
 
-.pricing-badge-choice {
+.pricing-section .pricing-badge-choice {
     background: #FF9500;
     color: #FFFFFF;
 }
 
-.pricing-discount {
+.pricing-section .pricing-discount {
     position: absolute;
     top: 12px;
     right: 20px;
@@ -61,12 +61,12 @@
     font-weight: 600;
 }
 
-.pricing-bg-name {
+.pricing-section .pricing-bg-name {
     background-color: var(--primary-color-14);
     width: 100%;
 }
 
-.pricing-name {
+.pricing-section .pricing-name {
     font-size: 32px;
     font-weight: 700;
     color: var(--primary-color);
@@ -74,19 +74,19 @@
     text-align: center;
 }
 
-.pricing-body {
+.pricing-section .pricing-body {
     padding: 0 20px 25px 20px;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
 }
 
-.pricing-price {
+.pricing-section .pricing-price {
     text-align: center;
     margin-bottom: 10px;
 }
 
-.price-amount {
+.pricing-section .price-amount {
     font-size: 32px;
     font-weight: 700;
     color: #444;
@@ -94,13 +94,13 @@
     line-height: 1.2;
 }
 
-.price-unit {
+.pricing-section .price-unit {
     font-size: 14px;
     color: #444;
     font-weight: 400;
 }
 
-.pricing-copyright {
+.pricing-section .pricing-copyright {
     text-align: center;
     font-size: 18px;
     margin-bottom: 10px;
@@ -108,32 +108,32 @@
     border-bottom: 1px solid #D9D9D9;
 }
 
-.copyright-note {
+.pricing-section .copyright-note {
     font-size: 14px;
     color: #717171;
     margin: 0;
 }
 
-.pricing-mst {
+.pricing-section .pricing-mst {
     text-align: center;
     margin-bottom: 10px;
 }
 
-.mst-number {
+.pricing-section .mst-number {
     font-size: 22px;
     font-weight: 600;
     color: var(--primary-color);
     margin-right: 8px;
 }
 
-.pricing-features {
+.pricing-section .pricing-features {
     list-style: none;
     padding: 0;
     margin: 0 0 30px 0;
     flex-grow: 1;
 }
 
-.feature-item {
+.pricing-section .feature-item {
     display: flex;
     align-items: center;
     margin-bottom: 12px;
@@ -145,12 +145,12 @@
     padding: 14px;
 }
 
-.feature-item:last-child {
+.pricing-section .feature-item:last-child {
     margin-bottom: 0;
     color: var(--primary-color);
 }
 
-.checkmark-icon {
+.pricing-section .checkmark-icon {
     width: 28px;
     height: 28px;
     margin-right: 12px;
@@ -159,7 +159,7 @@
     color: var(--primary-color);
 }
 
-.pricing-button {
+.pricing-section .pricing-button {
     width: 100%;
     padding: 10px 10px;
     background: #FFFFFF;
@@ -174,7 +174,7 @@
     display: block;
 }
 
-.pricing-button:hover {
+.pricing-section .pricing-button:hover {
     background: var(--primary-color);
     color: #FFFFFF;
     transform: translateY(-2px);
@@ -183,7 +183,7 @@
 
 /* Responsive */
 @media (max-width: 1199.98px) {
-    .pricing-card {
+    .pricing-section .pricing-card {
         margin-bottom: 20px;
     }
 }
@@ -193,19 +193,19 @@
         padding: 60px 0;
     }
 
-    .pricing-name {
+    .pricing-section .pricing-name {
         font-size: 22px;
     }
 
-    .pricing-body {
+    .pricing-section .pricing-body {
         padding: 24px;
     }
 
-    .price-amount {
+    .pricing-section .price-amount {
         font-size: 32px;
     }
 
-    .mst-number {
+    .pricing-section .mst-number {
         font-size: 28px;
     }
 }
@@ -215,23 +215,23 @@
         padding: 50px 0;
     }
 
-    .pricing-name {
+    .pricing-section .pricing-name {
         font-size: 20px;
     }
 
-    .pricing-body {
+    .pricing-section .pricing-body {
         padding: 20px;
     }
 
-    .price-amount {
+    .pricing-section .price-amount {
         font-size: 28px;
     }
 
-    .mst-number {
+    .pricing-section .mst-number {
         font-size: 24px;
     }
 
-    .feature-item {
+    .pricing-section .feature-item {
         font-size: 14px;
     }
 }

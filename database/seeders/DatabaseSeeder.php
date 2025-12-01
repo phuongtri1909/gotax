@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             GoSoftPackageSeeder::class,
             GoQuickPackageSeeder::class,
             TrialSeeder::class,
+            PackageUpgradeConfigSeeder::class,
+            DocumentSeeder::class,
+            PolicySeeder::class,
         ]);
     }
 }

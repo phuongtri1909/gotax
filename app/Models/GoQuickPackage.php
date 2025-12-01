@@ -18,7 +18,7 @@ class GoQuickPackage extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price' => 'integer',
         'cccd_limit' => 'integer',
         'discount_percent' => 'integer',
         'order' => 'integer',

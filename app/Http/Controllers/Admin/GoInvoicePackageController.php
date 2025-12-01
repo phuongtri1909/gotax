@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\GoInvoicePackage;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\GoInvoicePackage;
+use App\Models\GoInvoicePurchase;
+use App\Http\Controllers\Controller;
 
 class GoInvoicePackageController extends Controller
 {
@@ -86,7 +87,12 @@ class GoInvoicePackageController extends Controller
      */
     public function show(GoInvoicePackage $goInvoicePackage)
     {
-        return view('admin.pages.go-invoice-packages.show', compact('goInvoicePackage'));
+        $purchases = GoInvoicePurchase::where('package_id', $goInvoicePackage->id)
+            ->with(['user', 'bank'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('admin.pages.go-invoice-packages.show', compact('goInvoicePackage', 'purchases'));
     }
 
     /**

@@ -1,9 +1,11 @@
 @props([
     'features' => [],
     'packages' => [],
+    'showModal' => true,
+    'toolType' => null,
 ])
 
-<section class="pricing-bot-section">
+<section class="pricing-bot-section" id="pricing-section">
     <div class="container">
         <h2 class="tools-title text-center">Bảng Giá</h2>
         <p class="tools-subtitle text-center mb-5">Giải pháp phù hợp cho mọi nhu cầu tải hóa đơn</p>
@@ -31,6 +33,19 @@
                         @php
                             $pkg = is_array($package) ? (object) $package : $package;
                             $cleanPrice = str_replace(['.', ',', ' ', 'đ'], '', $pkg->price ?? '0');
+                            // Detect tool type from route if not provided
+                            $detectedToolType = $toolType;
+                            if (!$detectedToolType) {
+                                if (Route::currentRouteName() == 'tools.go-invoice') {
+                                    $detectedToolType = 'go-invoice';
+                                } elseif (Route::currentRouteName() == 'tools.go-soft') {
+                                    $detectedToolType = 'go-soft';
+                                } elseif (Route::currentRouteName() == 'tools.go-bot') {
+                                    $detectedToolType = 'go-bot';
+                                } elseif (Route::currentRouteName() == 'tools.go-quick') {
+                                    $detectedToolType = 'go-quick';
+                                }
+                            }
                             $packageData = [
                                 'id' => $pkg->id ?? null,
                                 'package_id' => $pkg->id ?? null,
@@ -38,6 +53,7 @@
                                 'description' => ($pkg->mst ?? '') . ' MST / năm',
                                 'price' => $cleanPrice,
                                 'discount' => $pkg->discount ?? null,
+                                'tool_type' => $detectedToolType,
                             ];
                         @endphp
                         <div class="pricing-bot-card"
@@ -74,7 +90,9 @@
     </div>
 </section>
 
-<x-payment.register-modal modalId="registerModal" />
+@if($showModal)
+    <x-payment.register-modal modalId="registerModal" />
+@endif
 
 @push('styles')
     @vite('resources/assets/frontend/css/components/pricing-bot-section.css')

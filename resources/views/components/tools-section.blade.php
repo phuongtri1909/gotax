@@ -6,6 +6,7 @@
             'description' => 'Tải Hoá Đơn Điện Tử Hàng Loạt',
             'icon' => 'invoice',
             'link' => 'tools.go-invoice',
+            'tool_link' => 'tools.trial.go-invoice',
         ],
         [
             'id' => 2,
@@ -13,6 +14,7 @@
             'description' => 'Tra Mã Số Thuế Hàng Loạt',
             'icon' => 'bot',
             'link' => 'tools.go-bot',
+            'tool_link' => 'tools.trial.go-bot',
         ],
         [
             'id' => 3,
@@ -20,6 +22,7 @@
             'description' => 'Tải Tờ Khai Hàng Loạt',
             'icon' => 'soft',
             'link' => 'tools.go-soft',
+            'tool_link' => 'tools.go-soft.overview',
         ],
         [
             'id' => 4,
@@ -27,6 +30,7 @@
             'description' => 'Đọc CCCD Hàng Loạt',
             'icon' => 'quick',
             'link' => 'tools.go-quick',
+            'tool_link' => 'tools.go-quick.tools',
         ],
     ];
 @endphp
@@ -37,8 +41,14 @@
 
     <div class="tools-grid">
         @foreach ($tools as $tool)
-            <a href="{{ route($tool['link']) }}"
-                class="tool-card {{ Route::currentRouteNamed($tool['link']) ? 'active' : '' }}">
+            @php
+                $isActive = Route::currentRouteNamed($tool['link']);
+                $href = $isActive ? route($tool['tool_link'] ?? $tool['link']) : route($tool['link']);
+            @endphp
+            <a href="{{ $href }}"
+                class="tool-card {{ $isActive ? 'active' : '' }}"
+                data-tool-link="{{ route($tool['link']) }}"
+                data-trial-link="{{ route($tool['tool_link'] ?? $tool['link']) }}">
                 <div class="tool-icon">
                     @if ($tool['icon'] === 'invoice')
                         <img src="{{ asset('images/svg/tools/go-invoice.svg') }}" alt="Invoice" width="64"

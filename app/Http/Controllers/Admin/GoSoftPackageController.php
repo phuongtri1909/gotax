@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\GoSoftPackage;
+use App\Models\GoSoftPurchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -83,7 +84,12 @@ class GoSoftPackageController extends Controller
      */
     public function show(GoSoftPackage $goSoftPackage)
     {
-        return view('admin.pages.go-soft-packages.show', compact('goSoftPackage'));
+        $purchases = GoSoftPurchase::where('package_id', $goSoftPackage->id)
+            ->with(['user', 'bank'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('admin.pages.go-soft-packages.show', compact('goSoftPackage', 'purchases'));
     }
 
     /**

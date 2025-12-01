@@ -1,0 +1,247 @@
+.pricing-page {
+    padding: 60px 0 100px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    min-height: calc(100vh - 200px);
+}
+
+.pricing-page-header {
+    margin-bottom: 60px;
+    animation: fadeInDown 0.6s ease-out;
+}
+
+.pricing-page-title {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--primary-color, #227447);
+    margin-bottom: 16px;
+    line-height: 1.2;
+}
+
+.pricing-page-subtitle {
+    font-size: 20px;
+    color: #6B7280;
+    margin: 0;
+}
+
+/* Tabs Styles */
+.pricing-tabs-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 60px;
+    animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+.pricing-tabs {
+    display: flex;
+    gap: 16px;
+    background: #ffffff;
+    padding: 8px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(34, 116, 71, 0.1);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pricing-tab {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 32px;
+    border: 2px solid transparent;
+    background: transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 16px;
+    font-weight: 600;
+    color: #6B7280;
+    position: relative;
+    overflow: hidden;
+}
+
+.pricing-tab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(34, 116, 71, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.pricing-tab:hover::before {
+    left: 100%;
+}
+
+.pricing-tab:hover {
+    color: var(--primary-color, #227447);
+    background: rgba(34, 116, 71, 0.05);
+    transform: translateY(-2px);
+}
+
+.pricing-tab.active {
+    background: var(--primary-color, #227447);
+    color: #ffffff;
+    border-color: var(--primary-color, #227447);
+    box-shadow: 0 4px 12px rgba(34, 116, 71, 0.3);
+    transform: translateY(-2px);
+}
+
+.pricing-tab.active::before {
+    display: none;
+}
+
+.pricing-tab.active .tab-icon {
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+.pricing-tab .tab-icon {
+    font-size: 20px;
+    transition: all 0.3s ease;
+    color: inherit;
+}
+
+.pricing-tab .tab-text {
+    font-weight: 600;
+}
+
+/* Content Wrapper */
+.pricing-content-wrapper {
+    position: relative;
+    min-height: 500px;
+}
+
+.pricing-content {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.pricing-content.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+    .pricing-page-title {
+        font-size: 36px;
+    }
+
+    .pricing-page-subtitle {
+        font-size: 18px;
+    }
+
+    .pricing-tabs {
+        gap: 8px;
+        padding: 6px;
+    }
+
+    .pricing-tab {
+        padding: 12px 20px;
+        font-size: 14px;
+        gap: 8px;
+    }
+
+    .pricing-tab .tab-icon {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pricing-page {
+        padding: 40px 0 60px;
+    }
+
+    .pricing-page-header {
+        margin-bottom: 40px;
+    }
+
+    .pricing-page-title {
+        font-size: 28px;
+    }
+
+    .pricing-page-subtitle {
+        font-size: 16px;
+    }
+
+    .pricing-tabs-wrapper {
+        margin-bottom: 40px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+    }
+
+    .pricing-tabs-wrapper::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .pricing-tabs-wrapper::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .pricing-tabs-wrapper::-webkit-scrollbar-thumb {
+        background: var(--primary-color, #227447);
+        border-radius: 10px;
+    }
+
+    .pricing-tabs {
+        width: max-content;
+        min-width: 100%;
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .pricing-tab {
+        min-width: 140px;
+        justify-content: center;
+        padding: 14px 20px;
+        white-space: nowrap;
+    }
+}
+
+/* Override pricing section styles for pricing page */
+.pricing-page .pricing-section,
+.pricing-page .pricing-bot-section {
+    padding: 0;
+}
+
+.pricing-page .pricing-section .tools-title,
+.pricing-page .pricing-bot-section .tools-title {
+    display: none;
+}
+
+.pricing-page .pricing-section .tools-subtitle,
+.pricing-page .pricing-bot-section .tools-subtitle {
+    display: none;
+}
+

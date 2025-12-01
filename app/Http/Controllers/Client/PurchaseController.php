@@ -11,6 +11,7 @@ use App\Models\GoInvoiceUse;
 use App\Models\GoBotUse;
 use App\Models\GoSoftUse;
 use App\Models\GoQuickUse;
+use App\Models\ReferralPurchase;
 use App\Http\Controllers\Client\PaymentController;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -19,36 +20,27 @@ use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
-    /**
-     * Callback từ Casso Webhook v2 khi có giao dịch mới
-     */
+    
     public function cassoCallback(Request $request)
     {
         $payload = $request->getContent();
         $signature = $request->header('X-Casso-Signature');
-        
-        if (!$signature) {
-            Log::warning('Thiếu chữ ký Casso trong header');
-            return response()->json(['success' => false, 'message' => 'Thiếu chữ ký Casso'], 401);
-        }
-        
+
         if (!$this->verifyCassoSignature($payload, $signature)) {
-            Log::warning('Chữ ký Casso không hợp lệ', [
+            Log::warning('Casso signature verification failed', [
                 'signature' => $signature,
-                'payload_preview' => substr($payload, 0, 100)
+                'payload_length' => strlen($payload)
             ]);
-            return response()->json(['success' => false, 'message' => 'Chữ ký Casso không hợp lệ'], 401);
+            return response()->json(['success' => false, 'message' => 'Invalid signature'], 401);
         }
-        
-        // Parse JSON payload
+
         $data = json_decode($payload, true);
         
         if (json_last_error() !== JSON_ERROR_NONE) {
             Log::error('JSON payload không hợp lệ', ['error' => json_last_error_msg()]);
             return response()->json(['success' => false, 'message' => 'JSON payload không hợp lệ'], 400);
         }
-        
-        // Casso Webhook v2 format
+
         $transactionId = $data['data']['id'] ?? null;
         $reference = $data['data']['reference'] ?? null;
         $description = $data['data']['description'] ?? '';
@@ -99,13 +91,11 @@ class PurchaseController extends Controller
                 ]);
                 return response()->json(['success' => false, 'message' => 'Giao dịch không tồn tại'], 404);
             }
-            
-            // Check if already processed
+
             if ($purchase->status === $this->getSuccessStatus($toolType) && $purchase->casso_transaction_id === $transactionId) {
                 return response()->json(['success' => true, 'message' => 'Giao dịch đã được xử lý trước đó'], 200);
             }
-            
-            // Verify amount
+
             if ($amount != $purchase->amount) {
                 Log::warning('Số tiền nhận được không khớp', [
                     'expected' => $purchase->amount,
@@ -119,8 +109,7 @@ class PurchaseController extends Controller
                 DB::commit();
                 return response()->json(['success' => false, 'message' => 'Số tiền không khớp'], 400);
             }
-            
-            // Check if expired
+
             if ($purchase->expires_at && $purchase->expires_at->isPast()) {
                 Log::warning('Purchase đã hết hạn', [
                     'transaction_code' => $transactionCode,
@@ -132,14 +121,11 @@ class PurchaseController extends Controller
                 DB::commit();
                 return response()->json(['success' => false, 'message' => 'Đơn hàng đã hết hạn'], 400);
             }
-            
-            // Update purchase status
+
             $this->updatePurchaseStatus($purchase, $toolType, $this->getSuccessStatus($toolType), null, $data, $transactionId);
-            
-            // Process purchase based on tool type
+
             $this->processPurchase($purchase, $toolType);
-            
-            // Broadcast transaction update
+
             PaymentController::broadcastTransactionUpdate($transactionCode, 'success', $purchase);
             
             DB::commit();
@@ -158,10 +144,7 @@ class PurchaseController extends Controller
             return response()->json(['success' => false, 'message' => 'Có lỗi xảy ra khi xử lý'], 500);
         }
     }
-    
-    /**
-     * Get purchase by transaction code
-     */
+
     private function getPurchaseByTransactionCode($transactionCode, $toolType)
     {
         switch ($toolType) {
@@ -185,10 +168,7 @@ class PurchaseController extends Controller
                 return null;
         }
     }
-    
-    /**
-     * Get success status for tool type
-     */
+
     private function getSuccessStatus($toolType)
     {
         switch ($toolType) {
@@ -204,10 +184,7 @@ class PurchaseController extends Controller
                 return null;
         }
     }
-    
-    /**
-     * Get failed status for tool type
-     */
+
     private function getFailedStatus($toolType)
     {
         switch ($toolType) {
@@ -223,10 +200,7 @@ class PurchaseController extends Controller
                 return null;
         }
     }
-    
-    /**
-     * Update purchase status
-     */
+
     private function updatePurchaseStatus($purchase, $toolType, $status, $note = null, $cassoResponse = null, $cassoTransactionId = null)
     {
         $updateData = [
@@ -245,11 +219,13 @@ class PurchaseController extends Controller
         $updateData['status'] = $status;
         
         $purchase->update($updateData);
+
+        // Đồng bộ status của ReferralPurchase nếu có
+        ReferralPurchase::where('transaction_code', $purchase->transaction_code)
+            ->where('tool_type', $toolType)
+            ->update(['status' => $status]);
     }
-    
-    /**
-     * Process purchase - tạo hoặc cập nhật Use record
-     */
+
     private function processPurchase($purchase, $toolType)
     {
         $user = $purchase->user;
@@ -276,25 +252,101 @@ class PurchaseController extends Controller
                 break;
         }
     }
-    
-    /**
-     * Process GoInvoice purchase - tạo hoặc cập nhật Use (mỗi user 1 bản ghi)
-     */
+
     private function processGoInvoicePurchase($purchase)
     {
-        GoInvoiceUse::updateOrCreate(
-            ['user_id' => $purchase->user_id],
-            [
-                'package_id' => $purchase->package_id,
-                'mst_limit' => $purchase->mst_limit,
-                'expires_at' => $purchase->expires_tool,
-            ]
-        );
+        $use = GoInvoiceUse::where('user_id', $purchase->user_id)->first();
+
+        if ($purchase->is_upgrade && $purchase->upgradeHistory) {
+            $expiresAt = Carbon::now()->addYear();
+            $now = Carbon::now();
+
+            if ($use) {
+                $use->package_id = $purchase->package_id;
+                $use->mst_limit = $purchase->mst_limit;
+                $use->expires_at = $expiresAt;
+                $use->purchase_count = 1;
+                $use->first_purchase_date = $now;
+                $use->save();
+            } else {
+                GoInvoiceUse::create([
+                    'user_id' => $purchase->user_id,
+                    'package_id' => $purchase->package_id,
+                    'mst_limit' => $purchase->mst_limit,
+                    'expires_at' => $expiresAt,
+                    'purchase_count' => 1,
+                    'first_purchase_date' => $now,
+                ]);
+            }
+            } else {
+                
+            if ($use) {
+                
+                if ($use->package_id == $purchase->package_id) {
+                    
+                    $now = Carbon::now();
+                    $firstPurchaseDate = $use->first_purchase_date ? Carbon::parse($use->first_purchase_date) : null;
+
+                    $hasPassedFirstYear = false;
+                    if ($firstPurchaseDate) {
+                        $firstYearEnd = $firstPurchaseDate->copy()->addYear();
+                        if ($now->greaterThanOrEqualTo($firstYearEnd)) {
+                            $hasPassedFirstYear = true;
+                        }
+                    }
+                    
+                    if ($use->expires_at && $use->expires_at->isFuture()) {
+                        
+                        $newExpiresAt = $use->expires_at->copy()->addYear();
+                        
+                        if ($hasPassedFirstYear) {
+
+                            $yearsPassed = floor($firstPurchaseDate->diffInDays($now) / 365);
+                            $newFirstPurchaseDate = $firstPurchaseDate->copy()->addYears($yearsPassed);
+                            $use->first_purchase_date = $newFirstPurchaseDate;
+                            $use->purchase_count = 1; 
+                        } else {
+                            
+                            if (!$use->first_purchase_date) {
+                                
+                                $use->first_purchase_date = $use->created_at ?? $now;
+                            }
+                            $use->purchase_count = ($use->purchase_count ?? 1) + 1;
+                        }
+                    } else {
+                        
+                        $newExpiresAt = $now->copy()->addYear();
+                        $use->purchase_count = 1;
+                        $use->first_purchase_date = $now;
+                    }
+                    
+                    $use->expires_at = $newExpiresAt;
+                    $use->save();
+                } else {
+                    
+                    $now = Carbon::now();
+                    $use->package_id = $purchase->package_id;
+                    $use->mst_limit = $purchase->mst_limit;
+                    $use->expires_at = $purchase->expires_tool;
+                    $use->purchase_count = 1;
+                    $use->first_purchase_date = $now;
+                    $use->save();
+                }
+            } else {
+                
+                $now = Carbon::now();
+                GoInvoiceUse::create([
+                    'user_id' => $purchase->user_id,
+                    'package_id' => $purchase->package_id,
+                    'mst_limit' => $purchase->mst_limit,
+                    'expires_at' => $purchase->expires_tool,
+                    'purchase_count' => 1,
+                    'first_purchase_date' => $now,
+                ]);
+            }
+        }
     }
-    
-    /**
-     * Process GoBot purchase - cộng dồn mst_limit (mỗi user 1 bản ghi)
-     */
+
     private function processGoBotPurchase($purchase)
     {
         $use = GoBotUse::firstOrNew(['user_id' => $purchase->user_id]);
@@ -308,25 +360,101 @@ class PurchaseController extends Controller
         $use->package_id = $purchase->package_id;
         $use->save();
     }
-    
-    /**
-     * Process GoSoft purchase - tạo hoặc cập nhật Use (mỗi user 1 bản ghi)
-     */
+
     private function processGoSoftPurchase($purchase)
     {
-        GoSoftUse::updateOrCreate(
-            ['user_id' => $purchase->user_id],
-            [
-                'package_id' => $purchase->package_id,
-                'mst_limit' => $purchase->mst_limit,
-                'expires_at' => $purchase->expires_tool,
-            ]
-        );
+        $use = GoSoftUse::where('user_id', $purchase->user_id)->first();
+
+        if ($purchase->is_upgrade && $purchase->upgradeHistory) {
+            $expiresAt = Carbon::now()->addYear();
+            $now = Carbon::now();
+
+            if ($use) {
+                $use->package_id = $purchase->package_id;
+                $use->mst_limit = $purchase->mst_limit;
+                $use->expires_at = $expiresAt;
+                $use->purchase_count = 1;
+                $use->first_purchase_date = $now;
+                $use->save();
+            } else {
+                GoSoftUse::create([
+                    'user_id' => $purchase->user_id,
+                    'package_id' => $purchase->package_id,
+                    'mst_limit' => $purchase->mst_limit,
+                    'expires_at' => $expiresAt,
+                    'purchase_count' => 1,
+                    'first_purchase_date' => $now,
+                ]);
+            }
+        } else {
+            
+            if ($use) {
+                
+                if ($use->package_id == $purchase->package_id) {
+                    
+                    $now = Carbon::now();
+                    $firstPurchaseDate = $use->first_purchase_date ? Carbon::parse($use->first_purchase_date) : null;
+
+                    $hasPassedFirstYear = false;
+                    if ($firstPurchaseDate) {
+                        $firstYearEnd = $firstPurchaseDate->copy()->addYear();
+                        if ($now->greaterThanOrEqualTo($firstYearEnd)) {
+                            $hasPassedFirstYear = true;
+                        }
+                    }
+                    
+                    if ($use->expires_at && $use->expires_at->isFuture()) {
+                        
+                        $newExpiresAt = $use->expires_at->copy()->addYear();
+                        
+                        if ($hasPassedFirstYear) {
+                            
+                            $yearsPassed = floor($firstPurchaseDate->diffInDays($now) / 365);
+                            $newFirstPurchaseDate = $firstPurchaseDate->copy()->addYears($yearsPassed);
+                            $use->first_purchase_date = $newFirstPurchaseDate;
+                            $use->purchase_count = 1; 
+                        } else {
+                            
+                            if (!$use->first_purchase_date) {
+                                
+                                $use->first_purchase_date = $use->created_at ?? $now;
+                            }
+                            $use->purchase_count = ($use->purchase_count ?? 1) + 1;
+                        }
+                    } else {
+                        
+                        $newExpiresAt = $now->copy()->addYear();
+                        $use->purchase_count = 1;
+                        $use->first_purchase_date = $now;
+                    }
+                    
+                    $use->expires_at = $newExpiresAt;
+                    $use->save();
+                } else {
+                    
+                    $now = Carbon::now();
+                    $use->package_id = $purchase->package_id;
+                    $use->mst_limit = $purchase->mst_limit;
+                    $use->expires_at = $purchase->expires_tool;
+                    $use->purchase_count = 1;
+                    $use->first_purchase_date = $now;
+                    $use->save();
+                }
+            } else {
+                
+                $now = Carbon::now();
+                GoSoftUse::create([
+                    'user_id' => $purchase->user_id,
+                    'package_id' => $purchase->package_id,
+                    'mst_limit' => $purchase->mst_limit,
+                    'expires_at' => $purchase->expires_tool,
+                    'purchase_count' => 1,
+                    'first_purchase_date' => $now,
+                ]);
+            }
+        }
     }
-    
-    /**
-     * Process GoQuick purchase - cộng dồn cccd_limit (mỗi user 1 bản ghi)
-     */
+
     private function processGoQuickPurchase($purchase)
     {
         $use = GoQuickUse::firstOrNew(['user_id' => $purchase->user_id]);
@@ -340,10 +468,7 @@ class PurchaseController extends Controller
         $use->package_id = $purchase->package_id;
         $use->save();
     }
-    
-    /**
-     * Verify signature từ Casso Webhook v2
-     */
+
     private function verifyCassoSignature($payload, $signature)
     {
         $secret = config('services.casso.webhook_secret');
@@ -388,10 +513,7 @@ class PurchaseController extends Controller
         
         return hash_equals($expectedSignature, $receivedSignature);
     }
-    
-    /**
-     * Sắp xếp dữ liệu theo key
-     */
+
     private function sortDataByKey($data)
     {
         if (!is_array($data)) {

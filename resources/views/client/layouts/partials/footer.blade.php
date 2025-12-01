@@ -3,9 +3,9 @@
         'description' => 'Đơn giản hoá công việc kế toán, kiểm tra rủi ro, tải tờ khai và đọc CCCD nhanh chóng.',
         'help_links' => [
             ['text' => 'Tư Vấn', 'url' => route('contact')],
-            ['text' => 'Tài Liệu', 'url' => '#'],
-            ['text' => 'Bảng Giá', 'url' => '#'],
-            ['text' => 'Chính Sách', 'url' => '#'],
+            ['text' => 'Tài Liệu', 'url' => route('documentation.index')],
+            ['text' => 'Bảng Giá', 'url' => route('pricing')],
+            ['text' => 'Chính Sách', 'url' => route('policy.index')],
             ['text' => 'Câu Hỏi Thường Gặp', 'url' => route('faqs')],
         ],
         'tools_links' => [

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Support\Str;
 use App\Models\GoBotPackage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use App\Models\GoBotPurchase;
+use App\Http\Controllers\Controller;
 
 class GoBotPackageController extends Controller
 {
@@ -73,7 +74,12 @@ class GoBotPackageController extends Controller
      */
     public function show(GoBotPackage $goBotPackage)
     {
-        return view('admin.pages.go-bot-packages.show', compact('goBotPackage'));
+        $purchases = GoBotPurchase::where('package_id', $goBotPackage->id)
+            ->with(['user', 'bank'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('admin.pages.go-bot-packages.show', compact('goBotPackage', 'purchases'));
     }
 
     /**

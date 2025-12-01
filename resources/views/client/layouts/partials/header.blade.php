@@ -95,8 +95,8 @@
                             </a>
                         </div>
                     </div>
-                    <a href="#" class="nav-link">Bảng giá</a>
-                    <a href="#" class="nav-link">Tài liệu</a>
+                    <a href="{{ route('pricing') }}" class="nav-link {{ Route::currentRouteNamed('pricing') ? 'active' : '' }}">Bảng giá</a>
+                    <a href="{{ route('documentation.index') }}" class="nav-link {{ Route::currentRouteNamed('documentation.*') ? 'active' : '' }}">Tài liệu</a>
                     <a href="{{ route('contact') }}" class="nav-link">Liên hệ</a>
                 </nav>
 
@@ -252,8 +252,8 @@
                     <li><a href="{{ route('tools.go-quick') }}" class="text-md">Go Quick</a></li>
                 </ul>
             </li>
-            <li><a href="#" class="text-lg fw-medium">Bảng giá</a></li>
-            <li><a href="#" class="text-lg fw-medium">Tài liệu</a></li>
+            <li><a href="{{ route('pricing') }}" class="text-lg fw-medium {{ Route::currentRouteNamed('pricing') ? 'active' : '' }}">Bảng giá</a></li>
+            <li><a href="{{ route('documentation.index') }}" class="text-lg fw-medium {{ Route::currentRouteNamed('documentation.*') ? 'active' : '' }}">Tài liệu</a></li>
             <li><a href="{{ route('contact') }}" class="text-lg fw-medium">Liên hệ</a></li>
         </ul>
 

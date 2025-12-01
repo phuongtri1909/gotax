@@ -14,6 +14,10 @@ use App\Http\Controllers\Client\TestimonialController;
 use App\Http\Controllers\Client\PaymentController;
 use App\Http\Controllers\Client\TrialController;
 use App\Http\Controllers\Client\SitemapController;
+use App\Http\Controllers\Client\PricingController;
+use App\Http\Controllers\Client\DocumentationController;
+use App\Http\Controllers\Client\PolicyController;
+use App\Http\Controllers\Client\FileUploadController;
 
 Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('robots.txt', [SitemapController::class, 'robots'])->name('robots');
@@ -36,6 +40,16 @@ Route::post('contact', [ContactController::class, 'store'])->name('contact.post'
 Route::get('contact/captcha', [ContactController::class, 'generateCaptcha'])->name('contact.captcha');
 
 Route::get('faqs', [FaqController::class, 'index'])->name('faqs');
+
+Route::get('pricing', [PricingController::class, 'index'])->name('pricing');
+
+Route::get('documentation', [DocumentationController::class, 'index'])->name('documentation.index');
+Route::get('documentation/{slug}', [DocumentationController::class, 'show'])->name('documentation.show');
+
+Route::get('policy', [PolicyController::class, 'index'])->name('policy.index');
+Route::get('policy/{slug}', [PolicyController::class, 'show'])->name('policy.show');
+
+Route::post('upload/image', [FileUploadController::class, 'uploadImage'])->name('upload.image');
 
 Route::get('testimonials/load-more', [TestimonialController::class, 'loadMore'])->name('testimonials.load-more');
 
@@ -137,6 +151,15 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('payment/go-quick', [PaymentController::class, 'storeGoQuick'])->name('payment.go-quick.store');
     Route::get('payment/info', [PaymentController::class, 'getPaymentInfo'])->name('payment.info');
     Route::get('payment/sse', [PaymentController::class, 'sseTransactionUpdates'])->name('payment.sse');
+    
+    // Upgrade routes
+    Route::post('payment/calculate-upgrade/go-invoice', [PaymentController::class, 'calculateUpgradeGoInvoice'])->name('payment.calculate-upgrade.go-invoice');
+    Route::post('payment/calculate-upgrade/go-soft', [PaymentController::class, 'calculateUpgradeGoSoft'])->name('payment.calculate-upgrade.go-soft');
+    Route::post('payment/calculate-upgrade/go-bot', [PaymentController::class, 'calculateUpgradeGoBot'])->name('payment.calculate-upgrade.go-bot');
+    Route::post('payment/calculate-upgrade/go-quick', [PaymentController::class, 'calculateUpgradeGoQuick'])->name('payment.calculate-upgrade.go-quick');
+    Route::post('payment/check-referral-code', [PaymentController::class, 'checkReferralCode'])->name('payment.check-referral-code');
+    Route::post('payment/upgrade/go-invoice', [PaymentController::class, 'storeUpgradeGoInvoice'])->name('payment.upgrade.go-invoice');
+    Route::post('payment/upgrade/go-soft', [PaymentController::class, 'storeUpgradeGoSoft'])->name('payment.upgrade.go-soft');
 
 
     Route::prefix('go-quick')->group(function () {

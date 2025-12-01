@@ -15,6 +15,12 @@ use App\Http\Controllers\Admin\AdminContactInfoController;
 use App\Http\Controllers\Admin\AdminTestimonialController;
 use App\Http\Controllers\Admin\TrialRegistrationController;
 use App\Http\Controllers\Admin\TrialController;
+use App\Http\Controllers\Admin\PackageUpgradeConfigController;
+use App\Http\Controllers\Admin\PurchaseController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ReferralPurchaseController;
+use App\Http\Controllers\Admin\DocumentController;
+use App\Http\Controllers\Admin\PolicyController;
 
 Route::group(['as' => 'admin.'], function () {
     Route::get('/clear-cache', function () {
@@ -76,6 +82,30 @@ Route::group(['as' => 'admin.'], function () {
         Route::get('trials/{trial}', [TrialController::class, 'show'])->name('trials.show');
         Route::get('trials/{trial}/edit', [TrialController::class, 'edit'])->name('trials.edit');
         Route::put('trials/{trial}', [TrialController::class, 'update'])->name('trials.update');
+
+        // Package Upgrade Config Management
+        Route::get('package-upgrade-configs', [PackageUpgradeConfigController::class, 'index'])->name('package-upgrade-configs.index');
+        Route::get('package-upgrade-configs/{packageUpgradeConfig}', [PackageUpgradeConfigController::class, 'show'])->name('package-upgrade-configs.show');
+        Route::get('package-upgrade-configs/{packageUpgradeConfig}/edit', [PackageUpgradeConfigController::class, 'edit'])->name('package-upgrade-configs.edit');
+        Route::put('package-upgrade-configs/{packageUpgradeConfig}', [PackageUpgradeConfigController::class, 'update'])->name('package-upgrade-configs.update');
+
+        // Purchase Management
+        Route::get('purchases', [PurchaseController::class, 'index'])->name('purchases.index');
+        Route::get('purchases/{toolType}/{id}', [PurchaseController::class, 'show'])->name('purchases.show');
+
+        // User Management
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
+
+        // Referral Purchase Management
+        Route::get('referral-purchases', [ReferralPurchaseController::class, 'index'])->name('referral-purchases.index');
+        Route::get('referral-purchases/{referralPurchase}', [ReferralPurchaseController::class, 'show'])->name('referral-purchases.show');
+
+        // Document Management
+        Route::resource('documents', DocumentController::class);
+
+        // Policy Management
+        Route::resource('policies', PolicyController::class);
     });
 
     Route::group(['middleware' => 'guest'], function () {

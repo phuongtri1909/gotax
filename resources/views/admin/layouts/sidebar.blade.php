@@ -19,20 +19,34 @@
                         </a>
                     </li>
 
+                    <li class="{{ Route::currentRouteNamed('admin.users.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.users.index') }}">
+                            <i class="fas fa-users"></i>
+                            <span>Quản lý người dùng</span>
+                        </a>
+                    </li>
+
                     <li
-                        class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*', 'admin.trials.*']) ? 'open' : '' }}">
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.banks.*', 'admin.go-invoice-packages.*', 'admin.go-bot-packages.*', 'admin.go-soft-packages.*', 'admin.go-quick-packages.*', 'admin.trials.*', 'admin.package-upgrade-configs.*', 'admin.purchases.*']) ? 'open' : '' }}">
                         <a href="#" class="submenu-toggle">
                             <i class="fas fa-money-bill"></i>
                             <span>Quản lý bán hàng</span>
                             <i class="fas fa-chevron-down submenu-arrow"></i>
                         </a>
                         <ul class="submenu">
-                            <li class="{{ Route::currentRouteNamed('admin.banks.*') ? 'active' : '' }}">
-                                <a href="{{ route('admin.banks.index') }}">
-                                    <i class="fas fa-bank"></i>
-                                    <span>Ngân hàng</span>
+                            <li class="{{ Route::currentRouteNamed('admin.purchases.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.purchases.index') }}">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <span>Gói đã bán</span>
                                 </a>
                             </li>
+                            <li class="{{ Route::currentRouteNamed('admin.referral-purchases.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.referral-purchases.index') }}">
+                                    <i class="fas fa-user-friends"></i>
+                                    <span>Mã giới thiệu</span>
+                                </a>
+                            </li>
+                                                        
                             <li class="{{ Route::currentRouteNamed('admin.go-invoice-packages.*') ? 'active' : '' }}">
                                 <a href="{{ route('admin.go-invoice-packages.index') }}">
                                     <i class="fas fa-file-invoice"></i>
@@ -57,10 +71,24 @@
                                     <span>Gói GoQuick</span>
                                 </a>
                             </li>
+                            
                             <li class="{{ Route::currentRouteNamed('admin.trials.*') ? 'active' : '' }}">
                                 <a href="{{ route('admin.trials.index') }}">
                                     <i class="fas fa-cog"></i>
                                     <span>Cấu hình dùng thử</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.package-upgrade-configs.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.package-upgrade-configs.index') }}">
+                                    <i class="fas fa-percent"></i>
+                                    <span>Cấu hình giảm giá</span>
+                                </a>
+                            </li>
+
+                            <li class="{{ Route::currentRouteNamed('admin.banks.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.banks.index') }}">
+                                    <i class="fas fa-bank"></i>
+                                    <span>Ngân hàng</span>
                                 </a>
                             </li>
                         </ul>
@@ -111,6 +139,30 @@
                             <i class="fas fa-star"></i>
                             <span>Đánh giá khách hàng</span>
                         </a>
+                    </li>
+
+                    <!-- Quản lý Nội dung -->
+                    <li
+                        class="has-submenu {{ Route::currentRouteNamed(['admin.documents.*', 'admin.policies.*']) ? 'open' : '' }}">
+                        <a href="#" class="submenu-toggle">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Quản lý nội dung</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="{{ Route::currentRouteNamed('admin.documents.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.documents.index') }}">
+                                    <i class="fas fa-book"></i>
+                                    <span>Tài liệu</span>
+                                </a>
+                            </li>
+                            <li class="{{ Route::currentRouteNamed('admin.policies.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.policies.index') }}">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Chính sách</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
                     <!-- Cấu hình hệ thống -->

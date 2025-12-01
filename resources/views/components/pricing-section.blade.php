@@ -1,8 +1,10 @@
 @props([
     'packages' => [],
+    'showModal' => true,
+    'toolType' => null,
 ])
 
-<section class="pricing-section">
+<section class="pricing-section" id="pricing-section">
     <div class="container">
         <h2 class="tools-title">Bảng Giá</h2>
         <p class="tools-subtitle">Giải pháp phù hợp cho mọi nhu cầu tải hóa đơn</p>
@@ -33,7 +35,7 @@
                                 <span class="price-unit"> / năm</span>
                             </div>
 
-                            @if (route::currentRouteName() == 'tools.go-invoice')
+                            @if (Route::currentRouteName() == 'tools.go-invoice')
                                 <div class="pricing-copyright">
                                     <p class="copyright-fee mb-0">Phí bản quyền: 500.000đ</p>
                                     <p class="copyright-note">(Thanh toán 1 lần duy nhất / tài khoản)</p>
@@ -56,6 +58,19 @@
 
                             @php
                                 $cleanPrice = str_replace(['.', ',', ' ', 'đ'], '', $pkg->price ?? '0');
+                                // Detect tool type from route if not provided
+                                $detectedToolType = $toolType;
+                                if (!$detectedToolType) {
+                                    if (Route::currentRouteName() == 'tools.go-invoice') {
+                                        $detectedToolType = 'go-invoice';
+                                    } elseif (Route::currentRouteName() == 'tools.go-soft') {
+                                        $detectedToolType = 'go-soft';
+                                    } elseif (Route::currentRouteName() == 'tools.go-bot') {
+                                        $detectedToolType = 'go-bot';
+                                    } elseif (Route::currentRouteName() == 'tools.go-quick') {
+                                        $detectedToolType = 'go-quick';
+                                    }
+                                }
                                 $packageData = [
                                     'id' => $pkg->id ?? null,
                                     'package_id' => $pkg->id ?? null,
@@ -64,6 +79,7 @@
                                     'price' => $cleanPrice,
                                     'badge' => $pkg->badge ?? null,
                                     'discount' => $pkg->discount ?? null,
+                                    'tool_type' => $detectedToolType,
                                 ];
                             @endphp
                             <button type="button" 
@@ -81,7 +97,9 @@
     </div>
 </section>
 
-<x-payment.register-modal modalId="registerModal" />
+@if($showModal)
+    <x-payment.register-modal modalId="registerModal" />
+@endif
 
 @push('styles')
     @vite('resources/assets/frontend/css/components/pricing-section.css')

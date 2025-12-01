@@ -13,6 +13,8 @@ class GoQuickPurchase extends Model
         'package_id',
         'transaction_code',
         'amount',
+        'discount_percent',
+        'discount_amount',
         'cccd_limit',
         'status',
         'note',
@@ -30,7 +32,9 @@ class GoQuickPurchase extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount' => 'integer',
+        'discount_percent' => 'decimal:2',
+        'discount_amount' => 'integer',
         'cccd_limit' => 'integer',
         'expires_at' => 'datetime',
     ];

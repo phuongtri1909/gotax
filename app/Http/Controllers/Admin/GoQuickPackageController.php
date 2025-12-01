@@ -73,7 +73,12 @@ class GoQuickPackageController extends Controller
      */
     public function show(GoQuickPackage $goQuickPackage)
     {
-        return view('admin.pages.go-quick-packages.show', compact('goQuickPackage'));
+        $purchases = GoQuickPurchase::where('package_id', $goQuickPackage->id)
+            ->with(['user', 'bank'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('admin.pages.go-quick-packages.show', compact('goQuickPackage', 'purchases'));
     }
 
     /**

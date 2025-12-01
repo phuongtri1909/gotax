@@ -13,6 +13,8 @@ class GoBotPurchase extends Model
         'package_id',
         'transaction_code',
         'amount',
+        'discount_percent',
+        'discount_amount',
         'mst_limit',
         'status',
         'note',
@@ -30,7 +32,9 @@ class GoBotPurchase extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount' => 'integer',
+        'discount_percent' => 'decimal:2',
+        'discount_amount' => 'integer',
         'mst_limit' => 'integer',
         'expires_at' => 'datetime',
     ];

@@ -9,7 +9,6 @@
     $userEmail = $user ? $user->email : '';
     $userPhone = $user ? $user->phone : '';
     
-    // Parse full_name to first_name and last_name
     $firstName = '';
     $lastName = '';
     if ($userFullName) {
@@ -134,8 +133,17 @@
                                         <label class="promo-label">Mã giới thiệu</label>
                                         <div class="d-flex">
                                             <input type="text" class="form-control promo-input me-2 form-control-sm"
-                                                name="promo_code" placeholder="Code">
-                                            <button class="btn btn-apply btn-sm" type="button">Sử dụng</button>
+                                                id="referral_code_input" placeholder="Nhập mã giới thiệu" 
+                                                autocomplete="off" maxlength="10">
+                                            <button class="btn btn-apply btn-sm" type="button" id="btn-check-referral">Sử dụng</button>
+                                        </div>
+                                        <div id="referral-info" class="mt-2 d-none" style="font-size: 12px; color: #28a745;">
+                                            <i class="fas fa-check-circle"></i> 
+                                            <span id="referral-user-name"></span>
+                                        </div>
+                                        <div id="referral-error" class="mt-2 d-none" style="font-size: 12px; color: #dc3545;">
+                                            <i class="fas fa-times-circle"></i> 
+                                            <span id="referral-error-message"></span>
                                         </div>
                                     </div>
 
@@ -143,6 +151,10 @@
                                         <div class="price-row">
                                             <span class="price-label">Phí đăng ký</span>
                                             <span class="price-value" data-registration-fee>200.000đ</span>
+                                        </div>
+                                        <div class="price-row d-none" data-license-fee-row>
+                                            <span class="price-label">Phí bản quyền (lần đầu)</span>
+                                            <span class="price-value" data-license-fee>0đ</span>
                                         </div>
                                         <div class="price-row discount">
                                             <span class="price-label">Mã giảm giá</span>
@@ -201,6 +213,7 @@
                                                     name="phone" value="{{ $userPhone }}" required>
                                             </div>
                                         </div>
+                                        <input type="hidden" name="referral_code" id="referral_code" value="">
                                         <div class="col-12">
                                             <div class="form-check ps-4">
                                                 <input class="form-check-input" type="checkbox"
@@ -518,7 +531,6 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle modal show with package data
             const modal = document.getElementById('{{ $modalId }}');
 
             if (!modal) return;
@@ -537,46 +549,685 @@
                         currentPackageData = packageData;
                         updatePackageInfo(packageData);
                         
-                        // Set package_id - check both package_id and id
+                        let packageId = packageData.package_id || packageData.id || null;
                         const packageIdInput = document.getElementById('package_id_input');
-                        if (packageIdInput) {
-                            const packageId = packageData.package_id || packageData.id || null;
-                            if (packageId) {
-                                packageIdInput.value = packageId;
+                        if (packageIdInput && packageId) {
+                            packageIdInput.value = packageId;
+                        } else if (!packageId) {
+                            console.error('Package ID not found in package data:', packageData);
+                        }
+                        
+                        if (packageData.tool_type) {
+                            currentToolType = packageData.tool_type;
+                        } else {
+                            const path = window.location.pathname;
+                            if (path.includes('pricing')) {
+                                const activeTab = document.querySelector('.pricing-tab.active');
+                                if (activeTab) {
+                                    const tool = activeTab.getAttribute('data-tool');
+                                    if (tool === 'go-invoice') currentToolType = 'go-invoice';
+                                    else if (tool === 'go-soft') currentToolType = 'go-soft';
+                                    else if (tool === 'go-quick') currentToolType = 'go-quick';
+                                    else if (tool === 'go-bot') currentToolType = 'go-bot';
+                                }
+                                if (!currentToolType || currentToolType === 'go-invoice') {
+                                    const activeContent = document.querySelector('.pricing-content.active');
+                                    if (activeContent) {
+                                        const contentId = activeContent.id;
+                                        if (contentId.includes('go-invoice')) currentToolType = 'go-invoice';
+                                        else if (contentId.includes('go-soft')) currentToolType = 'go-soft';
+                                        else if (contentId.includes('go-quick')) currentToolType = 'go-quick';
+                                        else if (contentId.includes('go-bot')) currentToolType = 'go-bot';
+                                    }
+                                }
                             } else {
-                                console.error('Package ID not found in package data:', packageData);
+                                if (path.includes('go-invoice')) currentToolType = 'go-invoice';
+                                else if (path.includes('go-soft')) currentToolType = 'go-soft';
+                                else if (path.includes('go-quick')) currentToolType = 'go-quick';
+                                else if (path.includes('go-bot')) currentToolType = 'go-bot';
                             }
                         }
                         
-                        // Detect tool type
-                        const path = window.location.pathname;
-                        if (path.includes('go-invoice')) currentToolType = 'go-invoice';
-                        else if (path.includes('go-soft')) currentToolType = 'go-soft';
-                        else if (path.includes('go-quick')) currentToolType = 'go-quick';
-                        else if (path.includes('go-bot')) currentToolType = 'go-bot';
+                        if (packageId) {
+                            checkUpgradePrice(packageId);
+                        } else {
+                            resetUpgradeInfo();
+                        }
                     } catch (e) {
                         console.error('Error parsing package data:', e);
                     }
                 }
             });
 
-            // Update package information
+            let currentUpgradeInfo = null;
+            
+            async function checkUpgradePrice(packageId) {
+                if (!packageId) {
+                    resetUpgradeInfo();
+                    return;
+                }
+                
+                try {
+                    const routeMap = {
+                        'go-invoice': '{{ route("payment.calculate-upgrade.go-invoice") }}',
+                        'go-soft': '{{ route("payment.calculate-upgrade.go-soft") }}',
+                        'go-bot': '{{ route("payment.calculate-upgrade.go-bot") }}',
+                        'go-quick': '{{ route("payment.calculate-upgrade.go-quick") }}',
+                    };
+                    
+                    const route = routeMap[currentToolType];
+                    if (!route) {
+                        resetUpgradeInfo();
+                        return;
+                    }
+                    
+                    const response = await fetch(route, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        body: JSON.stringify({ package_id: parseInt(packageId) })
+                    });
+                    
+                    if (response.status === 401) {
+                        resetUpgradeInfo();
+                        return;
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        if (result.data && result.data.can_upgrade) {
+                            currentUpgradeInfo = result.data;
+                            displayUpgradeInfo(result.data);
+                        } else if (result.is_downgrade && result.downgrade_info) {
+                            currentUpgradeInfo = {
+                                is_downgrade: true,
+                                downgrade_info: result.downgrade_info
+                            };
+                            displayDowngradeInfo(result.downgrade_info);
+                        } else if (result.is_renewal && result.renewal_info) {
+                            currentUpgradeInfo = {
+                                is_renewal: true,
+                                renewal_info: result.renewal_info
+                            };
+                            displayRenewalInfo(result.renewal_info);
+                        } else if (result.data && result.data.discount_info) {
+                            currentUpgradeInfo = {
+                                is_new_purchase: result.data.is_new_purchase !== false,
+                                discount_info: result.data.discount_info,
+                                package: result.data.package,
+                                current_limit: result.data.current_limit,
+                                new_limit: result.data.new_limit,
+                                total_limit_after: result.data.total_limit_after,
+                                limit_type: result.data.limit_type,
+                                license_fee: result.data.license_fee,
+                                final_amount: result.data.final_amount
+                            };
+                            displayDiscountInfo(result.data.discount_info, result.data.package, result.data);
+                        } else {
+                            resetUpgradeInfo();
+                        }
+                    } else if (result.success === false) {
+                        const message = result.message || '';
+                        currentUpgradeInfo = {
+                            error: true,
+                            message: message
+                        };
+                    } else {
+                        resetUpgradeInfo();
+                    }
+                } catch (error) {
+                    console.error('Error checking upgrade price:', error);
+                    resetUpgradeInfo();
+                }
+            }
+            
+            function displayUpgradeInfo(upgradeData) {
+                // Hiển thị thông tin upgrade trong price breakdown
+                const discountEl = modal.querySelector('[data-discount]');
+                const registrationFeeEl = modal.querySelector('[data-registration-fee]');
+                const packagePriceEl = modal.querySelector('[data-package-price]');
+                
+                // Format số tiền Việt Nam (không có .00)
+                const formatPrice = (price) => {
+                    let num = 0;
+                    if (typeof price === 'number') {
+                        num = Math.round(price); // Làm tròn về số nguyên
+                    } else {
+                        num = Math.round(parseFloat(price || 0));
+                    }
+                    // Format theo định dạng Việt Nam: 1.000.000
+                    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                };
+                
+                if (discountEl) {
+                    const discountAmount = -upgradeData.discount_amount;
+                    discountEl.textContent = formatPrice(discountAmount) + 'đ';
+                    const discountRow = discountEl.closest('.price-row');
+                    if (discountRow) {
+                        discountRow.classList.remove('d-none');
+                        discountRow.style.display = 'flex';
+                    }
+                }
+                
+                if (registrationFeeEl) {
+                    registrationFeeEl.textContent = formatPrice(upgradeData.new_package.price) + 'đ';
+                }
+                
+                if (packagePriceEl) {
+                    packagePriceEl.textContent = formatPrice(upgradeData.new_package.price) + 'đ';
+                }
+                
+                addUpgradeInfoToBreakdown(upgradeData);
+                
+                calculateTotal();
+            }
+            
+            function addUpgradeInfoToBreakdown(upgradeData) {
+                let upgradeInfoSection = modal.querySelector('.upgrade-info-section');
+                if (!upgradeInfoSection) {
+                    const priceBreakdown = modal.querySelector('.price-breakdown');
+                    if (priceBreakdown) {
+                        upgradeInfoSection = document.createElement('div');
+                        upgradeInfoSection.className = 'upgrade-info-section mt-3';
+                        priceBreakdown.appendChild(upgradeInfoSection);
+                    }
+                }
+                
+                if (upgradeInfoSection) {
+                    const formatPrice = (price) => {
+                        let num = 0;
+                        if (typeof price === 'number') {
+                            num = Math.round(price);
+                        } else {
+                            num = Math.round(parseFloat(price || 0));
+                        }
+                        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    };
+                    
+                    const shouldResetExpires = upgradeData.should_reset_expires !== false;
+                    const hasCompensationInfo = upgradeData.compensation_info && upgradeData.compensation_info.compensation_days > 0;
+                    
+                    const formatTimeRemaining = () => {
+                        const days = upgradeData.days_remaining || 0;
+                        const hours = upgradeData.hours_remaining || 0;
+                        if (days === 0 && hours === 0) return 'đã hết hạn';
+                        if (days === 0) return `${hours} giờ`;
+                        if (hours === 0) return `${days} ngày`;
+                        return `${days} ngày ${hours} giờ`;
+                    };
+                    
+                    const timeRemainingText = formatTimeRemaining();
+                    
+                    const formatCompensationTime = () => {
+                        if (!hasCompensationInfo) return '';
+                        const days = upgradeData.compensation_info.compensation_days || 0;
+                        const hours = upgradeData.compensation_info.compensation_hours || 0;
+                        if (days === 0 && hours === 0) return '';
+                        if (days === 0) return `${hours} giờ`;
+                        if (hours === 0) return `${days} ngày`;
+                        return `${days} ngày ${hours} giờ`;
+                    };
+                    
+                    const compensationTimeText = formatCompensationTime();
+                    
+                    const isBotOrQuick = currentToolType === 'go-bot' || currentToolType === 'go-quick';
+                    
+                    if (isBotOrQuick && upgradeData.current_limit !== undefined) {
+                        const limitType = upgradeData.limit_type === 'mst' ? 'MST' : 'CCCD';
+                        const currentLimit = upgradeData.current_limit || 0;
+                        const newLimit = upgradeData.new_limit || 0;
+                        const totalLimitAfter = upgradeData.total_limit_after || 0;
+                        
+                        upgradeInfoSection.innerHTML = `
+                            <div class="upgrade-notice mb-2" style="background: #e8f5e9; padding: 10px; border-radius: 5px; font-size: 13px;">
+                                <strong>🎉 Mua thêm gói với ưu đãi ${upgradeData.discount_percent}%</strong>
+                                <div style="margin-top: 5px; color: #666;">
+                                    ${limitType} còn lại: <strong>${currentLimit.toLocaleString('vi-VN')}</strong>
+                                </div>
+                                <div style="margin-top: 3px; color: #666;">
+                                    ${limitType} gói mới: <strong>${newLimit.toLocaleString('vi-VN')}</strong>
+                                </div>
+                                <div style="margin-top: 3px; color: #666;">
+                                    ${limitType} sau khi mua thêm: <strong style="color: #227447;">${totalLimitAfter.toLocaleString('vi-VN')}</strong>
+                                </div>
+                                <div style="margin-top: 3px; color: #666;">
+                                    Giá gốc: ${formatPrice(upgradeData.price_difference)}đ - 
+                                    Giảm ${formatPrice(upgradeData.discount_amount)}đ = 
+                                    <strong style="color: #227447;">${formatPrice(upgradeData.final_amount)}đ</strong>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Với go-invoice và go-soft: hiển thị thông tin upgrade với thời hạn
+                        // Hiển thị thông tin thời hạn
+                        let timeInfo = '';
+                        if (shouldResetExpires) {
+                            if (hasCompensationInfo) {
+                                timeInfo = `
+                                    <div style="margin-top: 5px; color: #666; font-size: 12px;">
+                                        <em>⏰ Thời hạn sẽ được reset về 1 năm từ thời điểm nâng cấp + ${compensationTimeText} bù trừ</em>
+                                    </div>
+                                `;
+                            } else {
+                                timeInfo = `
+                                    <div style="margin-top: 5px; color: #666; font-size: 12px;">
+                                        <em>⏰ Thời hạn sẽ được reset về 1 năm từ thời điểm nâng cấp</em>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            timeInfo = `
+                                <div style="margin-top: 5px; color: #666; font-size: 12px;">
+                                    <em>⏰ Thời hạn sẽ được giữ nguyên (không reset) để đảm bảo quyền lợi của bạn</em>
+                                </div>
+                            `;
+                        }
+                        
+                        const remainingTimeInfo = upgradeData.days_remaining > 0 ? `
+                            <div style="margin-top: 3px; color: #999; font-size: 11px;">
+                                <em>ℹ️ Thời gian còn lại của gói cũ: ${timeRemainingText}</em>
+                            </div>
+                        ` : '';
+                        
+                        upgradeInfoSection.innerHTML = `
+                            <div class="upgrade-notice mb-2" style="background: #e8f5e9; padding: 10px; border-radius: 5px; font-size: 13px;">
+                                <strong>🎉 Nâng cấp gói với ưu đãi ${upgradeData.discount_percent}%</strong>
+                                <div style="margin-top: 5px; color: #666;">
+                                    Gói cũ: ${formatPrice(upgradeData.old_package.price)}đ → 
+                                    Gói mới: ${formatPrice(upgradeData.new_package.price)}đ
+                                </div>
+                                <div style="margin-top: 3px; color: #666;">
+                                    Chênh lệch: ${formatPrice(upgradeData.price_difference)}đ - 
+                                    Giảm ${formatPrice(upgradeData.discount_amount)}đ = 
+                                    <strong style="color: #227447;">${formatPrice(upgradeData.final_amount)}đ</strong>
+                                </div>
+                                ${timeInfo}
+                                ${remainingTimeInfo}
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            function displayRenewalInfo(renewalInfo) {
+                const formatPrice = (price) => {
+                    let num = 0;
+                    if (typeof price === 'number') {
+                        num = Math.round(price);
+                    } else {
+                        num = Math.round(parseFloat(price || 0));
+                    }
+                    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                };
+                
+                // Cập nhật giá và discount
+                const discountEl = modal.querySelector('[data-discount]');
+                const registrationFeeEl = modal.querySelector('[data-registration-fee]');
+                const packagePriceEl = modal.querySelector('[data-package-price]');
+                
+                if (discountEl && renewalInfo.discount_amount) {
+                    const discountAmount = -renewalInfo.discount_amount;
+                    discountEl.textContent = formatPrice(discountAmount) + 'đ';
+                    const discountRow = discountEl.closest('.price-row');
+                    if (discountRow) {
+                        discountRow.classList.remove('d-none');
+                        discountRow.style.display = 'flex';
+                    }
+                }
+                
+                // Phí đăng ký phải là giá gốc, không phải giá sau giảm
+                if (registrationFeeEl) {
+                    registrationFeeEl.textContent = formatPrice(renewalInfo.package.price) + 'đ';
+                }
+                
+                if (packagePriceEl) {
+                    packagePriceEl.textContent = formatPrice(renewalInfo.package.price) + 'đ';
+                }
+                
+                let renewalInfoSection = modal.querySelector('.renewal-info-section');
+                if (!renewalInfoSection) {
+                    const priceBreakdown = modal.querySelector('.price-breakdown');
+                    if (priceBreakdown) {
+                        renewalInfoSection = document.createElement('div');
+                        renewalInfoSection.className = 'renewal-info-section mt-3';
+                        priceBreakdown.appendChild(renewalInfoSection);
+                    }
+                }
+                
+                if (renewalInfoSection) {
+                    const currentExpires = renewalInfo.current_expires_at ? 
+                        new Date(renewalInfo.current_expires_at).toLocaleDateString('vi-VN') : 'Đã hết hạn';
+                    const newExpires = new Date(renewalInfo.new_expires_at).toLocaleDateString('vi-VN');
+                    
+                    renewalInfoSection.innerHTML = `
+                        <div class="renewal-notice mb-2" style="background: #fff3cd; padding: 10px; border-radius: 5px; font-size: 13px; border-left: 4px solid #ffc107;">
+                            <strong>⏰ Gia hạn gói hiện tại thêm 1 năm với ưu đãi ${renewalInfo.discount_percent}%</strong>
+                            <div style="margin-top: 5px; color: #666;">
+                                Gói: <strong>${renewalInfo.package.name}</strong> - ${formatPrice(renewalInfo.package.price)}đ
+                            </div>
+                            <div style="margin-top: 3px; color: #666;">
+                                Giá gốc: ${formatPrice(renewalInfo.package.price)}đ - 
+                                Giảm ${formatPrice(renewalInfo.discount_amount)}đ = 
+                                <strong style="color: #227447;">${formatPrice(renewalInfo.final_amount)}đ</strong>
+                            </div>
+                            <div style="margin-top: 3px; color: #666;">
+                                Hạn hiện tại: ${currentExpires} → 
+                                Hạn mới: <strong style="color: #227447;">${newExpires}</strong>
+                            </div>
+                            <div style="margin-top: 3px; color: #666; font-size: 12px;">
+                                <em>Thời hạn sẽ được cộng dồn từ thời hạn hiện tại</em>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                calculateTotal();
+            }
+            
+            function displayDowngradeInfo(downgradeInfo) {
+                const formatPrice = (price) => {
+                    let num = 0;
+                    if (typeof price === 'number') {
+                        num = Math.round(price);
+                    } else {
+                        num = Math.round(parseFloat(price || 0));
+                    }
+                    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                };
+                
+                // Cập nhật giá và discount
+                const discountEl = modal.querySelector('[data-discount]');
+                const registrationFeeEl = modal.querySelector('[data-registration-fee]');
+                const packagePriceEl = modal.querySelector('[data-package-price]');
+                
+                if (discountEl && downgradeInfo.discount_amount) {
+                    const discountAmount = -downgradeInfo.discount_amount;
+                    discountEl.textContent = formatPrice(discountAmount) + 'đ';
+                    const discountRow = discountEl.closest('.price-row');
+                    if (discountRow) {
+                        discountRow.classList.remove('d-none');
+                        discountRow.style.display = 'flex';
+                    }
+                }
+                
+                // Phí đăng ký phải là giá gốc, không phải giá sau giảm
+                if (registrationFeeEl) {
+                    registrationFeeEl.textContent = formatPrice(downgradeInfo.original_price) + 'đ';
+                }
+                
+                if (packagePriceEl) {
+                    packagePriceEl.textContent = formatPrice(downgradeInfo.original_price) + 'đ';
+                }
+                
+                let downgradeInfoSection = modal.querySelector('.downgrade-info-section');
+                if (!downgradeInfoSection) {
+                    const priceBreakdown = modal.querySelector('.price-breakdown');
+                    if (priceBreakdown) {
+                        downgradeInfoSection = document.createElement('div');
+                        downgradeInfoSection.className = 'downgrade-info-section mt-3';
+                        priceBreakdown.appendChild(downgradeInfoSection);
+                    }
+                }
+                
+                if (downgradeInfoSection) {
+                    const daysRemaining = downgradeInfo.days_remaining;
+                    const hoursRemaining = downgradeInfo.hours_remaining || 0;
+                    
+                    const formatTimeRemaining = () => {
+                        if (daysRemaining === null) return '';
+                        if (daysRemaining === 0 && hoursRemaining === 0) return 'đã hết hạn';
+                        if (daysRemaining === 0) return `${hoursRemaining} giờ`;
+                        if (hoursRemaining === 0) return `${daysRemaining} ngày`;
+                        return `${daysRemaining} ngày ${hoursRemaining} giờ`;
+                    };
+                    
+                    const timeRemainingText = formatTimeRemaining();
+                    const canPurchase = downgradeInfo.can_purchase !== false;
+                    
+                    const warningMessage = daysRemaining !== null && daysRemaining >= 30 
+                        ? `<div style="margin-top: 5px; color: #d32f2f; font-size: 12px; font-weight: bold;">
+                            ⚠️ Chỉ cho phép giảm cấp khi thời hạn còn dưới 1 tháng (hiện tại còn ${timeRemainingText})
+                           </div>`
+                        : daysRemaining !== null && daysRemaining < 30
+                        ? `<div style="margin-top: 3px; color: #666; font-size: 12px;">
+                            <em>Áp dụng ưu đãi vì thời hạn gói hiện tại còn dưới 1 tháng (${timeRemainingText})</em>
+                           </div>`
+                        : '';
+                    
+                    const daysText = timeRemainingText ? ` (thời hạn còn ${timeRemainingText})` : '';
+                    
+                    downgradeInfoSection.innerHTML = `
+                        <div class="downgrade-notice mb-2" style="background: #e3f2fd; padding: 10px; border-radius: 5px; font-size: 13px; border-left: 4px solid #2196f3;">
+                            <strong>⬇️ Giảm cấp gói với ưu đãi ${downgradeInfo.discount_percent}%${daysText}</strong>
+                            <div style="margin-top: 5px; color: #666;">
+                                Gói cũ: <strong>${downgradeInfo.old_package.name}</strong> - ${formatPrice(downgradeInfo.old_package.price)}đ
+                            </div>
+                            <div style="margin-top: 3px; color: #666;">
+                                Gói mới: <strong>${downgradeInfo.new_package.name}</strong> - ${formatPrice(downgradeInfo.new_package.price)}đ
+                            </div>
+                            <div style="margin-top: 3px; color: #666;">
+                                Giá gốc: ${formatPrice(downgradeInfo.original_price)}đ - 
+                                Giảm ${formatPrice(downgradeInfo.discount_amount)}đ = 
+                                <strong style="color: #227447;">${formatPrice(downgradeInfo.final_amount)}đ</strong>
+                            </div>
+                            ${warningMessage}
+                        </div>
+                    `;
+                }
+                
+                calculateTotal();
+            }
+            
+            function displayDiscountInfo(discountInfo, package, additionalData = {}) {
+                const formatPrice = (price) => {
+                    let num = 0;
+                    if (typeof price === 'number') {
+                        num = Math.round(price);
+                    } else {
+                        num = Math.round(parseFloat(price || 0));
+                    }
+                    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                };
+                
+                // Cập nhật giá và discount
+                const discountEl = modal.querySelector('[data-discount]');
+                const registrationFeeEl = modal.querySelector('[data-registration-fee]');
+                const packagePriceEl = modal.querySelector('[data-package-price]');
+                
+                if (discountEl && discountInfo.discount_amount) {
+                    const discountAmount = -discountInfo.discount_amount;
+                    discountEl.textContent = formatPrice(discountAmount) + 'đ';
+                    const discountRow = discountEl.closest('.price-row');
+                    if (discountRow) {
+                        discountRow.classList.remove('d-none');
+                        discountRow.style.display = 'flex';
+                    }
+                }
+                
+                // Phí đăng ký phải là giá gốc, không phải giá sau giảm
+                if (registrationFeeEl) {
+                    registrationFeeEl.textContent = formatPrice(discountInfo.original_price) + 'đ';
+                }
+                
+                if (packagePriceEl) {
+                    packagePriceEl.textContent = formatPrice(discountInfo.original_price) + 'đ';
+                }
+                
+                if (additionalData && additionalData.license_fee && currentToolType === 'go-invoice') {
+                    const licenseFeeEl = modal.querySelector('[data-license-fee]');
+                    const licenseFeeRow = modal.querySelector('[data-license-fee-row]');
+                    if (licenseFeeEl && licenseFeeRow) {
+                        licenseFeeEl.textContent = formatPrice(additionalData.license_fee) + 'đ';
+                        licenseFeeRow.classList.remove('d-none');
+                        licenseFeeRow.style.display = 'flex';
+                    }
+                }
+                
+                let discountInfoSection = modal.querySelector('.discount-info-section');
+                if (!discountInfoSection) {
+                    const priceBreakdown = modal.querySelector('.price-breakdown');
+                    if (priceBreakdown) {
+                        discountInfoSection = document.createElement('div');
+                        discountInfoSection.className = 'discount-info-section mt-3';
+                        priceBreakdown.appendChild(discountInfoSection);
+                    }
+                }
+                
+                if (discountInfoSection) {
+                    let discountTypeText = '';
+                    if (discountInfo.type === 'first_purchase') {
+                        discountTypeText = 'Lần đầu mua';
+                    } else if (discountInfo.type === 'cross_product') {
+                        if (currentToolType === 'go-bot' || currentToolType === 'go-quick') {
+                            discountTypeText = 'Mua thêm gói';
+                        } else {
+                            discountTypeText = 'Khách hàng đang sử dụng sản phẩm khác';
+                        }
+                    } else {
+                        discountTypeText = 'Ưu đãi đặc biệt';
+                    }
+                    
+                    const hasLimitInfo = additionalData && additionalData.current_limit !== undefined && 
+                                        additionalData.new_limit !== undefined && 
+                                        additionalData.total_limit_after !== undefined;
+                    
+                    let limitInfoHtml = '';
+                    if (hasLimitInfo && (currentToolType === 'go-bot' || currentToolType === 'go-quick')) {
+                        const limitType = additionalData.limit_type === 'mst' ? 'MST' : 'CCCD';
+                        const currentLimit = additionalData.current_limit || 0;
+                        const newLimit = additionalData.new_limit || 0;
+                        const totalLimitAfter = additionalData.total_limit_after || 0;
+                        
+                        limitInfoHtml = `
+                            <div style="margin-top: 5px; color: #666;">
+                                ${limitType} còn lại: <strong>${currentLimit.toLocaleString('vi-VN')}</strong>
+                            </div>
+                            <div style="margin-top: 3px; color: #666;">
+                                ${limitType} gói mới: <strong>${newLimit.toLocaleString('vi-VN')}</strong>
+                            </div>
+                            <div style="margin-top: 3px; color: #666;">
+                                ${limitType} sau khi mua thêm: <strong style="color: #227447;">${totalLimitAfter.toLocaleString('vi-VN')}</strong>
+                            </div>
+                        `;
+                    }
+                    
+                    discountInfoSection.innerHTML = `
+                        <div class="discount-notice mb-2" style="background: #e8f5e9; padding: 10px; border-radius: 5px; font-size: 13px; border-left: 4px solid #4caf50;">
+                            <strong>🎉 ${discountTypeText} - Ưu đãi ${discountInfo.discount_percent}%</strong>
+                            ${hasLimitInfo && (currentToolType === 'go-bot' || currentToolType === 'go-quick') ? '' : `
+                            <div style="margin-top: 5px; color: #666;">
+                                Gói: <strong>${package.name}</strong>
+                            </div>
+                            `}
+                            ${limitInfoHtml}
+                            <div style="margin-top: 3px; color: #666;">
+                                Giá gốc: ${formatPrice(discountInfo.original_price)}đ - 
+                                Giảm ${formatPrice(discountInfo.discount_amount)}đ = 
+                                <strong style="color: #227447;">${formatPrice(discountInfo.final_amount)}đ</strong>
+                                ${additionalData && additionalData.license_fee && currentToolType === 'go-invoice' ? 
+                                    ` + Phí bản quyền: ${formatPrice(additionalData.license_fee)}đ` : ''}
+                            </div>
+                            ${additionalData && additionalData.license_fee && currentToolType === 'go-invoice' ? 
+                                `<div style="margin-top: 3px; color: #666; font-size: 11px;">
+                                    <em>ℹ️ Phí bản quyền chỉ áp dụng cho lần đầu đăng ký Go Invoice, không được giảm giá</em>
+                                </div>` : ''}
+                        </div>
+                    `;
+                }
+                
+                calculateTotal();
+            }
+            
+            function resetUpgradeInfo() {
+                currentUpgradeInfo = null;
+                const discountEl = modal.querySelector('[data-discount]');
+                if (discountEl) {
+                    discountEl.textContent = '0đ';
+                    const discountRow = discountEl.closest('.price-row');
+                    if (discountRow) {
+                        discountRow.classList.add('d-none');
+                        discountRow.style.display = 'none';
+                    }
+                }
+                
+                // Ẩn license_fee row
+                const licenseFeeRow = modal.querySelector('[data-license-fee-row]');
+                if (licenseFeeRow) {
+                    licenseFeeRow.classList.add('d-none');
+                    licenseFeeRow.style.display = 'none';
+                }
+                const licenseFeeEl = modal.querySelector('[data-license-fee]');
+                if (licenseFeeEl) {
+                    licenseFeeEl.textContent = '0đ';
+                }
+                
+                const upgradeInfoSection = modal.querySelector('.upgrade-info-section');
+                if (upgradeInfoSection) {
+                    upgradeInfoSection.remove();
+                }
+                
+                const renewalInfoSection = modal.querySelector('.renewal-info-section');
+                if (renewalInfoSection) {
+                    renewalInfoSection.remove();
+                }
+                
+                const discountInfoSection = modal.querySelector('.discount-info-section');
+                if (discountInfoSection) {
+                    discountInfoSection.remove();
+                }
+                
+                const downgradeInfoSection = modal.querySelector('.downgrade-info-section');
+                if (downgradeInfoSection) {
+                    downgradeInfoSection.remove();
+                }
+                
+                calculateTotal();
+            }
+
             function updatePackageInfo(packageData) {
                 const packageNameEl = modal.querySelector('[data-package-name]');
                 const packageDescEl = modal.querySelector('[data-package-desc]');
                 const packagePriceEl = modal.querySelector('[data-package-price]');
                 const registrationFeeEl = modal.querySelector('[data-registration-fee]');
 
-                // Get tool name from package data or detect from route
                 let toolName = packageData.tool_name || '';
                 if (!toolName) {
-                    // Try to detect from current route/page
                     const path = window.location.pathname;
-                    if (path.includes('go-invoice')) toolName = 'Go Invoice';
-                    else if (path.includes('go-soft')) toolName = 'Go Soft';
-                    else if (path.includes('go-quick')) toolName = 'Go Quick';
-                    else if (path.includes('go-bot')) toolName = 'Go Bot';
-                    else toolName = 'Go Invoice'; // default
+                    if (path.includes('go-invoice')) {
+                        toolName = 'Go Invoice';
+                    } else if (path.includes('go-soft')) {
+                        toolName = 'Go Soft';
+                    } else if (path.includes('go-quick')) {
+                        toolName = 'Go Quick';
+                    } else if (path.includes('go-bot')) {
+                        toolName = 'Go Bot';
+                    } else if (path.includes('pricing')) {
+                        const activeTab = document.querySelector('.pricing-tab.active');
+                        if (activeTab) {
+                            const tool = activeTab.getAttribute('data-tool');
+                            if (tool === 'go-invoice') toolName = 'Go Invoice';
+                            else if (tool === 'go-soft') toolName = 'Go Soft';
+                            else if (tool === 'go-quick') toolName = 'Go Quick';
+                            else if (tool === 'go-bot') toolName = 'Go Bot';
+                        }
+                        if (!toolName) {
+                            const activeContent = document.querySelector('.pricing-content.active');
+                            if (activeContent) {
+                                const contentId = activeContent.id;
+                                if (contentId.includes('go-invoice')) toolName = 'Go Invoice';
+                                else if (contentId.includes('go-soft')) toolName = 'Go Soft';
+                                else if (contentId.includes('go-quick')) toolName = 'Go Quick';
+                                else if (contentId.includes('go-bot')) toolName = 'Go Bot';
+                            }
+                        }
+                    }
+                    // Default fallback
+                    if (!toolName) {
+                        toolName = 'Go Invoice';
+                    }
                 }
 
                 // Package name and description
@@ -593,8 +1244,10 @@
                 }
                 const formattedPrice = price.toLocaleString('vi-VN');
 
-                if (packagePriceEl) packagePriceEl.textContent = formattedPrice + 'đ';
-                if (registrationFeeEl) registrationFeeEl.textContent = formattedPrice + 'đ';
+                if (!currentUpgradeInfo) {
+                    if (packagePriceEl) packagePriceEl.textContent = formattedPrice + 'đ';
+                    if (registrationFeeEl) registrationFeeEl.textContent = formattedPrice + 'đ';
+                }
 
                 // Update price badge (discount badge)
                 // Priority: discount > badge
@@ -610,23 +1263,33 @@
                     }
                 }
 
-                // Reset discount in price breakdown
-                const discountEl = modal.querySelector('[data-discount]');
-                if (discountEl) {
-                    discountEl.textContent = '0đ';
+                if (!currentUpgradeInfo) {
+                    const discountEl = modal.querySelector('[data-discount]');
+                    if (discountEl) {
+                        discountEl.textContent = '0đ';
+                    }
                 }
 
                 calculateTotal();
             }
 
-            // Calculate total amount
             function calculateTotal() {
-                const registrationFeeText = modal.querySelector('[data-registration-fee]')?.textContent || '0đ';
-                const discountText = modal.querySelector('[data-discount]')?.textContent || '0đ';
+                let total = 0;
+                
+                // Nếu có upgrade info, sử dụng final_amount (đã bao gồm license_fee nếu có)
+                if (currentUpgradeInfo && currentUpgradeInfo.final_amount) {
+                    total = currentUpgradeInfo.final_amount;
+                } else {
+                    // Tính toán bình thường
+                    const registrationFeeText = modal.querySelector('[data-registration-fee]')?.textContent || '0đ';
+                    const discountText = modal.querySelector('[data-discount]')?.textContent || '0đ';
+                    const licenseFeeText = modal.querySelector('[data-license-fee]')?.textContent || '0đ';
 
-                const registrationFee = parseFloat(registrationFeeText.replace(/[^\d]/g, '') || 0);
-                const discount = parseFloat(discountText.replace(/[^\d-]/g, '') || 0);
-                const total = Math.max(0, registrationFee + discount);
+                    const registrationFee = parseFloat(registrationFeeText.replace(/[^\d]/g, '') || 0);
+                    const discount = parseFloat(discountText.replace(/[^\d-]/g, '') || 0);
+                    const licenseFee = parseFloat(licenseFeeText.replace(/[^\d]/g, '') || 0);
+                    total = Math.max(0, registrationFee + discount + licenseFee);
+                }
 
                 const totalEl = modal.querySelector('[data-total-amount]');
                 if (totalEl) {
@@ -634,19 +1297,97 @@
                 }
             }
 
-            // Handle promo code
-            const applyButton = modal.querySelector('.btn-apply');
-            if (applyButton) {
-                applyButton.addEventListener('click', function() {
-                    const promoInput = modal.querySelector('.promo-input');
-                    const promoCode = promoInput?.value.trim();
+            // Handle referral code check (sử dụng nút btn-check-referral ở promo-code-section)
+            const btnCheckReferral = modal.querySelector('#btn-check-referral');
+            const referralCodeInput = modal.querySelector('#referral_code_input');
+            const referralCodeHidden = modal.querySelector('#referral_code');
+            const referralInfo = modal.querySelector('#referral-info');
+            const referralError = modal.querySelector('#referral-error');
+            const referralUserName = modal.querySelector('#referral-user-name');
+            const referralErrorMessage = modal.querySelector('#referral-error-message');
+            
+            let currentReferralCode = null;
+            let currentReferrerId = null;
 
-                    if (promoCode) {
-                        // TODO: Call API to validate promo code
-                        console.log('Applying promo code:', promoCode);
-                        // Update discount amount based on API response
-                        // For now, just update UI
-                        // calculateTotal();
+            if (btnCheckReferral && referralCodeInput) {
+                btnCheckReferral.addEventListener('click', async function() {
+                    const referralCode = referralCodeInput.value.trim().toUpperCase();
+                    
+                    if (!referralCode) {
+                        if (referralError && referralErrorMessage) {
+                            referralErrorMessage.textContent = 'Vui lòng nhập mã giới thiệu.';
+                            referralError.classList.remove('d-none');
+                        }
+                        if (referralInfo) referralInfo.classList.add('d-none');
+                        if (referralCodeHidden) referralCodeHidden.value = '';
+                        return;
+                    }
+
+                    btnCheckReferral.disabled = true;
+                    const originalText = btnCheckReferral.innerHTML;
+                    btnCheckReferral.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                    try {
+                        const response = await fetch('{{ route("payment.check-referral-code") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ referral_code: referralCode })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            currentReferralCode = referralCode;
+                            currentReferrerId = result.data.id;
+                            
+                            // Lưu vào input hidden
+                            if (referralCodeHidden) {
+                                referralCodeHidden.value = referralCode;
+                            }
+                            
+                            // Hiển thị thông tin người giới thiệu
+                            if (referralInfo && referralUserName) {
+                                referralUserName.textContent = `Được giới thiệu bởi: ${result.data.full_name}`;
+                                referralInfo.classList.remove('d-none');
+                            }
+                            if (referralError) referralError.classList.add('d-none');
+                        } else {
+                            currentReferralCode = null;
+                            currentReferrerId = null;
+                            
+                            // Xóa input hidden
+                            if (referralCodeHidden) {
+                                referralCodeHidden.value = '';
+                            }
+                            
+                            if (referralError && referralErrorMessage) {
+                                referralErrorMessage.textContent = result.message || 'Mã giới thiệu không hợp lệ.';
+                                referralError.classList.remove('d-none');
+                            }
+                            if (referralInfo) referralInfo.classList.add('d-none');
+                        }
+                    } catch (error) {
+                        console.error('Lỗi kiểm tra mã giới thiệu:', error);
+                        if (referralError && referralErrorMessage) {
+                            referralErrorMessage.textContent = 'Có lỗi xảy ra khi kiểm tra mã giới thiệu.';
+                            referralError.classList.remove('d-none');
+                        }
+                        if (referralInfo) referralInfo.classList.add('d-none');
+                        if (referralCodeHidden) referralCodeHidden.value = '';
+                    } finally {
+                        btnCheckReferral.disabled = false;
+                        btnCheckReferral.innerHTML = originalText;
+                    }
+                });
+
+                // Cho phép nhấn Enter để check
+                referralCodeInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        btnCheckReferral.click();
                     }
                 });
             }
@@ -861,6 +1602,11 @@
                     
                     formData.append('package_id', packageId);
                     
+                    // Thêm mã giới thiệu nếu đã check thành công
+                    if (currentReferralCode) {
+                        formData.append('referral_code', currentReferralCode);
+                    }
+                    
                     // Xử lý phone
                     const countryCode = formData.get('country_code');
                     const phone = formData.get('phone');
@@ -873,6 +1619,49 @@
                         formData.set('export_vat_invoice', '0');
                     }
 
+                    // Kiểm tra lỗi upgrade trước khi submit (chỉ cho go-invoice và go-soft)
+                    if ((currentToolType === 'go-invoice' || currentToolType === 'go-soft') && 
+                        currentUpgradeInfo && currentUpgradeInfo.error) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Không thể mua gói này',
+                            text: currentUpgradeInfo.message || 'Không thể mua gói này. Vui lòng chọn gói khác.',
+                            confirmButtonColor: '#3085d6'
+                        });
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        return;
+                    }
+                    
+                    // Kiểm tra downgrade với thời hạn còn trên 1 tháng
+                    if ((currentToolType === 'go-invoice' || currentToolType === 'go-soft') && 
+                        currentUpgradeInfo && currentUpgradeInfo.is_downgrade && currentUpgradeInfo.downgrade_info) {
+                        const downgradeInfo = currentUpgradeInfo.downgrade_info;
+                        if (downgradeInfo.days_remaining !== null && downgradeInfo.days_remaining >= 30) {
+                            const hoursRemaining = downgradeInfo.hours_remaining || 0;
+                            let timeText = '';
+                            if (downgradeInfo.days_remaining === 0 && hoursRemaining === 0) {
+                                timeText = 'đã hết hạn';
+                            } else if (downgradeInfo.days_remaining === 0) {
+                                timeText = `${hoursRemaining} giờ`;
+                            } else if (hoursRemaining === 0) {
+                                timeText = `${downgradeInfo.days_remaining} ngày`;
+                            } else {
+                                timeText = `${downgradeInfo.days_remaining} ngày ${hoursRemaining} giờ`;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Không thể giảm cấp',
+                                text: `Chỉ cho phép giảm cấp khi thời hạn gói hiện tại còn dưới 1 tháng. Hiện tại còn ${timeText}.`,
+                                confirmButtonColor: '#3085d6'
+                            });
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                            return;
+                        }
+                    }
+                    
                     // Gọi API tạo purchase
                     const routeMap = {
                         'go-invoice': '{{ route("payment.go-invoice.store") }}',
@@ -893,6 +1682,22 @@
 
                     if (result.success) {
                         currentTransactionCode = result.transaction_code;
+                        
+                        // Cập nhật upgrade info nếu có (chỉ cho go-invoice và go-soft)
+                        if ((currentToolType === 'go-invoice' || currentToolType === 'go-soft') && 
+                            result.is_upgrade && result.upgrade_info) {
+                            currentUpgradeInfo = {
+                                ...currentUpgradeInfo,
+                                final_amount: result.upgrade_info.final_amount,
+                                discount_amount: result.upgrade_info.discount_amount,
+                                discount_percent: result.upgrade_info.discount_percent,
+                            };
+                            // Cập nhật lại giá hiển thị
+                            if (currentUpgradeInfo && !currentUpgradeInfo.error) {
+                                displayUpgradeInfo(currentUpgradeInfo);
+                            }
+                        }
+                        
                         // Load payment info
                         await loadPaymentInfo(result.transaction_code);
                         // Ẩn step 1, hiện step 2
@@ -1122,6 +1927,20 @@
                 const formEl = modal.querySelector('#registrationForm');
                 if (formEl) formEl.reset();
                 currentTransactionCode = null;
+                currentUpgradeInfo = null;
+                resetUpgradeInfo();
+                
+                // Reset referral info
+                const referralInfo = modal.querySelector('#referral-info');
+                const referralError = modal.querySelector('#referral-error');
+                const referralCodeInput = modal.querySelector('#referral_code_input');
+                const referralCodeHidden = modal.querySelector('#referral_code');
+                if (referralInfo) referralInfo.classList.add('d-none');
+                if (referralError) referralError.classList.add('d-none');
+                if (referralCodeInput) referralCodeInput.value = '';
+                if (referralCodeHidden) referralCodeHidden.value = '';
+                if (typeof currentReferralCode !== 'undefined') currentReferralCode = null;
+                if (typeof currentReferrerId !== 'undefined') currentReferrerId = null;
             });
         });
     </script>

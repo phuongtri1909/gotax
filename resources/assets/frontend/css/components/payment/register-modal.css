@@ -1,6 +1,15 @@
+.register-modal {
+    z-index: 1055 !important;
+}
+
+.register-modal .modal-backdrop {
+    z-index: 1050 !important;
+}
+
 .register-modal .modal-content {
     border: none;
     border-radius: 0;
+    z-index: 1055 !important;
 }
 
 .register-modal .btn-back {

@@ -13,6 +13,8 @@ class GoSoftPurchase extends Model
         'package_id',
         'transaction_code',
         'amount',
+        'discount_percent',
+        'discount_amount',
         'mst_limit',
         'expires_tool',
         'status',
@@ -28,13 +30,20 @@ class GoSoftPurchase extends Model
         'vat_company',
         'vat_address',
         'expires_at',
-        ];
+        // Upgrade fields
+        'is_upgrade',
+        'upgrade_history_id',
+        'old_package_id',
+    ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount' => 'integer',
+        'discount_percent' => 'decimal:2',
+        'discount_amount' => 'integer',
         'mst_limit' => 'integer',
         'expires_tool' => 'datetime',
         'expires_at' => 'datetime',
+        'is_upgrade' => 'boolean',
     ];
 
     const STATUS_PENDING = 'pending';
@@ -55,6 +64,30 @@ class GoSoftPurchase extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(GoSoftPackage::class, 'package_id');
+    }
+
+    /**
+     * Relationship với gói cũ (nếu là upgrade)
+     */
+    public function oldPackage(): BelongsTo
+    {
+        return $this->belongsTo(GoSoftPackage::class, 'old_package_id');
+    }
+
+    /**
+     * Relationship với upgrade history
+     */
+    public function upgradeHistory(): BelongsTo
+    {
+        return $this->belongsTo(PackageUpgradeHistory::class, 'upgrade_history_id');
+    }
+
+    /**
+     * Kiểm tra xem purchase này có phải là upgrade không
+     */
+    public function isUpgrade(): bool
+    {
+        return $this->is_upgrade === true;
     }
 
     public function scopeSuccess($query)

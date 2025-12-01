@@ -12,11 +12,15 @@ class GoSoftUse extends Model
         'package_id',
         'expires_at',
         'mst_limit',
+        'purchase_count',
+        'first_purchase_date',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'mst_limit' => 'integer',
+        'purchase_count' => 'integer',
+        'first_purchase_date' => 'datetime',
     ];
 
     public function user(): BelongsTo

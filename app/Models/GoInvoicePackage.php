@@ -21,8 +21,8 @@ class GoInvoicePackage extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'license_fee' => 'decimal:2',
+        'price' => 'integer',
+        'license_fee' => 'integer',
         'mst_limit' => 'integer',
         'discount_percent' => 'integer',
         'order' => 'integer',
