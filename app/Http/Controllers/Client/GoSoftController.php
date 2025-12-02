@@ -203,7 +203,7 @@ class GoSoftController extends Controller
     }
 
     /**
-     * Crawl tờ khai (sync)
+     * Crawl tờ khai với SSE streaming (để tránh timeout và hiển thị progress realtime)
      */
     public function crawlTokhai(Request $request)
     {
@@ -214,6 +214,15 @@ class GoSoftController extends Controller
             'tokhai_type' => 'nullable|string',
         ]);
 
+        // Kiểm tra nếu client muốn SSE
+        $acceptHeader = $request->header('Accept', '');
+        $useSSE = str_contains($acceptHeader, 'text/event-stream') || $request->input('stream') === 'true';
+
+        if ($useSSE) {
+            return $this->crawlTokhaiSSE($request);
+        }
+
+        // Fallback: sync mode
         try {
             $data = [
                 'session_id' => $request->session_id,
@@ -268,6 +277,180 @@ class GoSoftController extends Controller
     }
 
     /**
+     * Crawl tờ khai với SSE streaming
+     * Trả về realtime progress để frontend hiển thị
+     */
+    public function crawlTokhaiSSE(Request $request)
+    {
+        $sessionId = $request->input('session_id');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $tokhaiType = $request->input('tokhai_type');
+
+        return response()->stream(function () use ($sessionId, $startDate, $endDate, $tokhaiType) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            $url = $this->getApiUrl() . '/crawl/tokhai';
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'text/event-stream',
+            ];
+
+            if ($apiKey = $this->getApiKey()) {
+                $headers['X-API-Key'] = $apiKey;
+            }
+
+            $data = [
+                'session_id' => $sessionId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ];
+
+            if ($tokhaiType) {
+                $data['tokhai_type'] = (string) $tokhaiType;
+            }
+
+            try {
+                // Dùng cURL để stream SSE từ Python API
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(
+                    fn($k, $v) => "$k: $v",
+                    array_keys($headers),
+                    array_values($headers)
+                ));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 600);
+                curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
+                    echo $data;
+                    flush();
+                    return strlen($data);
+                });
+
+                curl_exec($ch);
+
+                if (curl_errno($ch)) {
+                    echo "data: " . json_encode([
+                        'type' => 'error',
+                        'error' => 'Connection error: ' . curl_error($ch)
+                    ]) . "\n\n";
+                    flush();
+                }
+
+                curl_close($ch);
+
+            } catch (\Exception $e) {
+                echo "data: " . json_encode([
+                    'type' => 'error',
+                    'error' => $e->getMessage()
+                ]) . "\n\n";
+                flush();
+            }
+
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
+    }
+
+    /**
+     * Lấy thông tin tờ khai (không download file) - nhanh hơn
+     */
+    public function crawlTokhaiInfo(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+            'tokhai_type' => 'nullable|string',
+        ]);
+
+        try {
+            $data = [
+                'session_id' => $request->session_id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+            ];
+
+            if ($request->tokhai_type) {
+                $data['tokhai_type'] = (string) $request->tokhai_type;
+            }
+
+            // Timeout ngắn hơn vì chỉ lấy info, không download
+            $result = $this->makeApiRequest('POST', '/crawl/tokhai/info', $data, 120);
+
+            if ($result['success']) {
+                return response()->json([
+                    'status' => 'success',
+                    'total' => $result['data']['total'] ?? 0,
+                    'results' => $result['data']['results'] ?? [],
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $result['data']['message'] ?? $result['message'] ?? 'Lấy thông tin thất bại',
+            ], $result['status'] ?? 500);
+        } catch (\Exception $e) {
+            Log::error('Crawl tokhai info error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi lấy thông tin tờ khai: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Download các file tờ khai đã chọn
+     */
+    public function downloadTokhaiFiles(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'tokhai_ids' => 'required|array',
+        ]);
+
+        try {
+            $data = [
+                'session_id' => $request->session_id,
+                'tokhai_ids' => $request->tokhai_ids,
+            ];
+
+            $result = $this->makeApiRequest('POST', '/crawl/tokhai/download', $data, 300);
+
+            if ($result['success']) {
+                $zipBase64 = $result['data']['zip_base64'] ?? null;
+                
+                return response()->json([
+                    'status' => 'success',
+                    'total' => $result['data']['total'] ?? 0,
+                    'files_count' => $result['data']['files_count'] ?? 0,
+                    'zip_base64' => $zipBase64,
+                    'zip_filename' => $result['data']['zip_filename'] ?? null,
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $result['data']['message'] ?? $result['message'] ?? 'Download thất bại',
+            ], $result['status'] ?? 500);
+        } catch (\Exception $e) {
+            Log::error('Download tokhai files error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi download tờ khai: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Crawl thông báo (sync)
      */
     public function crawlThongbao(Request $request)
@@ -278,6 +461,15 @@ class GoSoftController extends Controller
             'end_date' => 'required|string',
         ]);
 
+        // Kiểm tra nếu client muốn SSE
+        $acceptHeader = $request->header('Accept', '');
+        $useSSE = str_contains($acceptHeader, 'text/event-stream') || $request->input('stream') === 'true';
+
+        if ($useSSE) {
+            return $this->crawlThongbaoSSE($request);
+        }
+
+        // Fallback: sync mode
         try {
             $data = [
                 'session_id' => $request->session_id,
@@ -327,6 +519,79 @@ class GoSoftController extends Controller
     }
 
     /**
+     * Crawl thông báo với SSE streaming
+     */
+    public function crawlThongbaoSSE(Request $request)
+    {
+        $sessionId = $request->input('session_id');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        return response()->stream(function () use ($sessionId, $startDate, $endDate) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            $url = $this->getApiUrl() . '/crawl/thongbao';
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'text/event-stream',
+            ];
+
+            if ($apiKey = $this->getApiKey()) {
+                $headers['X-API-Key'] = $apiKey;
+            }
+
+            $data = [
+                'session_id' => $sessionId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ];
+
+            try {
+                // Dùng cURL để stream SSE từ Python API
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(
+                    fn($k, $v) => "$k: $v",
+                    array_keys($headers),
+                    array_values($headers)
+                ));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 600);
+                curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
+                    echo $data;
+                    flush();
+                    return strlen($data);
+                });
+
+                curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($httpCode !== 200) {
+                    echo "data: " . json_encode([
+                        'type' => 'error',
+                        'error' => 'HTTP ' . $httpCode . ' from API'
+                    ], JSON_UNESCAPED_UNICODE) . "\n\n";
+                }
+            } catch (\Exception $e) {
+                echo "data: " . json_encode([
+                    'type' => 'error',
+                    'error' => $e->getMessage()
+                ], JSON_UNESCAPED_UNICODE) . "\n\n";
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
      * Crawl giấy nộp tiền thuế (sync)
      */
     public function crawlGiayNopTien(Request $request)
@@ -337,6 +602,15 @@ class GoSoftController extends Controller
             'end_date' => 'required|string',
         ]);
 
+        // Kiểm tra nếu client muốn SSE
+        $acceptHeader = $request->header('Accept', '');
+        $useSSE = str_contains($acceptHeader, 'text/event-stream') || $request->input('stream') === 'true';
+
+        if ($useSSE) {
+            return $this->crawlGiayNopTienSSE($request);
+        }
+
+        // Fallback: sync mode
         try {
             $data = [
                 'session_id' => $request->session_id,
@@ -383,6 +657,79 @@ class GoSoftController extends Controller
                 'message' => 'Lỗi khi crawl giấy nộp tiền thuế: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Crawl giấy nộp tiền với SSE streaming
+     */
+    public function crawlGiayNopTienSSE(Request $request)
+    {
+        $sessionId = $request->input('session_id');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        return response()->stream(function () use ($sessionId, $startDate, $endDate) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            $url = $this->getApiUrl() . '/crawl/giaynoptien';
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'text/event-stream',
+            ];
+
+            if ($apiKey = $this->getApiKey()) {
+                $headers['X-API-Key'] = $apiKey;
+            }
+
+            $data = [
+                'session_id' => $sessionId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ];
+
+            try {
+                // Dùng cURL để stream SSE từ Python API
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(
+                    fn($k, $v) => "$k: $v",
+                    array_keys($headers),
+                    array_values($headers)
+                ));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 600);
+                curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
+                    echo $data;
+                    flush();
+                    return strlen($data);
+                });
+
+                curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($httpCode !== 200) {
+                    echo "data: " . json_encode([
+                        'type' => 'error',
+                        'error' => 'HTTP ' . $httpCode . ' from API'
+                    ], JSON_UNESCAPED_UNICODE) . "\n\n";
+                }
+            } catch (\Exception $e) {
+                echo "data: " . json_encode([
+                    'type' => 'error',
+                    'error' => $e->getMessage()
+                ], JSON_UNESCAPED_UNICODE) . "\n\n";
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 
     /**
@@ -458,6 +805,89 @@ class GoSoftController extends Controller
                 'message' => 'Lỗi khi đóng session: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Crawl batch - nhiều loại đồng thời (SSE streaming)
+     */
+    public function crawlBatch(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+            'crawl_types' => 'required|array|min:1',
+            'tokhai_type' => 'nullable|string',
+        ]);
+
+        // Sử dụng SSE streaming để trả về kết quả realtime
+        return response()->stream(function () use ($request) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            try {
+                $apiUrl = $this->getApiUrl() . '/crawl/batch';
+                $headers = [
+                    'Content-Type: application/json',
+                    'Accept: text/event-stream',
+                ];
+
+                if ($apiKey = $this->getApiKey()) {
+                    $headers[] = 'X-API-Key: ' . $apiKey;
+                }
+
+                $data = [
+                    'session_id' => $request->session_id,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                    'crawl_types' => $request->crawl_types,
+                ];
+
+                if ($request->tokhai_type) {
+                    $data['tokhai_type'] = (string) $request->tokhai_type;
+                }
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $apiUrl);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 1800); // 30 phút cho batch
+                curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
+                    echo $data;
+                    flush();
+                    return strlen($data);
+                });
+
+                $result = curl_exec($ch);
+
+                if (curl_errno($ch)) {
+                    echo "data: " . json_encode([
+                        'type' => 'error',
+                        'error' => 'Connection error: ' . curl_error($ch)
+                    ]) . "\n\n";
+                    flush();
+                }
+
+                curl_close($ch);
+
+            } catch (\Exception $e) {
+                echo "data: " . json_encode([
+                    'type' => 'error',
+                    'error' => $e->getMessage()
+                ]) . "\n\n";
+                flush();
+            }
+
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
     }
 }
 

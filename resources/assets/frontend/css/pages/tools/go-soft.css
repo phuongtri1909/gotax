@@ -1159,7 +1159,7 @@
 
 .download-files-grid {
     margin: 0 auto;
-    width: 500px;
+    max-width: 575px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;

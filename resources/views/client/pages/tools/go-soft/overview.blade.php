@@ -108,24 +108,92 @@
                 </select>
             </div>
             
-            <!-- Loại -->
+            <!-- Loại (checkbox để chọn nhiều) -->
             <div class="form-row">
                 <label class="form-label">Loại</label>
-                <div class="radio-group">
-                    <label class="radio-option">
-                        <input type="radio" name="loai" value="to-khai" checked>
-                        <span>Tờ khai</span>
+                <div class="checkbox-group" id="loaiCheckboxGroup">
+                    <label class="loai-checkbox-option selected">
+                        <input type="checkbox" name="loai[]" value="to-khai" checked>
+                        <span class="loai-checkbox-icon"></span>
+                        <span class="loai-checkbox-text">Tờ khai</span>
                     </label>
-                    <label class="radio-option">
-                        <input type="radio" name="loai" value="giay-nop-tien">
-                        <span>Giấy nộp tiền</span>
+                    <label class="loai-checkbox-option">
+                        <input type="checkbox" name="loai[]" value="giay-nop-tien">
+                        <span class="loai-checkbox-icon"></span>
+                        <span class="loai-checkbox-text">Giấy nộp tiền</span>
                     </label>
-                    <label class="radio-option">
-                        <input type="radio" name="loai" value="thong-bao">
-                        <span>Thông báo</span>
+                    <label class="loai-checkbox-option">
+                        <input type="checkbox" name="loai[]" value="thong-bao">
+                        <span class="loai-checkbox-icon"></span>
+                        <span class="loai-checkbox-text">Thông báo</span>
                     </label>
                 </div>
             </div>
+            
+            <style>
+                .checkbox-group {
+                    display: flex;
+                    gap: 15px;
+                    flex-wrap: wrap;
+                }
+                
+                .loai-checkbox-option {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 12px 24px;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    background: #fff;
+                    min-width: 140px;
+                }
+                
+                .loai-checkbox-option:hover {
+                    border-color: #4CAF50;
+                }
+                
+                .loai-checkbox-option.selected {
+                    border-color: #4CAF50;
+                    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+                }
+                
+                .loai-checkbox-option input[type="checkbox"] {
+                    display: none;
+                }
+                
+                .loai-checkbox-icon {
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid #ccc;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
+                    flex-shrink: 0;
+                }
+                
+                .loai-checkbox-option.selected .loai-checkbox-icon {
+                    border-color: #4CAF50;
+                    background: #4CAF50;
+                }
+                
+                .loai-checkbox-option.selected .loai-checkbox-icon::after {
+                    content: '';
+                    width: 6px;
+                    height: 6px;
+                    background: #fff;
+                    border-radius: 50%;
+                }
+                
+                .loai-checkbox-text {
+                    font-size: 14px;
+                    color: #333;
+                    font-weight: 500;
+                }
+            </style>
             
             <!-- Action Button -->
             <div class="form-actions">
@@ -296,6 +364,18 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         updateUIForLoggedOut();
     }
+    
+    // Checkbox loại - toggle selected class
+    document.querySelectorAll('.loai-checkbox-option input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = this.closest('.loai-checkbox-option');
+            if (this.checked) {
+                label.classList.add('selected');
+            } else {
+                label.classList.remove('selected');
+            }
+        });
+    });
     
     // Button click handler
     lookupBtn.addEventListener('click', async function() {
@@ -487,10 +567,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Đăng nhập';
                 
-                // Reset refresh button
+                // Reset refresh button - ĐẢM BẢO LUÔN HOẠT ĐỘNG
                 if (captchaRefreshBtn) {
                     captchaRefreshBtn.disabled = false;
                     captchaRefreshBtn.classList.remove('loading');
+                    // Đảm bảo có event handler để có thể thử lại
+                    captchaRefreshBtn.onclick = () => {
+                        if (captchaInput) {
+                            captchaInput.value = '';
+                        }
+                        initTaxLogin();
+                    };
                 }
                 
                 // Ẩn captcha nếu có lỗi
@@ -503,9 +590,28 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Init login error:', error);
             showGoSoftFailed(error.message || 'Lỗi kết nối');
             const form = document.querySelector('.tax-login-form');
+            if (form) {
             const submitBtn = form.querySelector('.btn-submit-login');
+                if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Đăng nhập';
+                }
+                
+                // Đảm bảo nút refresh luôn hoạt động khi có lỗi - dùng selector đúng
+                const captchaRefreshBtn = form.querySelector('.captcha-refresh') || form.querySelector('.captcha-refresh-btn');
+                if (captchaRefreshBtn) {
+                    captchaRefreshBtn.disabled = false;
+                    captchaRefreshBtn.classList.remove('loading');
+                    // Đảm bảo có event handler để có thể thử lại
+                    captchaRefreshBtn.onclick = () => {
+                        const captchaInput = form.querySelector('.captcha-input');
+                        if (captchaInput) {
+                            captchaInput.value = '';
+                        }
+                        initTaxLogin();
+                    };
+                }
+            }
         }
     }
     
@@ -656,7 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
     }
     
-    function showDownloadSection(downloadData) {
+    function showDownloadSection(downloadData, zipFilename = null, mode = 'single') {
         const mainRow = document.getElementById('goSoftMainRow');
         const downloadSection = document.getElementById('downloadSection');
         const formSection = document.querySelector('.overview-form-section');
@@ -678,6 +784,63 @@ document.addEventListener('DOMContentLoaded', function() {
         const loai = downloadData.loai || 'to-khai';
         const zipBase64 = downloadData.zip_base64;
         const total = downloadData.total || 0;
+        const batchResults = downloadData.batch_results || {};
+        
+        // Xử lý batch mode
+        if (mode === 'batch' && batchResults) {
+            console.log('showDownloadSection batch mode:', {
+                batchResults,
+                mode,
+                hasBatchResults: !!batchResults
+            });
+            
+            // Hiển thị tất cả các loại có trong batch results
+            document.querySelectorAll('.download-file-item').forEach(item => {
+                const dataType = item.getAttribute('data-type');
+                const button = item.querySelector('.btn-download-item');
+                
+                // Map data-type sang crawl_type
+                let crawlType = null;
+                if (dataType === 'to-khai') crawlType = 'tokhai';
+                else if (dataType === 'giay-nop-tien') crawlType = 'giaynoptien';
+                else if (dataType === 'thong-bao') crawlType = 'thongbao';
+                
+                if (crawlType && batchResults[crawlType]) {
+                    const typeResult = batchResults[crawlType];
+                    const typeZipBase64 = typeResult.zip_base64;
+                    const hasZip = typeZipBase64 && typeof typeZipBase64 === 'string' && typeZipBase64.trim().length > 0;
+                    
+                    console.log(`Checking ${crawlType}:`, {
+                        hasTypeResult: !!typeResult,
+                        hasZipBase64: !!typeZipBase64,
+                        zipBase64Length: typeZipBase64 ? typeZipBase64.length : 0,
+                        hasZip
+                    });
+                    
+                    item.style.display = 'flex';
+                    
+                    if (button) {
+                        if (!hasZip) {
+                            button.disabled = true;
+                            button.style.opacity = '0.5';
+                            button.style.cursor = 'not-allowed';
+                        } else {
+                            button.disabled = false;
+                            button.style.opacity = '1';
+                            button.style.cursor = 'pointer';
+                            
+                            // Lưu zip_base64 vào button để dùng khi click
+                            button.dataset.zipBase64 = typeZipBase64;
+                            button.dataset.crawlType = crawlType;
+                            button.dataset.total = typeResult.total || 0;
+                        }
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        } else {
+            // Single mode - hiển thị 1 loại
         const hasZipBase64 = zipBase64 && typeof zipBase64 === 'string' && zipBase64.trim().length > 0;
         
         document.querySelectorAll('.download-file-item').forEach(item => {
@@ -696,19 +859,38 @@ document.addEventListener('DOMContentLoaded', function() {
                         button.disabled = false;
                         button.style.opacity = '1';
                         button.style.cursor = 'pointer';
+                            
+                            // Lưu zip_base64 vào button
+                            button.dataset.zipBase64 = zipBase64;
+                            button.dataset.loai = loai;
+                            button.dataset.total = total;
                     }
                 }
             } else {
                 item.style.display = 'none';
             }
         });
+        }
         
         document.querySelectorAll('.btn-download-item').forEach(btn => {
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
             newBtn.addEventListener('click', function() {
-                if (!hasZipBase64) {
+                // Lấy zip_base64 từ dataset (batch mode) hoặc từ downloadData (single mode)
+                let zipBase64ToUse = this.dataset.zipBase64;
+                let loaiToUse = this.dataset.loai;
+                let totalToUse = parseInt(this.dataset.total) || 0;
+                let crawlType = this.dataset.crawlType;
+                
+                // Nếu không có trong dataset (single mode), dùng từ downloadData
+                if (!zipBase64ToUse && mode === 'single') {
+                    zipBase64ToUse = zipBase64;
+                    loaiToUse = loai;
+                    totalToUse = total;
+                }
+                
+                if (!zipBase64ToUse || typeof zipBase64ToUse !== 'string' || zipBase64ToUse.trim().length === 0) {
                     showGoSoftFailed('Không có dữ liệu để tải xuống');
                     return;
                 }
@@ -719,26 +901,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.querySelector('span').textContent = 'Đang tải...';
                 
                 try {
-                    const zipBytes = Uint8Array.from(atob(zipBase64), c => c.charCodeAt(0));
-                    const blob = new Blob([zipBytes], { type: 'application/zip' });
-                    const url = URL.createObjectURL(blob);
+                    const zipBytes = Uint8Array.from(atob(zipBase64ToUse), c => c.charCodeAt(0));
                     
                     let filename = 'download.zip';
-                    if (loai === 'to-khai') {
-                        filename = `tokhai_${total}_files.zip`;
-                    } else if (loai === 'giay-nop-tien') {
-                        filename = `giaynoptien_${total}_files.zip`;
-                    } else if (loai === 'thong-bao') {
-                        filename = `thongbao_${total}_files.zip`;
+                    if (mode === 'batch' && crawlType) {
+                        // Batch mode - dùng crawlType
+                        if (crawlType === 'tokhai') {
+                            filename = `tokhai_${totalToUse}_files.zip`;
+                        } else if (crawlType === 'giaynoptien') {
+                            filename = `giaynoptien_${totalToUse}_files.zip`;
+                        } else if (crawlType === 'thongbao') {
+                            filename = `thongbao_${totalToUse}_files.zip`;
+                        }
+                    } else {
+                        // Single mode - dùng loai
+                        if (loaiToUse === 'to-khai') {
+                            filename = `tokhai_${totalToUse}_files.zip`;
+                        } else if (loaiToUse === 'giay-nop-tien') {
+                            filename = `giaynoptien_${totalToUse}_files.zip`;
+                        } else if (loaiToUse === 'thong-bao') {
+                            filename = `thongbao_${totalToUse}_files.zip`;
+                        }
                     }
+                    
+                    // Nếu có zipFilename từ tham số, dùng nó
+                    if (zipFilename) {
+                        filename = zipFilename;
+                    }
+                    
+                    // Dùng Blob URL nhưng đảm bảo download attribute được set đúng
+                    const blob = new Blob([zipBytes], { type: 'application/zip' });
+                    const url = URL.createObjectURL(blob);
                     
                     const link = document.createElement('a');
                     link.href = url;
                     link.download = filename;
+                    link.style.display = 'none';
                     document.body.appendChild(link);
+                    
+                    // Trigger download
+                    setTimeout(() => {
                     link.click();
+                        // Clean up sau khi click
+                        setTimeout(() => {
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
+                        }, 100);
+                    }, 10);
                     
                     this.disabled = false;
                     this.querySelector('span').textContent = originalText;
@@ -809,40 +1018,639 @@ document.addEventListener('DOMContentLoaded', function() {
         const endDate = getEndDate();
         const tokhaiTypeRaw = toKhaiSelect.value || '';
         const tokhaiType = tokhaiTypeRaw ? String(tokhaiTypeRaw) : null;
-        const loai = document.querySelector('input[name="loai"]:checked')?.value || 'to-khai';
+        
+        // Lấy tất cả checkbox được chọn
+        const selectedLoaiCheckboxes = document.querySelectorAll('input[name="loai[]"]:checked');
+        const selectedLoaiList = Array.from(selectedLoaiCheckboxes).map(cb => cb.value);
+        
+        if (selectedLoaiList.length === 0) {
+            showGoSoftFailed('Vui lòng chọn ít nhất 1 loại');
+            return;
+        }
         
         if (!startDate || !endDate) {
             showGoSoftFailed('Vui lòng chọn khoảng thời gian');
             return;
         }
         
-        lookupBtn.disabled = true;
-        btnText.textContent = 'Đang tra cứu...';
+        // Clear download section trước khi bắt đầu crawl mới
+        const downloadSection = document.getElementById('downloadSection');
+        if (downloadSection) {
+            downloadSection.classList.add('d-none');
+        }
+        const mainRow = document.getElementById('goSoftMainRow');
+        if (mainRow) {
+            mainRow.classList.remove('d-none');
+        }
+        const formSection = document.querySelector('.overview-form-section');
+        if (formSection) {
+            formSection.classList.remove('d-none');
+        }
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 600000);
+        lookupBtn.disabled = true;
+        btnText.textContent = 'Đang kết nối...';
+        
+        // Hiển thị progress modal và reset message
+        showProgressModal();
+        updateProgressMessage('Đang kết nối...');
+        updateProgressCount(0, 'Đang bắt đầu...');
         
         try {
-            let routeUrl;
             let requestBody = {
                 session_id: String(sessionId),
                 start_date: String(startDate),
-                end_date: String(endDate)
+                end_date: String(endDate),
+                stream: 'true'
             };
+            
+            // Nếu chọn nhiều loại (2+), dùng batch API
+            if (selectedLoaiList.length > 1) {
+                // Convert loại sang crawl_types format
+                const crawlTypes = selectedLoaiList.map(loai => {
+                    if (loai === 'to-khai') return 'tokhai';
+                    if (loai === 'giay-nop-tien') return 'giaynoptien';
+                    if (loai === 'thong-bao') return 'thongbao';
+                    return loai;
+                });
+                
+                requestBody.crawl_types = crawlTypes;
+                if (tokhaiType && crawlTypes.includes('tokhai')) {
+                    requestBody.tokhai_type = String(tokhaiType);
+                }
+                
+                // Dùng batch API
+                const routeUrl = '{{ route("tools.go-soft.crawl.batch") }}';
+                await performBatchLookup(routeUrl, requestBody, selectedLoaiList);
+            } else {
+                // Chỉ chọn 1 loại - dùng API riêng như cũ
+                const loai = selectedLoaiList[0];
+                let routeUrl;
             
             if (loai === 'to-khai') {
                 routeUrl = '{{ route("tools.go-soft.crawl.tokhai") }}';
                 if (tokhaiType) {
                     requestBody.tokhai_type = String(tokhaiType);
                 }
+                    await performLookupWithSSE(routeUrl, requestBody, loai);
             } else if (loai === 'thong-bao') {
                 routeUrl = '{{ route("tools.go-soft.crawl.thongbao") }}';
+                    await performLookupWithSSE(routeUrl, requestBody, loai);
             } else if (loai === 'giay-nop-tien') {
                 routeUrl = '{{ route("tools.go-soft.crawl.giaynoptien") }}';
+                    await performLookupWithSSE(routeUrl, requestBody, loai);
             } else {
                 throw new Error('Loại không hợp lệ');
             }
+            }
+        } catch (error) {
+            hideProgressModal();
             
+            // Check session error - kiểm tra cả message và error object
+            const errorMessage = error.message || '';
+            const errorMessageLower = errorMessage.toLowerCase();
+            
+            // Check connection error - nếu không kết nối được API thì clear session và yêu cầu đăng nhập lại
+            if (errorMessage.includes('CONNECTION_ERROR:') ||
+                errorMessageLower.includes('failed to connect') ||
+                errorMessageLower.includes("couldn't connect") ||
+                errorMessageLower.includes('econnrefused') ||
+                errorMessageLower.includes('networkerror') ||
+                errorMessageLower.includes('network request failed') ||
+                errorMessageLower.includes('fetch failed')) {
+                // Extract message từ CONNECTION_ERROR nếu có
+                const connectionMessage = errorMessage.includes('CONNECTION_ERROR:') 
+                    ? errorMessage.split('CONNECTION_ERROR:')[1].trim()
+                    : 'Lỗi hệ thống: Không thể kết nối đến server. Vui lòng đăng nhập lại.';
+                handleSessionExpired(connectionMessage);
+                return;
+            }
+            
+            if (errorMessageLower.includes('session not found') ||
+                errorMessageLower.includes('session expired') ||
+                errorMessageLower.includes('session không hợp lệ') ||
+                errorMessageLower.includes('session đã hết hạn')) {
+                handleSessionExpired(errorMessage || 'Session không hợp lệ');
+                return;
+            }
+            
+            // Nếu error có error_code, check session error
+            if (error.error_code || (error.response && error.response.error_code)) {
+                const errorCode = error.error_code || error.response.error_code;
+                if (checkSessionError({ error_code: errorCode, message: errorMessage })) {
+                    return;
+                }
+            }
+            
+            if (error.name === 'AbortError') {
+                showGoSoftFailed('Quá trình tra cứu mất quá nhiều thời gian. Vui lòng thử lại với khoảng thời gian ngắn hơn.');
+            } else {
+                showGoSoftFailed(errorMessage || 'Lỗi kết nối');
+            }
+        } finally {
+            lookupBtn.disabled = false;
+            btnText.textContent = 'Tra cứu';
+        }
+    }
+    
+    // Batch lookup - crawl nhiều loại đồng thời
+    async function performBatchLookup(routeUrl, requestBody, selectedLoaiList) {
+        return new Promise((resolve, reject) => {
+            // Clear download section trước khi bắt đầu crawl mới
+            const downloadSection = document.getElementById('downloadSection');
+            if (downloadSection) {
+                downloadSection.classList.add('d-none');
+            }
+            const mainRow = document.getElementById('goSoftMainRow');
+            if (mainRow) {
+                mainRow.classList.remove('d-none');
+            }
+            const formSection = document.querySelector('.overview-form-section');
+            if (formSection) {
+                formSection.classList.remove('d-none');
+            }
+            
+            let results = [];
+            let batchResults = {};
+            let totalFiles = 0;
+            let zipBase64 = null;
+            let zipFilename = null;
+            let currentType = '';
+            let totalCount = 0; // Tổng số items đã tìm thấy
+            let hasError = false; // Flag để track lỗi
+            
+            fetch(routeUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream'
+                },
+                body: JSON.stringify(requestBody)
+            }).then(async response => {
+                if (!response.ok) {
+                    // Parse response body để lấy error_code
+                    let errorData = null;
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            errorData = JSON.parse(errorText);
+                        } catch (e) {
+                            errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
+                        }
+                    } catch (e) {
+                        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+                    }
+                    
+                    // Check session error trước khi throw
+                    if (checkSessionError(errorData)) {
+                        reject(new Error(errorData.message || 'Session không hợp lệ'));
+                        return;
+                    }
+                    
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                function processChunk({ done, value }) {
+                    if (done) {
+                        hideProgressModal();
+                        
+                        // Nếu có lỗi, không hiển thị trang kết quả
+                        if (hasError) {
+                            console.warn('Batch stream completed with error - not showing results');
+                            resolve();
+                            return;
+                        }
+                        
+                        // Hoàn thành - hiển thị kết quả
+                        const downloadData = {
+                            status: 'success',
+                            total: totalFiles,
+                            results: results,
+                            zip_base64: zipBase64,
+                            batch_results: batchResults,
+                            loai: 'batch'
+                        };
+                        
+                        // Kiểm tra xem có batchResults với zip_base64 không
+                        const hasBatchResults = batchResults && Object.keys(batchResults).length > 0;
+                        const hasAnyZipBase64 = hasBatchResults && Object.values(batchResults).some(result => 
+                            result && result.zip_base64 && typeof result.zip_base64 === 'string' && result.zip_base64.trim().length > 0
+                        );
+                        
+                        console.log('Batch complete:', {
+                            hasBatchResults,
+                            hasAnyZipBase64,
+                            batchResultsKeys: hasBatchResults ? Object.keys(batchResults) : [],
+                            totalFiles
+                        });
+                        
+                        if (hasAnyZipBase64 || zipBase64) {
+                            showDownloadSection(downloadData, zipFilename || `batch_${totalFiles}_files.zip`, 'batch');
+                        } else if (totalFiles === 0) {
+                            showGoSoftFailed('Không tìm thấy dữ liệu trong khoảng thời gian đã chọn');
+                        } else {
+                            // Có files nhưng không có zip_base64 - vẫn hiển thị download section nhưng buttons sẽ disabled
+                            showDownloadSection(downloadData, zipFilename || `batch_${totalFiles}_files.zip`, 'batch');
+                        }
+                        
+                        resolve();
+                        return;
+                    }
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    
+                    // Parse SSE events - tìm các event hoàn chỉnh (kết thúc bằng \n\n)
+                    let eventEnd;
+                    while ((eventEnd = buffer.indexOf('\n\n')) !== -1) {
+                        const eventBlock = buffer.substring(0, eventEnd);
+                        buffer = buffer.substring(eventEnd + 2);
+                        
+                        // Parse từng line trong event block
+                        const lines = eventBlock.split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    
+                                    if (data.type === 'batch_start') {
+                                        // Reset state khi bắt đầu batch mới
+                                        totalCount = 0;
+                                        results = [];
+                                        batchResults = {};
+                                        updateProgressModal(`Bắt đầu crawl ${data.total_types} loại...`, 0);
+                                        updateProgressCount(0, 'Đang bắt đầu...');
+                                    } else if (data.type === 'batch_progress') {
+                                        currentType = data.current_type;
+                                        const percent = Math.round((data.type_index - 1) / data.total_types * 100);
+                                        updateProgressModal(`Đang crawl ${getLoaiLabel(currentType)} (${data.type_index}/${data.total_types})...`, percent);
+                                    } else if (data.type === 'progress') {
+                                        // Cập nhật progress từ individual crawl
+                                        if (data.current !== undefined && data.total !== undefined) {
+                                            updateProgressBar(data.current, data.total);
+                                        }
+                                        if (data.message) {
+                                            updateProgressModal(data.message);
+                                        }
+                                    } else if (data.type === 'item') {
+                                        // Cập nhật khi có item mới
+                                        totalCount++;
+                                        results.push(data.data || data);
+                                        updateProgressCount(totalCount, `Đã tìm thấy ${totalCount} items...`);
+                                    } else if (data.type === 'download_start') {
+                                        updateProgressModal(`[${getLoaiLabel(currentType)}] Bắt đầu tải ${data.total_to_download} file...`, null);
+                                        // Hiển thị progress bar
+                                        const progressBarContainer = document.getElementById('progressBarContainer');
+                                        if (progressBarContainer) {
+                                            progressBarContainer.style.display = 'block';
+                                        }
+                                    } else if (data.type === 'download_progress') {
+                                        updateProgressBar(data.downloaded || 0, data.total || 1);
+                                        updateProgressModal(`[${getLoaiLabel(currentType)}] Đã tải ${data.downloaded}/${data.total} (${data.percent}%)`, data.percent);
+                                        // Không cập nhật progressCount ở đây vì đây là số file download, không phải số items
+                                        // progressCount sẽ được cập nhật khi type_complete
+                                    } else if (data.type === 'type_complete') {
+                                        const typeResult = data.result || {};
+                                        batchResults[data.crawl_type] = typeResult;
+                                        console.log(`Type complete for ${data.crawl_type}:`, {
+                                            hasZipBase64: !!(typeResult.zip_base64),
+                                            zipBase64Length: typeResult.zip_base64 ? typeResult.zip_base64.length : 0,
+                                            total: typeResult.total
+                                        });
+                                        // Cập nhật totalCount từ typeResult
+                                        if (typeResult.total) {
+                                            totalCount += typeResult.total;
+                                            updateProgressCount(totalCount, `Đã tìm thấy ${totalCount} items...`);
+                                        }
+                                    } else if (data.type === 'type_error') {
+                                        hasError = true; // Đánh dấu có lỗi
+                                        console.warn(`Error crawling ${data.crawl_type}:`, data.error);
+                                        // Check session error - nếu session expired thì dừng batch
+                                        if (checkSessionError({ 
+                                            message: data.error,
+                                            error_code: data.error_code || (data.error && data.error.includes('SESSION_EXPIRED') ? 'SESSION_EXPIRED' : null)
+                                        })) {
+                                            reject(new Error(data.error));
+                                            return;
+                                        }
+                                    } else if (data.type === 'batch_complete') {
+                                        totalFiles = data.total_files || 0;
+                                        results = data.results || [];
+                                        if (data.zip_base64) {
+                                            zipBase64 = data.zip_base64;
+                                        }
+                                        zipFilename = data.zip_filename;
+                                        // Merge batch_results từ event vào batchResults hiện tại
+                                        if (data.batch_results) {
+                                            Object.assign(batchResults, data.batch_results);
+                                        }
+                                    } else if (data.type === 'batch_zip_data') {
+                                        zipBase64 = data.zip_base64 || null;
+                                        if (data.zip_filename) {
+                                            zipFilename = data.zip_filename;
+                                        }
+                                    } else if (data.type === 'zip_data') {
+                                        // Event zip_data từ individual crawl - lưu vào batchResults
+                                        if (data.crawl_type && data.zip_base64) {
+                                            if (!batchResults[data.crawl_type]) {
+                                                batchResults[data.crawl_type] = {};
+                                            }
+                                            batchResults[data.crawl_type].zip_base64 = data.zip_base64;
+                                            if (data.zip_filename) {
+                                                batchResults[data.crawl_type].zip_filename = data.zip_filename;
+                                            }
+                                        }
+                                    } else if (data.type === 'error') {
+                                        hasError = true; // Đánh dấu có lỗi
+                                        // Check session error trước khi throw
+                                        if (checkSessionError({ 
+                                            message: data.error,
+                                            error_code: data.error_code || (data.error && data.error.includes('SESSION_EXPIRED') ? 'SESSION_EXPIRED' : null)
+                                        })) {
+                                            reject(new Error(data.error));
+                                            return;
+                                        }
+                                        throw new Error(data.error || 'Lỗi không xác định');
+                                    }
+                                } catch (e) {
+                                    if (e.message && !e.message.includes('JSON')) {
+                                        throw e;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    return reader.read().then(processChunk);
+                }
+                
+                return reader.read().then(processChunk);
+            }).catch(error => {
+                hideProgressModal();
+                
+                // Check connection error
+                const errorMessage = error.message || '';
+                const errorMessageLower = errorMessage.toLowerCase();
+                
+                if (errorMessageLower.includes('failed to connect') ||
+                    errorMessageLower.includes("couldn't connect") ||
+                    errorMessageLower.includes('econnrefused') ||
+                    errorMessageLower.includes('networkerror') ||
+                    errorMessageLower.includes('network request failed') ||
+                    errorMessageLower.includes('fetch failed')) {
+                    // Reject với message rõ ràng để catch block ngoài xử lý
+                    reject(new Error('CONNECTION_ERROR: Lỗi hệ thống: Không thể kết nối đến server'));
+                    return;
+                }
+                
+                reject(error);
+            });
+        });
+    }
+    
+    function getLoaiLabel(crawlType) {
+        switch (crawlType) {
+            case 'tokhai': return 'Tờ khai';
+            case 'thongbao': return 'Thông báo';
+            case 'giaynoptien': return 'Giấy nộp tiền';
+            default: return crawlType;
+        }
+    }
+    
+    // SSE streaming lookup - hiển thị progress realtime
+    async function performLookupWithSSE(routeUrl, requestBody, loai) {
+        return new Promise((resolve, reject) => {
+            // Reset state mỗi lần gọi
+            let results = [];
+            let totalCount = 0;
+            let downloadedCount = 0;
+            let zipBase64 = null;
+            let zipFilename = null;
+            let hasError = false; // Flag để track lỗi
+            
+            // Đảm bảo loai được set đúng
+            const currentLoai = loai || 'to-khai';
+            console.log('performLookupWithSSE called with loai:', currentLoai);
+            
+            // Tạo URL với query params cho SSE
+            const params = new URLSearchParams();
+            params.append('session_id', requestBody.session_id);
+            params.append('start_date', requestBody.start_date);
+            params.append('end_date', requestBody.end_date);
+            if (requestBody.tokhai_type) {
+                params.append('tokhai_type', requestBody.tokhai_type);
+            }
+            params.append('stream', 'true');
+            params.append('_token', '{{ csrf_token() }}');
+            
+            // Dùng fetch với streaming reader
+            fetch(routeUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream'
+                },
+                body: JSON.stringify(requestBody)
+            }).then(async response => {
+                if (!response.ok) {
+                    // Parse response body để lấy error_code
+                    let errorData = null;
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            errorData = JSON.parse(errorText);
+                        } catch (e) {
+                            errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
+                        }
+                    } catch (e) {
+                        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+                    }
+                    
+                    // Check session error trước khi throw
+                    if (checkSessionError(errorData)) {
+                        reject(new Error(errorData.message || 'Session không hợp lệ'));
+                        return;
+                    }
+                    
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                function processChunk({ done, value }) {
+                    if (done) {
+                        hideProgressModal();
+                        
+                        // Nếu có lỗi, không hiển thị trang kết quả
+                        if (hasError) {
+                            console.warn('Stream completed with error - not showing results');
+                            resolve();
+                            return;
+                        }
+                        
+                        // Chỉ hiển thị kết quả nếu có zip_base64 hoặc có results
+                        if (zipBase64 || (results && results.length > 0)) {
+                            const downloadData = {
+                                status: 'success',
+                                total: totalCount,
+                                results: results,
+                                zip_base64: zipBase64,
+                                loai: currentLoai,
+                                timestamp: Date.now()
+                            };
+                            
+                            localStorage.setItem('goSoftDownloadData', JSON.stringify(downloadData));
+                            showDownloadSection(downloadData);
+                        } else {
+                            // Không có data - có thể đã bị lỗi trước đó
+                            // Không hiển thị trang kết quả
+                            console.warn('No data to display - stream completed without zip_base64 or results');
+                        }
+                        
+                        resolve();
+                        return;
+                    }
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    
+                    // Parse SSE events
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Giữ lại phần chưa hoàn thành
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const eventData = JSON.parse(line.slice(6));
+                                handleSSEEvent(eventData);
+                            } catch (e) {
+                                // Ignore parse errors
+                            }
+                        }
+                    }
+                    
+                    // Continue reading
+                    reader.read().then(processChunk).catch(reject);
+                }
+                
+                function handleSSEEvent(event) {
+                    const loaiLabel = currentLoai === 'to-khai' ? 'tờ khai' : (currentLoai === 'thong-bao' ? 'thông báo' : 'giấy nộp tiền');
+                    
+                    switch (event.type) {
+                        case 'info':
+                            updateProgressMessage(event.message || 'Đang xử lý...');
+                            break;
+                            
+                        case 'progress':
+                            if (event.total) {
+                                updateProgressBar(event.current || 0, event.total);
+                            }
+                            if (event.message) {
+                                updateProgressMessage(event.message);
+                            }
+                            break;
+                        
+                        // Xử lý download progress (cho thông báo và giấy nộp tiền)
+                        case 'download_start':
+                            updateProgressMessage(`Bắt đầu tải ${event.total_to_download} ${loaiLabel}...`);
+                            break;
+                            
+                        case 'download_progress':
+                            updateProgressBar(event.downloaded || 0, event.total || 1);
+                            updateProgressMessage(`Đã tải ${event.downloaded}/${event.total} ${loaiLabel} (${event.percent}%)`);
+                            break;
+                            
+                        case 'download_complete':
+                            updateProgressMessage(`Hoàn thành tải ${event.downloaded}/${event.total} ${loaiLabel}`);
+                            break;
+                            
+                        case 'item':
+                            downloadedCount++;
+                            results.push(event.data);
+                            updateProgressCount(downloadedCount, `Đã tìm thấy ${downloadedCount} ${loaiLabel}...`);
+                            break;
+                            
+                        case 'complete':
+                            totalCount = event.total || results.length;
+                            if (event.zip_base64) {
+                                zipBase64 = event.zip_base64;
+                            }
+                            zipFilename = event.zip_filename || null;
+                            // Tính lại loaiLabel để đảm bảo đúng
+                            const finalLoaiLabel = currentLoai === 'to-khai' ? 'tờ khai' : (currentLoai === 'thong-bao' ? 'thông báo' : 'giấy nộp tiền');
+                            updateProgressMessage(`Hoàn thành! Tổng cộng ${totalCount} ${finalLoaiLabel}.`);
+                            console.log('Complete event:', { totalCount, currentLoai, finalLoaiLabel });
+                            break;
+                            
+                        case 'zip_data':
+                            // Event riêng chứa zip_base64 (tránh JSON quá lớn)
+                            zipBase64 = event.zip_base64 || null;
+                            if (event.zip_filename) {
+                                zipFilename = event.zip_filename;
+                            }
+                            break;
+                            
+                        case 'error':
+                            hasError = true; // Đánh dấu có lỗi
+                            hideProgressModal();
+                            
+                            // Check session error với error_code
+                            if (checkSessionError({ 
+                                message: event.error,
+                                error_code: event.error_code || (event.error && event.error.includes('SESSION_EXPIRED') ? 'SESSION_EXPIRED' : null)
+                            })) {
+                                reject(new Error(event.error));
+                                return;
+                            }
+                            
+                            showGoSoftFailed(event.error || 'Có lỗi xảy ra');
+                            reject(new Error(event.error));
+                            break;
+                            
+                        case 'warning':
+                            console.warn('SSE Warning:', event.message);
+                            break;
+                    }
+                }
+                
+                reader.read().then(processChunk).catch(reject);
+                
+            }).catch(error => {
+                hideProgressModal();
+                
+                // Check connection error
+                const errorMessage = error.message || '';
+                const errorMessageLower = errorMessage.toLowerCase();
+                
+                if (errorMessageLower.includes('failed to connect') ||
+                    errorMessageLower.includes("couldn't connect") ||
+                    errorMessageLower.includes('econnrefused') ||
+                    errorMessageLower.includes('networkerror') ||
+                    errorMessageLower.includes('network request failed') ||
+                    errorMessageLower.includes('fetch failed')) {
+                    // Reject với message rõ ràng để catch block ngoài xử lý
+                    reject(new Error('CONNECTION_ERROR: Lỗi hệ thống: Không thể kết nối đến server'));
+                    return;
+                }
+                
+                reject(error);
+            });
+        });
+    }
+    
+    // Sync lookup - fallback cho thông báo và giấy nộp tiền
+    async function performLookupSync(routeUrl, requestBody, loai) {
+        updateProgressMessage('Đang tra cứu...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600000);
+        
+        try {
             const response = await fetch(routeUrl, {
                 method: 'POST',
                 headers: {
@@ -855,6 +1663,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             clearTimeout(timeoutId);
+            hideProgressModal();
             
             if (!response.ok) {
                 const errorText = await response.text();
@@ -879,8 +1688,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (result.status === 'success') {
-                const loai = document.querySelector('input[name="loai"]:checked')?.value || 'to-khai';
-                
                 const downloadData = {
                     status: 'success',
                     total: result.total || 0,
@@ -897,25 +1704,88 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             clearTimeout(timeoutId);
+            hideProgressModal();
+            throw error;
+        }
+    }
+    
+    // Progress modal functions
+    function showProgressModal() {
+        let modal = document.getElementById('progressModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'progressModal';
+            modal.className = 'go-soft-modal';
+            modal.innerHTML = `
+                <div class="go-soft-modal-content" style="max-width: 400px; text-align: center;">
+                    <div class="progress-spinner" style="margin: 20px auto;">
+                        <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin 1s linear infinite;">
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="#227447" stroke-width="4" stroke-dasharray="80 40" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <p id="progressMessage" style="margin: 15px 0; color: #333; font-size: 14px;">Đang kết nối...</p>
+                    <div id="progressBarContainer" style="display: none; margin: 15px 0;">
+                        <div style="background: #e5e7eb; border-radius: 10px; height: 8px; overflow: hidden;">
+                            <div id="progressBar" style="background: linear-gradient(90deg, #10A142, #227447); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <p id="progressCount" style="margin-top: 10px; color: #666; font-size: 12px;"></p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
             
-            if (error.message && (
-                error.message.toLowerCase().includes('session not found') ||
-                error.message.toLowerCase().includes('session expired')
-            )) {
-                handleSessionExpired(error.message);
-                return;
+            // Add spinner animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        modal.classList.add('show');
+    }
+    
+    function hideProgressModal() {
+        const modal = document.getElementById('progressModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+    
+    function updateProgressMessage(message) {
+        const el = document.getElementById('progressMessage');
+        if (el) el.textContent = message;
+    }
+    
+    function updateProgressBar(current, total) {
+        const container = document.getElementById('progressBarContainer');
+        const bar = document.getElementById('progressBar');
+        if (container) container.style.display = 'block';
+        if (bar && total > 0) {
+            bar.style.width = Math.min((current / total) * 100, 100) + '%';
+        }
+    }
+    
+    function updateProgressCount(count, message) {
+        const el = document.getElementById('progressCount');
+        if (el) el.textContent = message || `Đã tải ${count} file...`;
+        
+        const msgEl = document.getElementById('progressMessage');
+        if (msgEl) msgEl.textContent = message || `Đang tải tờ khai...`;
+    }
+    
+    // Hàm update progress modal với message và percent (dùng cho batch crawl)
+    function updateProgressModal(message, percent) {
+        updateProgressMessage(message);
+        if (percent !== null && percent !== undefined) {
+            const container = document.getElementById('progressBarContainer');
+            const bar = document.getElementById('progressBar');
+            if (container) container.style.display = 'block';
+            if (bar) {
+                bar.style.width = Math.min(percent, 100) + '%';
             }
-            
-            if (error.name === 'AbortError') {
-                showGoSoftFailed('Quá trình tra cứu mất quá nhiều thời gian. Vui lòng thử lại với khoảng thời gian ngắn hơn hoặc chọn loại tờ khai cụ thể.');
-            } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
-                showGoSoftFailed('Quá trình tra cứu mất quá nhiều thời gian. Vui lòng thử lại với khoảng thời gian ngắn hơn.');
-            } else {
-                showGoSoftFailed(error.message || 'Lỗi kết nối');
-            }
-        } finally {
-            lookupBtn.disabled = false;
-            btnText.textContent = 'Tra cứu';
         }
     }
     

@@ -33,7 +33,7 @@
             <div class="form-group">
                 <label class="input-label">Tên đăng nhập</label>
                 <div class="form-input-wrapper">
-                    <input type="text" class="form-input" placeholder="2400899360-ql" value="2400899360-ql">
+                    <input type="text" class="form-input" placeholder="0200769272-ql" value="0200769272-ql">
                 </div>
             </div>
             
@@ -41,7 +41,7 @@
                 <label class="input-label">Mật khẩu</label>
                 <div class="form-input-wrapper">
                     <div class="password-input-wrapper">
-                        <input type="password" class="form-input" id="taxPassword" placeholder="••••••••••••" value="Thue2025@">
+                        <input type="password" class="form-input" id="taxPassword" placeholder="••••••••••••" value="nv@2107">
                         <button type="button" class="password-toggle" onclick="toggleTaxPassword()">
                             <img src="{{ asset('/images/svg/eye.svg') }}" alt="Eye" class="eye-icon" id="tax-password-icon">
                         </button>

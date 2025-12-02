@@ -185,6 +185,7 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('/crawl/tokhai/download', [GoSoftController::class, 'downloadTokhaiFiles'])->name('tools.go-soft.crawl.tokhai.download');
         Route::post('/crawl/thongbao', [GoSoftController::class, 'crawlThongbao'])->name('tools.go-soft.crawl.thongbao');
         Route::post('/crawl/giaynoptien', [GoSoftController::class, 'crawlGiayNopTien'])->name('tools.go-soft.crawl.giaynoptien');
+        Route::post('/crawl/batch', [GoSoftController::class, 'crawlBatch'])->name('tools.go-soft.crawl.batch');
     });
 });
 
