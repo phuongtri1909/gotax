@@ -216,7 +216,7 @@
     <div id="downloadSection" class="d-none">
         <h2 class="download-title text-center">
             Tra cứu tờ khai Thành Công 
-            <img src="{{ asset('images/d/go-quick/check-success.png') }}" alt="Success">
+            <img src="{{ asset('images/d/go-quick/check-success.png') }}" alt="Thành công">
         </h2>
 
         <div class="download-content">
@@ -292,6 +292,54 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnText = lookupBtn.querySelector('.btn-text');
     const toKhaiSelect = document.getElementById('toKhaiSelect');
     const companySelectorRow = document.getElementById('companySelectorRow');
+    
+    // Kiểm tra session status một cách im lặng (không hiển thị modal)
+    async function checkSessionStatusSilent() {
+        if (!sessionId) {
+            return false;
+        }
+        
+        try {
+            const response = await fetch('{{ route("tools.go-soft.session.status") }}?session_id=' + encodeURIComponent(sessionId), {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            let result;
+            if (!response.ok) {
+                const errorText = await response.text();
+                try {
+                    result = JSON.parse(errorText);
+                } catch (e) {
+                    result = { 
+                        status: 'error', 
+                        error_code: 'HTTP_ERROR'
+                    };
+                }
+            } else {
+                result = await response.json();
+            }
+            
+            // Nếu là session error, handle và return false
+            if (checkSessionError(result)) {
+                return false;
+            }
+            
+            // Nếu session hợp lệ và đã login, return true
+            if (result.status === 'success' && result.is_logged_in) {
+                return true;
+            }
+            
+            // Session không hợp lệ
+            return false;
+        } catch (error) {
+            // Lỗi khi check - giả định session không hợp lệ
+            return false;
+        }
+    }
     
     async function checkSessionOnLoad() {
         if (sessionId) {
@@ -915,11 +963,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Xử lý batch mode
         if (mode === 'batch' && batchResults) {
-            console.log('showDownloadSection batch mode:', {
-                batchResults,
-                mode,
-                hasBatchResults: !!batchResults
-            });
             
             // Hiển thị tất cả các loại có trong batch results
             document.querySelectorAll('.download-file-item').forEach(item => {
@@ -937,12 +980,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const typeZipBase64 = typeResult.zip_base64;
                     const hasZip = typeZipBase64 && typeof typeZipBase64 === 'string' && typeZipBase64.trim().length > 0;
                     
-                    console.log(`Checking ${crawlType}:`, {
-                        hasTypeResult: !!typeResult,
-                        hasZipBase64: !!typeZipBase64,
-                        zipBase64Length: typeZipBase64 ? typeZipBase64.length : 0,
-                        hasZip
-                    });
                     
                     item.style.display = 'flex';
                     
@@ -1030,7 +1067,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const zipBytes = Uint8Array.from(atob(zipBase64ToUse), c => c.charCodeAt(0));
                     
-                    let filename = 'download.zip';
+                    let filename = 'tai_xuong.zip';
                     if (mode === 'batch' && crawlType) {
                         // Batch mode - dùng crawlType
                         if (crawlType === 'tokhai') {
@@ -1108,27 +1145,54 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!result) return false;
         
         const errorCode = result.error_code || '';
+        const errorMessage = result.error || result.message || '';
+        
+        // Danh sách error_code cần bắt đăng nhập lại
+        const sessionErrorCodes = [
+            'SESSION_NOT_FOUND',
+            'MISSING_SESSION_ID', 
+            'SESSION_EXPIRED',
+            'NOT_LOGGED_IN'
+        ];
+        
         if (errorCode) {
-            if (errorCode === 'SESSION_NOT_FOUND' || 
-                errorCode === 'MISSING_SESSION_ID' ||
-                errorCode === 'SESSION_EXPIRED' ||
-                errorCode.includes('SESSION_NOT_FOUND') || 
-                errorCode.includes('MISSING_SESSION_ID') ||
-                errorCode.includes('SESSION_EXPIRED') ||
+            // Kiểm tra error_code chính xác hoặc chứa trong danh sách
+            if (sessionErrorCodes.includes(errorCode) || 
+                sessionErrorCodes.some(code => errorCode.includes(code)) ||
                 (errorCode.includes('SESSION') && errorCode.length > 0)) {
-                handleSessionExpired(result.message || 'Session không hợp lệ');
+                
+                // Tạo thông báo tiếng Việt phù hợp
+                let message = errorMessage;
+                if (!message || message === 'Session not found' || message === 'Not logged in') {
+                    if (errorCode === 'SESSION_NOT_FOUND' || errorCode === 'MISSING_SESSION_ID') {
+                        message = 'Session không tồn tại hoặc đã hết hạn. Vui lòng đăng nhập lại.';
+                    } else if (errorCode === 'SESSION_EXPIRED') {
+                        message = 'Phiên giao dịch hết hạn. Vui lòng đăng nhập lại.';
+                    } else if (errorCode === 'NOT_LOGGED_IN') {
+                        message = 'Chưa đăng nhập. Vui lòng đăng nhập lại.';
+                    } else {
+                        message = 'Session không hợp lệ. Vui lòng đăng nhập lại.';
+                    }
+                }
+                
+                handleSessionExpired(message);
                 return true;
             }
         }
         
-        if (result.message) {
-            const messageLower = result.message.toLowerCase();
+        // Kiểm tra message (fallback nếu không có error_code)
+        if (errorMessage) {
+            const messageLower = errorMessage.toLowerCase();
             if (messageLower.includes('session not found') || 
                 messageLower.includes('session expired') ||
                 messageLower.includes('session đã hết hạn') ||
                 messageLower.includes('session không hợp lệ') ||
-                messageLower.includes('missing session')) {
-                handleSessionExpired(result.message);
+                messageLower.includes('session không tồn tại') ||
+                messageLower.includes('chưa đăng nhập') ||
+                messageLower.includes('not logged in') ||
+                messageLower.includes('missing session') ||
+                messageLower.includes('phiên giao dịch hết hạn')) {
+                handleSessionExpired(errorMessage);
                 return true;
             }
         }
@@ -1304,6 +1368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let currentType = '';
             let totalCount = 0; // Tổng số items đã tìm thấy
             let hasError = false; // Flag để track lỗi
+            let sessionError = false; // Flag để track session error (cần logout)
             
             fetch(routeUrl, {
                 method: 'POST',
@@ -1345,9 +1410,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (done) {
                         hideProgressModal();
                         
+                        // Nếu có session error, đã được xử lý trong error handler rồi, không cần làm gì thêm
+                        if (sessionError) {
+                            resolve();
+                            return;
+                        }
+                        
                         // Nếu có lỗi, không hiển thị trang kết quả
                         if (hasError) {
-                            console.warn('Batch stream completed with error - not showing results');
+                            showGoSoftFailed('Quá trình tra cứu gặp lỗi. Vui lòng thử lại.');
                             resolve();
                             return;
                         }
@@ -1368,12 +1439,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             result && result.zip_base64 && typeof result.zip_base64 === 'string' && result.zip_base64.trim().length > 0
                         );
                         
-                        console.log('Batch complete:', {
-                            hasBatchResults,
-                            hasAnyZipBase64,
-                            batchResultsKeys: hasBatchResults ? Object.keys(batchResults) : [],
-                            totalFiles
-                        });
                         
                         if (hasAnyZipBase64 || zipBase64) {
                             showDownloadSection(downloadData, zipFilename || `batch_${totalFiles}_files.zip`, 'batch');
@@ -1442,11 +1507,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     } else if (data.type === 'type_complete') {
                                         const typeResult = data.result || {};
                                         batchResults[data.crawl_type] = typeResult;
-                                        console.log(`Type complete for ${data.crawl_type}:`, {
-                                            hasZipBase64: !!(typeResult.zip_base64),
-                                            zipBase64Length: typeResult.zip_base64 ? typeResult.zip_base64.length : 0,
-                                            total: typeResult.total
-                                        });
                                         // Cập nhật totalCount từ typeResult
                                         if (typeResult.total) {
                                             totalCount += typeResult.total;
@@ -1454,15 +1514,20 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
                                     } else if (data.type === 'type_error') {
                                         hasError = true; // Đánh dấu có lỗi
-                                        console.warn(`Error crawling ${data.crawl_type}:`, data.error);
-                                        // Check session error - nếu session expired thì dừng batch
+                                        
+                                        // Check session error trước - nếu session expired thì dừng batch và bắt đăng nhập lại
                                         if (checkSessionError({ 
                                             message: data.error,
-                                            error_code: data.error_code || (data.error && data.error.includes('SESSION_EXPIRED') ? 'SESSION_EXPIRED' : null)
+                                            error_code: data.error_code
                                         })) {
+                                            sessionError = true; // Đánh dấu là session error
                                             reject(new Error(data.error));
                                             return;
                                         }
+                                        
+                                        // Nếu không phải session error, hiển thị lỗi bình thường
+                                        const loaiLabel = getLoaiLabel(data.crawl_type);
+                                        showGoSoftFailed(`Lỗi khi tra cứu ${loaiLabel.toLowerCase()}: ${data.error || 'Lỗi không xác định'}`);
                                     } else if (data.type === 'batch_complete') {
                                         totalFiles = data.total_files || 0;
                                         results = data.results || [];
@@ -1492,15 +1557,22 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
                                     } else if (data.type === 'error') {
                                         hasError = true; // Đánh dấu có lỗi
-                                        // Check session error trước khi throw
+                                        hideProgressModal();
+                                        
+                                        // Check session error trước - nếu session expired thì bắt đăng nhập lại
                                         if (checkSessionError({ 
                                             message: data.error,
-                                            error_code: data.error_code || (data.error && data.error.includes('SESSION_EXPIRED') ? 'SESSION_EXPIRED' : null)
+                                            error_code: data.error_code
                                         })) {
+                                            sessionError = true; // Đánh dấu là session error
                                             reject(new Error(data.error));
                                             return;
                                         }
-                                        throw new Error(data.error || 'Lỗi không xác định');
+                                        
+                                        // Nếu không phải session error, hiển thị lỗi và reject
+                                        showGoSoftFailed(data.error || 'Lỗi không xác định');
+                                        reject(new Error(data.error || 'Lỗi không xác định'));
+                                        return;
                                     }
                                 } catch (e) {
                                     if (e.message && !e.message.includes('JSON')) {
@@ -1557,10 +1629,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let zipBase64 = null;
             let zipFilename = null;
             let hasError = false; // Flag để track lỗi
+            let sessionError = false; // Flag để track session error (cần logout)
             
             // Đảm bảo loai được set đúng
             const currentLoai = loai || 'to-khai';
-            console.log('performLookupWithSSE called with loai:', currentLoai);
             
             // Tạo URL với query params cho SSE
             const params = new URLSearchParams();
@@ -1610,13 +1682,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const decoder = new TextDecoder();
                 let buffer = '';
                 
-                function processChunk({ done, value }) {
+                async function processChunk({ done, value }) {
                     if (done) {
                         hideProgressModal();
                         
-                        // Nếu có lỗi, không hiển thị trang kết quả
+                        // Nếu có session error, đã được xử lý trong error handler rồi, không cần làm gì thêm
+                        if (sessionError) {
+                            resolve();
+                            return;
+                        }
+                        
+                        // Nếu có lỗi thông thường, không hiển thị trang kết quả
                         if (hasError) {
-                            console.warn('Stream completed with error - not showing results');
+                            showGoSoftFailed('Quá trình tra cứu gặp lỗi. Vui lòng thử lại.');
                             resolve();
                             return;
                         }
@@ -1634,12 +1712,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             localStorage.setItem('goSoftDownloadData', JSON.stringify(downloadData));
                             showDownloadSection(downloadData);
-                        } else {
-                            // Không có data - có thể đã bị lỗi trước đó
-                            // Không hiển thị trang kết quả
-                            console.warn('No data to display - stream completed without zip_base64 or results');
+                            resolve();
+                            return;
                         }
                         
+                        // Không có data - có thể do session hết hạn hoặc không tìm thấy dữ liệu
+                        // Kiểm tra session status trước khi hiển thị lỗi chung
+                        const isValid = await checkSessionStatusSilent();
+                        if (!isValid) {
+                            // Session không hợp lệ - đã được handle trong checkSessionStatusSilent
+                            // Không cần làm gì thêm vì checkSessionError đã xử lý
+                            resolve();
+                            return;
+                        }
+                        
+                        // Session hợp lệ nhưng không có data - đây là trường hợp thực sự không tìm thấy dữ liệu
+                        showGoSoftFailed('Không tìm thấy dữ liệu trong khoảng thời gian đã chọn.');
                         resolve();
                         return;
                     }
@@ -1711,7 +1799,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Tính lại loaiLabel để đảm bảo đúng
                             const finalLoaiLabel = currentLoai === 'to-khai' ? 'tờ khai' : (currentLoai === 'thong-bao' ? 'thông báo' : 'giấy nộp tiền');
                             updateProgressMessage(`Hoàn thành! Tổng cộng ${totalCount} ${finalLoaiLabel}.`);
-                            console.log('Complete event:', { totalCount, currentLoai, finalLoaiLabel });
                             break;
                             
                         case 'zip_data':
@@ -1727,20 +1814,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             hideProgressModal();
                             
                             // Check session error với error_code
+                            // Check session error trước - nếu session expired thì bắt đăng nhập lại
                             if (checkSessionError({ 
                                 message: event.error,
-                                error_code: event.error_code || (event.error && event.error.includes('SESSION_EXPIRED') ? 'SESSION_EXPIRED' : null)
+                                error_code: event.error_code
                             })) {
+                                sessionError = true; // Đánh dấu là session error
                                 reject(new Error(event.error));
                                 return;
                             }
                             
+                            // Nếu không phải session error, hiển thị lỗi bình thường
                             showGoSoftFailed(event.error || 'Có lỗi xảy ra');
                             reject(new Error(event.error));
                             break;
                             
                         case 'warning':
-                            console.warn('SSE Warning:', event.message);
+                            // Hiển thị cảnh báo bằng modal failed nếu có message
+                            if (event.message) {
+                                showGoSoftFailed(event.message);
+                            }
                             break;
                     }
                 }
