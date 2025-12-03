@@ -29,7 +29,7 @@
         
         <h3 class="modal-form-title">Đăng Nhập Thuế Điện Tử</h3>
         
-        <form class="tax-login-form">
+        <form class="tax-login-form" novalidate>
             <div class="form-group">
                 <label class="input-label">Tên đăng nhập</label>
                 <div class="form-input-wrapper">
@@ -49,7 +49,8 @@
                 </div>
             </div>
             
-            <div class="form-group">
+            <!-- Captcha fields - Ẩn đi vì login mới không cần captcha -->
+            <div class="form-group" style="display: none;">
                 <label class="input-label">Mã capcha</label>
                 <div class="form-input-wrapper">
                     <div class="captcha-wrapper">
@@ -61,7 +62,7 @@
                 </div>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" style="display: none;">
                 <label class="input-label">Nhập mã capcha</label>
                 <div class="form-input-wrapper">
                     <input type="text" class="form-input captcha-input" placeholder="Nhập mã capcha" autocomplete="off">

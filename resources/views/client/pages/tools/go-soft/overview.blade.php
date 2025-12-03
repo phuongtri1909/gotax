@@ -418,6 +418,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Event delegation cho các nút close modal (result modals) - hoạt động ngay cả khi element được thêm sau
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-modal-close]')) {
+            const btn = e.target.closest('[data-modal-close]');
+            const modalId = btn.getAttribute('data-modal-close');
+            if (modalId && window.closeGoSoftModal) {
+                window.closeGoSoftModal(modalId);
+            }
+        }
+    });
+    
     async function initTaxLogin() {
         try {
         const form = document.querySelector('.tax-login-form');
@@ -441,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                // Bước 1: Tạo session
+                // Bước 1: Tạo session (login mới không cần captcha nữa)
                 const sessionResponse = await fetch('{{ route("tools.go-soft.session.create") }}', {
                     method: 'POST',
                     headers: {
@@ -480,84 +491,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Lưu session_id
                 sessionId = sessionData.session_id;
                 localStorage.setItem('goSoftSessionId', sessionId);
-                // Bước 2: Lấy captcha với session_id vừa tạo
-                submitBtn.textContent = 'Đang lấy captcha...';
                 
-                const captchaResponse = await fetch('{{ route("tools.go-soft.login.init") }}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        session_id: sessionId 
-                    })
-                });
-                
-                if (!captchaResponse.ok) {
-                    const errorText = await captchaResponse.text();
-                    let errorData;
-                    try {
-                        errorData = JSON.parse(errorText);
-                    } catch (e) {
-                        errorData = { message: `HTTP ${captchaResponse.status}: ${captchaResponse.statusText}` };
-                    }
-                    
-                    // Kiểm tra error_code trước
-                    if (checkSessionError(errorData)) {
-                        return;
-                    }
-                    
-                    throw new Error(errorData.message || `HTTP ${captchaResponse.status}: ${captchaResponse.statusText}`);
-                }
-                
-                const captchaData = await captchaResponse.json();
-                
-                // Kiểm tra error_code trước
-                if (checkSessionError(captchaData)) {
-                    return;
-                }
-                
-                if (captchaData.status !== 'success' || !captchaData.captcha_base64) {
-                    throw new Error(captchaData.message || 'Không thể lấy captcha. Vui lòng thử lại.');
-                }
-                
-                // Xử lý base64 - có thể đã có prefix hoặc chưa
-                let captchaBase64 = captchaData.captcha_base64.trim();
-                if (!captchaBase64.startsWith('data:image')) {
-                    captchaBase64 = 'data:image/png;base64,' + captchaBase64;
-                }
-                
-                // Hiển thị captcha
+                // Login mới không cần captcha - bỏ qua bước lấy captcha
+                // Ẩn captcha nếu có
                 if (captchaImg) {
-                    captchaImg.src = captchaBase64;
-                    captchaImg.style.display = 'block';
-                    captchaImg.alt = 'Captcha';
-                    captchaImg.onerror = function() {
-                        showGoSoftFailed('Không thể hiển thị captcha. Vui lòng thử lại.');
-                    };
+                    captchaImg.style.display = 'none';
+                    captchaImg.src = '';
                 }
                 
-                // Clear và focus vào captcha input
+                // Clear và disable captcha input
                 if (captchaInput) {
                     captchaInput.value = '';
-                    captchaInput.disabled = false;
-                    setTimeout(() => captchaInput.focus(), 100);
+                    captchaInput.disabled = true;
                 }
                 
-                // Refresh captcha handler
+                // Disable refresh button
                 if (captchaRefreshBtn) {
-                    captchaRefreshBtn.onclick = () => {
-                        if (captchaInput) {
-                            captchaInput.value = '';
-                        }
-                        initTaxLogin();
-                    };
-                    captchaRefreshBtn.disabled = false;
+                    captchaRefreshBtn.disabled = true;
                     captchaRefreshBtn.classList.remove('loading');
                 }
                 
+                // Enable submit button ngay sau khi tạo session thành công
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Đăng nhập';
                 
@@ -567,17 +521,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Đăng nhập';
                 
-                // Reset refresh button - ĐẢM BẢO LUÔN HOẠT ĐỘNG
+                // Reset refresh button
                 if (captchaRefreshBtn) {
                     captchaRefreshBtn.disabled = false;
                     captchaRefreshBtn.classList.remove('loading');
-                    // Đảm bảo có event handler để có thể thử lại
-                    captchaRefreshBtn.onclick = () => {
-                        if (captchaInput) {
-                            captchaInput.value = '';
-                        }
-                        initTaxLogin();
-                    };
                 }
                 
                 // Ẩn captcha nếu có lỗi
@@ -626,10 +573,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const username = usernameInput ? usernameInput.value : '';
         const password = passwordInput ? passwordInput.value : '';
-        const captcha = captchaInput ? captchaInput.value : '';
+        // Login mới không cần captcha nữa
+        const captcha = ''; // Gửi rỗng vì không cần captcha
         
-        if (!username || !password || !captcha) {
-            showGoSoftFailed('Vui lòng điền đầy đủ thông tin');
+        if (!username || !password) {
+            showGoSoftFailed('Vui lòng điền đầy đủ thông tin đăng nhập');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Đăng nhập';
             return;
@@ -672,7 +620,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                showGoSoftFailed(errorData.message || 'Đăng nhập thất bại');
+                // Xử lý validation errors từ Laravel (422)
+                let errorMessage = errorData.message || 'Đăng nhập thất bại';
+                if (errorData.errors && typeof errorData.errors === 'object') {
+                    // Lấy message đầu tiên từ errors
+                    const firstError = Object.values(errorData.errors).flat()[0];
+                    if (firstError) {
+                        errorMessage = firstError;
+                    }
+                }
+                
+                showGoSoftFailed(errorMessage);
                 return;
             }
             
@@ -700,21 +658,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 showGoSoftSuccess('Đăng nhập thành công!');
             } else {
                 showGoSoftFailed(result.message || 'Đăng nhập thất bại. Sai thông tin đăng nhập');
-                // Chỉ clear input captcha, KHÔNG reload captcha tự động
-                // User có thể dùng lại captcha hiện tại để nhập lại
-                // Chỉ reload khi user click button refresh
-                if (captchaInput) {
-                    captchaInput.value = '';
-                }
-                // Không gọi initTaxLogin() - giữ nguyên captcha hiện tại
+                // Login mới không cần captcha - không cần xử lý captcha nữa
             }
         } catch (error) {
             showGoSoftFailed(error.message || 'Lỗi kết nối');
-            // Chỉ clear input captcha, KHÔNG reload captcha tự động
-            if (captchaInput) {
-                captchaInput.value = '';
-            }
-            // Không gọi initTaxLogin() - giữ nguyên captcha hiện tại
+            // Login mới không cần captcha - không cần xử lý captcha nữa
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Đăng nhập';
@@ -783,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Auto close sau duration
         modalTimeouts['goSoftSuccessModal'] = setTimeout(() => {
-            closeGoSoftModal('goSoftSuccessModal');
+            window.closeGoSoftModal('goSoftSuccessModal');
         }, duration);
     }
     
@@ -828,11 +776,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Auto close sau duration
         modalTimeouts['goSoftFailedModal'] = setTimeout(() => {
-            closeGoSoftModal('goSoftFailedModal');
+            window.closeGoSoftModal('goSoftFailedModal');
         }, duration);
     }
     
-    // Setup hover pause/resume cho modal
+    // Setup hover pause/resume cho modal - chỉ dừng khi hover vào modal content
     function setupModalHover(modalId, duration) {
         const modal = document.getElementById(modalId);
         if (!modal) return;
@@ -840,12 +788,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const progressBar = modal.querySelector('.bulk-modal-progress-bar');
         if (!progressBar) return;
         
-        // Remove old listeners bằng cách thêm flag
-        modal.removeEventListener('mouseenter', modal._hoverEnter);
-        modal.removeEventListener('mouseleave', modal._hoverLeave);
+        // Lấy modal content (phần thực sự chứa nội dung, không phải overlay background)
+        const modalContent = modal.querySelector('.bulk-modal-content');
+        if (!modalContent) return;
         
-        // Hover enter - pause
-        modal._hoverEnter = () => {
+        // Remove old listeners nếu có (quan trọng: phải clear trước khi setup mới)
+        if (modal._hoverEnter && modal._hoverEnterBound) {
+            modalContent.removeEventListener('mouseenter', modal._hoverEnterBound);
+        }
+        if (modal._hoverLeave && modal._hoverLeaveBound) {
+            modalContent.removeEventListener('mouseleave', modal._hoverLeaveBound);
+        }
+        
+        // Hover enter vào modal content - pause
+        modal._hoverEnter = function() {
             const state = modalProgressStates[modalId];
             if (!state || !state.startTime || state.paused) return;
             
@@ -868,8 +824,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         
-        // Hover leave - resume
-        modal._hoverLeave = () => {
+        // Hover leave khỏi modal content - resume
+        modal._hoverLeave = function() {
             const state = modalProgressStates[modalId];
             if (!state || !state.paused) return;
             
@@ -883,17 +839,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Resume timeout với thời gian còn lại
             if (state.remaining > 0) {
                 modalTimeouts[modalId] = setTimeout(() => {
-                    closeGoSoftModal(modalId);
+                    window.closeGoSoftModal(modalId);
                 }, state.remaining);
             }
         };
         
-        modal.addEventListener('mouseenter', modal._hoverEnter);
-        modal.addEventListener('mouseleave', modal._hoverLeave);
+        // Bind functions để có thể remove sau
+        modal._hoverEnterBound = modal._hoverEnter.bind(modal);
+        modal._hoverLeaveBound = modal._hoverLeave.bind(modal);
+        
+        // Chỉ bắt event khi hover vào modal content, không phải toàn bộ modal
+        modalContent.addEventListener('mouseenter', modal._hoverEnterBound);
+        modalContent.addEventListener('mouseleave', modal._hoverLeaveBound);
     }
     
-    // Đóng modal
-    function closeGoSoftModal(modalId) {
+    // Đóng modal - đưa ra global scope để có thể gọi từ onclick
+    window.closeGoSoftModal = function(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.classList.remove('show');
@@ -908,10 +869,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressBar.style.animation = 'none';
                 progressBar.style.width = '100%';
             }
+            // Clear hover event listeners
+            const modalContent = modal.querySelector('.bulk-modal-content');
+            if (modalContent) {
+                if (modal._hoverEnterBound) {
+                    modalContent.removeEventListener('mouseenter', modal._hoverEnterBound);
+                    delete modal._hoverEnterBound;
+                }
+                if (modal._hoverLeaveBound) {
+                    modalContent.removeEventListener('mouseleave', modal._hoverLeaveBound);
+                    delete modal._hoverLeaveBound;
+                }
+            }
+            delete modal._hoverEnter;
+            delete modal._hoverLeave;
+            
             // Clear state
             delete modalProgressStates[modalId];
         }
-    }
+    };
     
     function showDownloadSection(downloadData, zipFilename = null, mode = 'single') {
         const mainRow = document.getElementById('goSoftMainRow');

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class GoSoftController extends Controller
 {
@@ -135,19 +136,33 @@ class GoSoftController extends Controller
      */
     public function submitLogin(Request $request)
     {
-        $request->validate([
-            'session_id' => 'required|string',
-            'username' => 'required|string',
-            'password' => 'required|string',
-            'captcha' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'session_id' => 'required|string',
+                'username' => 'required|string',
+                'password' => 'required|string',
+                'captcha' => 'nullable|string', // Login mới không cần captcha nữa
+            ], [
+                'session_id.required' => 'Session ID là bắt buộc',
+                'username.required' => 'Tên đăng nhập là bắt buộc',
+                'password.required' => 'Mật khẩu là bắt buộc',
+            ]);
+        } catch (ValidationException $e) {
+            $errors = $e->errors();
+            $firstError = collect($errors)->flatten()->first();
+            return response()->json([
+                'status' => 'error',
+                'message' => $firstError ?? 'Vui lòng điền đầy đủ thông tin đăng nhập',
+                'errors' => $errors
+            ], 422);
+        }
 
         try {
             $result = $this->makeApiRequest('POST', '/login/submit', [
                 'session_id' => $request->session_id,
                 'username' => $request->username,
                 'password' => $request->password,
-                'captcha' => $request->captcha,
+                'captcha' => $request->captcha ?? '', // Gửi rỗng nếu không có
             ]);
 
             if ($result['success']) {
