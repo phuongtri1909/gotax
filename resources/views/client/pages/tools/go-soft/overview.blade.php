@@ -673,10 +673,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 showGoSoftFailed(errorData.message || 'Đăng nhập thất bại');
-                if (captchaInput) {
-                    captchaInput.value = '';
-                }
-                await initTaxLogin();
                 return;
             }
             
@@ -704,15 +700,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 showGoSoftSuccess('Đăng nhập thành công!');
             } else {
                 showGoSoftFailed(result.message || 'Đăng nhập thất bại. Sai thông tin đăng nhập');
-                // Refresh captcha và clear input
+                // Chỉ clear input captcha, KHÔNG reload captcha tự động
+                // User có thể dùng lại captcha hiện tại để nhập lại
+                // Chỉ reload khi user click button refresh
                 if (captchaInput) {
                     captchaInput.value = '';
                 }
-                await initTaxLogin();
+                // Không gọi initTaxLogin() - giữ nguyên captcha hiện tại
             }
         } catch (error) {
             showGoSoftFailed(error.message || 'Lỗi kết nối');
-            await initTaxLogin();
+            // Chỉ clear input captcha, KHÔNG reload captcha tự động
+            if (captchaInput) {
+                captchaInput.value = '';
+            }
+            // Không gọi initTaxLogin() - giữ nguyên captcha hiện tại
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Đăng nhập';
@@ -737,29 +739,178 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Hiển thị modal thành công
+    // Biến lưu timeout và progress state
+    let modalTimeouts = {};
+    let modalProgressStates = {};
+    
     function showGoSoftSuccess(message) {
         const modal = document.getElementById('goSoftSuccessModal');
         const modalMessage = modal.querySelector('.bulk-modal-message');
+        const progressBar = document.getElementById('goSoftSuccessProgress');
+        const duration = 2000; // 2 giây cho thành công
+        
         if (modalMessage && message) {
             modalMessage.textContent = message;
         }
+        
+        // Clear timeout cũ nếu có
+        if (modalTimeouts['goSoftSuccessModal']) {
+            clearTimeout(modalTimeouts['goSoftSuccessModal']);
+        }
+        
+        // Reset progress state
+        modalProgressStates['goSoftSuccessModal'] = {
+            duration: duration,
+            elapsed: 0,
+            startTime: null,
+            paused: false
+        };
+        
+        // Reset và start progress bar
+        if (progressBar) {
+            progressBar.style.animation = 'none';
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                progressBar.style.animation = `bulk-modal-progress ${duration}ms linear forwards`;
+                modalProgressStates['goSoftSuccessModal'].startTime = Date.now();
+            }, 10);
+        }
+        
+        // Setup hover pause/resume
+        setupModalHover('goSoftSuccessModal', duration);
+        
         modal.classList.add('show');
-        setTimeout(() => {
-            modal.classList.remove('show');
-        }, 2000);
+        
+        // Auto close sau duration
+        modalTimeouts['goSoftSuccessModal'] = setTimeout(() => {
+            closeGoSoftModal('goSoftSuccessModal');
+        }, duration);
     }
     
     // Hiển thị modal thất bại
     function showGoSoftFailed(message) {
         const modal = document.getElementById('goSoftFailedModal');
         const modalMessage = modal.querySelector('.bulk-modal-message');
+        const progressBar = document.getElementById('goSoftFailedProgress');
+        const duration = 5000; // 5 giây cho lỗi
+        
         if (modalMessage && message) {
             modalMessage.innerHTML = message.includes('<br>') ? message : `Có lỗi xảy ra!<br>${message}`;
         }
+        
+        // Clear timeout cũ nếu có
+        if (modalTimeouts['goSoftFailedModal']) {
+            clearTimeout(modalTimeouts['goSoftFailedModal']);
+        }
+        
+        // Reset progress state
+        modalProgressStates['goSoftFailedModal'] = {
+            duration: duration,
+            elapsed: 0,
+            startTime: null,
+            paused: false
+        };
+        
+        // Reset và start progress bar
+        if (progressBar) {
+            progressBar.style.animation = 'none';
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                progressBar.style.animation = `bulk-modal-progress ${duration}ms linear forwards`;
+                modalProgressStates['goSoftFailedModal'].startTime = Date.now();
+            }, 10);
+        }
+        
+        // Setup hover pause/resume
+        setupModalHover('goSoftFailedModal', duration);
+        
         modal.classList.add('show');
-        setTimeout(() => {
+        
+        // Auto close sau duration
+        modalTimeouts['goSoftFailedModal'] = setTimeout(() => {
+            closeGoSoftModal('goSoftFailedModal');
+        }, duration);
+    }
+    
+    // Setup hover pause/resume cho modal
+    function setupModalHover(modalId, duration) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        const progressBar = modal.querySelector('.bulk-modal-progress-bar');
+        if (!progressBar) return;
+        
+        // Remove old listeners bằng cách thêm flag
+        modal.removeEventListener('mouseenter', modal._hoverEnter);
+        modal.removeEventListener('mouseleave', modal._hoverLeave);
+        
+        // Hover enter - pause
+        modal._hoverEnter = () => {
+            const state = modalProgressStates[modalId];
+            if (!state || !state.startTime || state.paused) return;
+            
+            // Tính thời gian đã trôi qua
+            const elapsed = Date.now() - state.startTime;
+            const remaining = Math.max(0, state.duration - elapsed);
+            
+            // Lưu state
+            state.paused = true;
+            state.elapsed = elapsed;
+            state.remaining = remaining;
+            
+            // Pause animation bằng cách set animation-play-state
+            progressBar.style.animationPlayState = 'paused';
+            
+            // Clear timeout
+            if (modalTimeouts[modalId]) {
+                clearTimeout(modalTimeouts[modalId]);
+                delete modalTimeouts[modalId];
+            }
+        };
+        
+        // Hover leave - resume
+        modal._hoverLeave = () => {
+            const state = modalProgressStates[modalId];
+            if (!state || !state.paused) return;
+            
+            // Resume animation
+            state.paused = false;
+            state.startTime = Date.now() - state.elapsed;
+            
+            // Resume animation
+            progressBar.style.animationPlayState = 'running';
+            
+            // Resume timeout với thời gian còn lại
+            if (state.remaining > 0) {
+                modalTimeouts[modalId] = setTimeout(() => {
+                    closeGoSoftModal(modalId);
+                }, state.remaining);
+            }
+        };
+        
+        modal.addEventListener('mouseenter', modal._hoverEnter);
+        modal.addEventListener('mouseleave', modal._hoverLeave);
+    }
+    
+    // Đóng modal
+    function closeGoSoftModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
             modal.classList.remove('show');
-        }, 2000);
+            // Clear timeout
+            if (modalTimeouts[modalId]) {
+                clearTimeout(modalTimeouts[modalId]);
+                delete modalTimeouts[modalId];
+            }
+            // Reset progress bar
+            const progressBar = modal.querySelector('.bulk-modal-progress-bar');
+            if (progressBar) {
+                progressBar.style.animation = 'none';
+                progressBar.style.width = '100%';
+            }
+            // Clear state
+            delete modalProgressStates[modalId];
+        }
     }
     
     function showDownloadSection(downloadData, zipFilename = null, mode = 'single') {
