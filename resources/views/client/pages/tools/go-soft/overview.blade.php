@@ -770,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (progressBar) {
             progressBar.style.animation = 'none';
             progressBar.style.width = '100%';
-            setTimeout(() => {
+        setTimeout(() => {
                 progressBar.style.animation = `bulk-modal-progress ${duration}ms linear forwards`;
                 modalProgressStates['goSoftSuccessModal'].startTime = Date.now();
             }, 10);
@@ -815,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (progressBar) {
             progressBar.style.animation = 'none';
             progressBar.style.width = '100%';
-            setTimeout(() => {
+        setTimeout(() => {
                 progressBar.style.animation = `bulk-modal-progress ${duration}ms linear forwards`;
                 modalProgressStates['goSoftFailedModal'].startTime = Date.now();
             }, 10);
