@@ -1033,5 +1033,638 @@ class GoQuickController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * SSE Streaming: Process CCCD với progress updates
+     * Tránh connection timeout khi xử lý nhiều CCCD
+     */
+    public function processCCCDStream(Request $request)
+    {
+        return $this->streamApiRequest($request, '/process-cccd-stream');
+    }
+
+    /**
+     * SSE Streaming: Process PDF với progress updates
+     */
+    public function processPDFStream(Request $request)
+    {
+        return $this->streamApiRequest($request, '/process-pdf-stream');
+    }
+
+    /**
+     * SSE Streaming: Process Excel với progress updates
+     */
+    public function processExcelStream(Request $request)
+    {
+        return $this->streamApiRequest($request, '/process-excel-stream');
+    }
+
+    /**
+     * SSE Streaming: Process multiple images với progress updates
+     */
+    public function processImagesStream(Request $request)
+    {
+        return $this->streamImagesApiRequest($request, '/process-images-stream');
+    }
+
+    // ==================== ASYNC JOB METHODS ====================
+    
+    /**
+     * Start async job để xử lý CCCD - trả về job_id ngay lập tức
+     */
+    public function processCCCDAsync(Request $request)
+    {
+        try {
+            $usageCheck = $this->checkUsage(1);
+            if (!$usageCheck['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $usageCheck['message']
+                ], 403);
+            }
+
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                
+                $request->validate([
+                    'file' => 'required|file|mimes:zip|max:102400'
+                ], [
+                    'file.required' => 'Vui lòng chọn file ZIP',
+                    'file.file' => 'File không hợp lệ',
+                    'file.mimes' => 'Chỉ chấp nhận file ZIP. File của bạn có định dạng: ' . ($file->getClientOriginalExtension() ?? 'unknown'),
+                    'file.max' => 'File ZIP không được vượt quá 100MB',
+                ]);
+                
+                $response = Http::timeout(30)
+                    ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                    ->post($this->getApiUrl() . '/process-cccd-async');
+            }
+            elseif ($request->has('inp_path')) {
+                $request->validate([
+                    'inp_path' => 'required|string'
+                ]);
+                
+                $response = Http::timeout(30)
+                    ->post($this->getApiUrl() . '/process-cccd-async', [
+                        'inp_path' => $request->inp_path
+                    ]);
+            }
+            else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Vui lòng cung cấp file hoặc base64 string'
+                ], 400);
+            }
+            
+            if ($response->successful()) {
+                $result = $response->json();
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $result
+                ]);
+            }
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => $response->json()['message'] ?? 'Lỗi tạo job'
+            ], $response->status());
+            
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Go Quick Process CCCD Async Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi xử lý: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Start async job để xử lý PDF
+     */
+    public function processPDFAsync(Request $request)
+    {
+        try {
+            $usageCheck = $this->checkUsage(1);
+            if (!$usageCheck['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $usageCheck['message']
+                ], 403);
+            }
+
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                
+                $request->validate([
+                    'file' => 'required|file|mimes:pdf|max:102400'
+                ], [
+                    'file.required' => 'Vui lòng chọn file PDF',
+                    'file.file' => 'File không hợp lệ',
+                    'file.mimes' => 'Chỉ chấp nhận file PDF. File của bạn có định dạng: ' . ($file->getClientOriginalExtension() ?? 'unknown'),
+                    'file.max' => 'File PDF không được vượt quá 100MB',
+                ]);
+                
+                $response = Http::timeout(30)
+                    ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                    ->post($this->getApiUrl() . '/process-pdf-async');
+            }
+            elseif ($request->has('inp_path')) {
+                $request->validate([
+                    'inp_path' => 'required|string'
+                ]);
+                
+                $response = Http::timeout(30)
+                    ->post($this->getApiUrl() . '/process-pdf-async', [
+                        'inp_path' => $request->inp_path
+                    ]);
+            }
+            else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Vui lòng cung cấp file PDF hoặc base64 string'
+                ], 400);
+            }
+            
+            if ($response->successful()) {
+                $result = $response->json();
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $result
+                ]);
+            }
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => $response->json()['message'] ?? 'Lỗi tạo job'
+            ], $response->status());
+            
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Go Quick Process PDF Async Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi xử lý: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Start async job để xử lý Excel
+     */
+    public function processExcelAsync(Request $request)
+    {
+        try {
+            $usageCheck = $this->checkUsage(1);
+            if (!$usageCheck['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $usageCheck['message']
+                ], 403);
+            }
+
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                
+                $request->validate([
+                    'file' => 'required|file|mimes:xlsx,xls|max:10240'
+                ], [
+                    'file.required' => 'Vui lòng chọn file Excel',
+                    'file.file' => 'File không hợp lệ',
+                    'file.mimes' => 'Chỉ chấp nhận file Excel (XLSX, XLS). File của bạn có định dạng: ' . ($file->getClientOriginalExtension() ?? 'unknown'),
+                    'file.max' => 'File Excel không được vượt quá 10MB',
+                ]);
+                
+                $response = Http::timeout(30)
+                    ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                    ->post($this->getApiUrl() . '/process-excel-async');
+            }
+            elseif ($request->has('inp_path')) {
+                $request->validate([
+                    'inp_path' => 'required|string'
+                ]);
+                
+                $response = Http::timeout(30)
+                    ->post($this->getApiUrl() . '/process-excel-async', [
+                        'inp_path' => $request->inp_path
+                    ]);
+            }
+            else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Vui lòng cung cấp file Excel hoặc base64 string'
+                ], 400);
+            }
+            
+            if ($response->successful()) {
+                $result = $response->json();
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $result
+                ]);
+            }
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => $response->json()['message'] ?? 'Lỗi tạo job'
+            ], $response->status());
+            
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Go Quick Process Excel Async Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi xử lý: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy status của job
+     */
+    public function getJobStatus($jobId)
+    {
+        try {
+            $response = Http::timeout(10)->get($this->getApiUrl() . '/job-status/' . $jobId);
+            
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => $response->json()['message'] ?? 'Lỗi lấy status'
+            ], $response->status());
+            
+        } catch (\Exception $e) {
+            Log::error('Go Quick Get Job Status Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy kết quả của job
+     */
+    public function getJobResult($jobId)
+    {
+        try {
+            $response = Http::timeout(10)->get($this->getApiUrl() . '/job-result/' . $jobId);
+            
+            if ($response->successful()) {
+                $result = $response->json();
+                
+                // Nếu job completed, check và update usage
+                if (isset($result['data']) && isset($result['data']['customer'])) {
+                    $customerCount = count($result['data']['customer']);
+                    if ($customerCount > 0) {
+                        $user = Auth::user();
+                        if ($user) {
+                            $usageCheck = $this->checkUsage($customerCount);
+                            if ($usageCheck['success']) {
+                                $this->updateUsage($customerCount);
+                            } else {
+                                // Job đã xong nhưng không đủ lượt - vẫn trả về kết quả nhưng báo lỗi
+                                return response()->json([
+                                    'status' => 'error',
+                                    'message' => $usageCheck['message'],
+                                    'data' => $result['data']
+                                ], 403);
+                            }
+                        }
+                    }
+                }
+                
+                return response()->json($result);
+            }
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => $response->json()['message'] ?? 'Lỗi lấy kết quả'
+            ], $response->status());
+            
+        } catch (\Exception $e) {
+            Log::error('Go Quick Get Job Result Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper: Forward streaming request to API
+     */
+    private function streamApiRequest(Request $request, $endpoint)
+    {
+        // Check user authentication
+        $user = Auth::user();
+        if (!$user) {
+            return response()->stream(function () {
+                echo "data: " . json_encode(['type' => 'error', 'message' => 'Bạn cần đăng nhập để sử dụng tính năng này.']) . "\n\n";
+                ob_flush();
+                flush();
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'Connection' => 'keep-alive',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
+
+        // Check usage
+        $usageCheck = $this->checkUsage(1);
+        if (!$usageCheck['success']) {
+            return response()->stream(function () use ($usageCheck) {
+                echo "data: " . json_encode(['type' => 'error', 'message' => $usageCheck['message']]) . "\n\n";
+                ob_flush();
+                flush();
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'Connection' => 'keep-alive',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
+
+        $apiUrl = $this->getApiUrl() . $endpoint;
+        
+        // Copy file sang thư mục tạm để tránh bị xóa trong quá trình streaming
+        $tempFilePath = null;
+        $originalFileName = null;
+        $shouldDeleteTemp = false;
+        
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $originalFileName = $file->getClientOriginalName();
+            
+            // Copy file sang storage/app/temp
+            $tempDir = storage_path('app/temp');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+            $tempFilePath = $tempDir . '/' . uniqid('upload_') . '_' . $originalFileName;
+            copy($file->getRealPath(), $tempFilePath);
+            $shouldDeleteTemp = true;
+        }
+
+        return response()->stream(function () use ($apiUrl, $tempFilePath, $originalFileName, $shouldDeleteTemp) {
+            // Disable PHP timeout
+            set_time_limit(0);
+            ignore_user_abort(true);
+            
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            try {
+                if (!$tempFilePath || !file_exists($tempFilePath)) {
+                    echo "data: " . json_encode(['type' => 'error', 'message' => 'Không có file được cung cấp']) . "\n\n";
+                    flush();
+                    return;
+                }
+
+                // Sử dụng cURL để forward request với streaming
+                $ch = curl_init();
+                
+                $cfile = new \CURLFile($tempFilePath, mime_content_type($tempFilePath), $originalFileName);
+                
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $apiUrl,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => ['file' => $cfile],
+                    CURLOPT_RETURNTRANSFER => false,
+                    CURLOPT_TIMEOUT => 0, // No timeout
+                    CURLOPT_CONNECTTIMEOUT => 60,
+                    CURLOPT_LOW_SPEED_LIMIT => 1, // 1 byte/s minimum
+                    CURLOPT_LOW_SPEED_TIME => 1800, // Allow 30 minutes of low speed
+                    CURLOPT_WRITEFUNCTION => function($ch, $data) {
+                        // Write immediately without buffering
+                        echo $data;
+                        // Flush all output buffers
+                        while (ob_get_level() > 0) {
+                            ob_end_flush();
+                        }
+                        flush();
+                        // Force PHP to send data immediately
+                        if (function_exists('fastcgi_finish_request')) {
+                            fastcgi_finish_request();
+                        }
+                        return strlen($data);
+                    },
+                    CURLOPT_HTTPHEADER => [
+                        'Accept: text/event-stream',
+                        'Connection: keep-alive',
+                        'Cache-Control: no-cache',
+                        'X-Accel-Buffering: no',
+                    ],
+                    CURLOPT_TCP_KEEPALIVE => 1,
+                    CURLOPT_TCP_KEEPIDLE => 60,
+                    CURLOPT_TCP_KEEPINTVL => 30,
+                    CURLOPT_BUFFERSIZE => 16384, // 16KB buffer
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1, // Use HTTP/1.1
+                ]);
+                
+                $result = curl_exec($ch);
+                
+                if (curl_errno($ch)) {
+                    $error = curl_error($ch);
+                    Log::error('Go Quick Stream cURL Error: ' . $error);
+                    echo "data: " . json_encode(['type' => 'error', 'message' => 'Lỗi kết nối: ' . $error]) . "\n\n";
+                    flush();
+                }
+                
+                curl_close($ch);
+
+            } catch (\Exception $e) {
+                Log::error('Go Quick Stream Error: ' . $e->getMessage());
+                echo "data: " . json_encode(['type' => 'error', 'message' => 'Lỗi: ' . $e->getMessage()]) . "\n\n";
+                flush();
+            } finally {
+                // Cleanup temp file
+                if ($shouldDeleteTemp && $tempFilePath && file_exists($tempFilePath)) {
+                    @unlink($tempFilePath);
+                }
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Helper: Forward streaming request for multiple images to API
+     */
+    private function streamImagesApiRequest(Request $request, $endpoint)
+    {
+        // Check user authentication
+        $user = Auth::user();
+        if (!$user) {
+            return response()->stream(function () {
+                echo "data: " . json_encode(['type' => 'error', 'message' => 'Bạn cần đăng nhập để sử dụng tính năng này.']) . "\n\n";
+                flush();
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'Connection' => 'keep-alive',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
+
+        // Check usage
+        $usageCheck = $this->checkUsage(1);
+        if (!$usageCheck['success']) {
+            return response()->stream(function () use ($usageCheck) {
+                echo "data: " . json_encode(['type' => 'error', 'message' => $usageCheck['message']]) . "\n\n";
+                flush();
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'Connection' => 'keep-alive',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
+
+        $apiUrl = $this->getApiUrl() . $endpoint;
+        
+        // Copy files sang thư mục tạm để tránh bị xóa
+        $tempFiles = [];
+        $tempDir = storage_path('app/temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+        
+        if ($request->hasFile('images')) {
+            $images = $request->file('images');
+            foreach ($images as $image) {
+                $tempPath = $tempDir . '/' . uniqid('img_') . '_' . $image->getClientOriginalName();
+                copy($image->getRealPath(), $tempPath);
+                $tempFiles[] = [
+                    'path' => $tempPath,
+                    'name' => $image->getClientOriginalName(),
+                    'mime' => $image->getMimeType()
+                ];
+            }
+        }
+
+        return response()->stream(function () use ($apiUrl, $tempFiles) {
+            // Disable PHP timeout
+            set_time_limit(0);
+            ignore_user_abort(true);
+            
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            try {
+                if (empty($tempFiles)) {
+                    echo "data: " . json_encode(['type' => 'error', 'message' => 'Không có ảnh được cung cấp']) . "\n\n";
+                    flush();
+                    return;
+                }
+
+                // Sử dụng cURL để forward request với streaming
+                $ch = curl_init();
+                
+                $postFields = [];
+                foreach ($tempFiles as $index => $imageInfo) {
+                    if (file_exists($imageInfo['path'])) {
+                        $cfile = new \CURLFile($imageInfo['path'], $imageInfo['mime'], $imageInfo['name']);
+                        $postFields["images[$index]"] = $cfile;
+                    }
+                }
+                
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $apiUrl,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $postFields,
+                    CURLOPT_RETURNTRANSFER => false,
+                    CURLOPT_TIMEOUT => 0,
+                    CURLOPT_CONNECTTIMEOUT => 60,
+                    CURLOPT_LOW_SPEED_LIMIT => 1,
+                    CURLOPT_LOW_SPEED_TIME => 1800, // Allow 30 minutes of low speed
+                    CURLOPT_WRITEFUNCTION => function($ch, $data) {
+                        // Write immediately without buffering
+                        echo $data;
+                        // Flush all output buffers
+                        while (ob_get_level() > 0) {
+                            ob_end_flush();
+                        }
+                        flush();
+                        // Force PHP to send data immediately
+                        if (function_exists('fastcgi_finish_request')) {
+                            fastcgi_finish_request();
+                        }
+                        return strlen($data);
+                    },
+                    CURLOPT_HTTPHEADER => [
+                        'Accept: text/event-stream',
+                        'Connection: keep-alive',
+                        'Cache-Control: no-cache',
+                        'X-Accel-Buffering: no',
+                    ],
+                    CURLOPT_TCP_KEEPALIVE => 1,
+                    CURLOPT_TCP_KEEPIDLE => 60,
+                    CURLOPT_TCP_KEEPINTVL => 30,
+                    CURLOPT_BUFFERSIZE => 16384, // 16KB buffer
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1, // Use HTTP/1.1
+                ]);
+                
+                $result = curl_exec($ch);
+                
+                if (curl_errno($ch)) {
+                    $error = curl_error($ch);
+                    Log::error('Go Quick Images Stream cURL Error: ' . $error);
+                    echo "data: " . json_encode(['type' => 'error', 'message' => 'Lỗi kết nối: ' . $error]) . "\n\n";
+                    flush();
+                }
+                
+                curl_close($ch);
+
+            } catch (\Exception $e) {
+                Log::error('Go Quick Images Stream Error: ' . $e->getMessage());
+                echo "data: " . json_encode(['type' => 'error', 'message' => 'Lỗi: ' . $e->getMessage()]) . "\n\n";
+                flush();
+            } finally {
+                // Cleanup temp files
+                foreach ($tempFiles as $tempFile) {
+                    if (isset($tempFile['path']) && file_exists($tempFile['path'])) {
+                        @unlink($tempFile['path']);
+                    }
+                }
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
 }
 

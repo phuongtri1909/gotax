@@ -171,6 +171,19 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('/process-excel', [GoQuickController::class, 'processExcel'])->name('tools.go-quick.process-excel');
         Route::post('/export-excel', [GoQuickController::class, 'exportExcel'])->name('tools.go-quick.export-excel');
         Route::post('/process', [GoQuickController::class, 'process'])->name('tools.go-quick.process');
+        
+        // SSE Streaming routes - tránh connection timeout khi xử lý nhiều CCCD
+        Route::post('/process-cccd-stream', [GoQuickController::class, 'processCCCDStream'])->name('tools.go-quick.process-cccd-stream');
+        Route::post('/process-pdf-stream', [GoQuickController::class, 'processPDFStream'])->name('tools.go-quick.process-pdf-stream');
+        Route::post('/process-excel-stream', [GoQuickController::class, 'processExcelStream'])->name('tools.go-quick.process-excel-stream');
+        Route::post('/process-images-stream', [GoQuickController::class, 'processImagesStream'])->name('tools.go-quick.process-images-stream');
+        
+        // Async Job routes - không cần giữ connection, polling để check progress
+        Route::post('/process-cccd-async', [GoQuickController::class, 'processCCCDAsync'])->name('tools.go-quick.process-cccd-async');
+        Route::post('/process-pdf-async', [GoQuickController::class, 'processPDFAsync'])->name('tools.go-quick.process-pdf-async');
+        Route::post('/process-excel-async', [GoQuickController::class, 'processExcelAsync'])->name('tools.go-quick.process-excel-async');
+        Route::get('/job-status/{jobId}', [GoQuickController::class, 'getJobStatus'])->name('tools.go-quick.job-status');
+        Route::get('/job-result/{jobId}', [GoQuickController::class, 'getJobResult'])->name('tools.go-quick.job-result');
     });
 
     Route::prefix('go-soft')->group(function () {

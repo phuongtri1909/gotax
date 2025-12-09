@@ -41,6 +41,7 @@ export default defineConfig({
                 'resources/assets/frontend/css/pages/tools/go-soft.css',
                 'resources/assets/frontend/css/pages/tools/go-invoice-tools.css',
                 'resources/assets/frontend/css/pages/tools/go-bot.css',
+                'resources/assets/frontend/js/go-quick-async.js',
             ],
             refresh: true,
         }),

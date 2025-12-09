@@ -299,6 +299,7 @@
 
     <div class="bulk-modal" id="bulkSuccessModal">
         <div class="bulk-modal-content">
+            <button class="bulk-modal-close" data-modal-close="bulkSuccessModal">×</button>
             <div class="bulk-modal-icon success">
                 <svg xmlns="http://www.w3.org/2000/svg" width="50" height="36" viewBox="0 0 50 36"
                     fill="none">
@@ -309,11 +310,15 @@
             </div>
             <h3 class="bulk-modal-title success">Thành công</h3>
             <p class="bulk-modal-message">File của bạn đã trích xuất dữ liệu thành công!</p>
+            <div class="bulk-modal-progress">
+                <div class="bulk-modal-progress-bar" id="bulkSuccessProgress"></div>
+            </div>
         </div>
     </div>
 
     <div class="bulk-modal" id="bulkFailedModal">
         <div class="bulk-modal-content">
+            <button class="bulk-modal-close" data-modal-close="bulkFailedModal">×</button>
             <div class="bulk-modal-icon failed">
                 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"
                     fill="none">
@@ -327,6 +332,9 @@
             </div>
             <h3 class="bulk-modal-title failed">Oops</h3>
             <p class="bulk-modal-message">Trích xuất dữ liệu thất bại!<br>Vui lòng kiểm tra lại file</p>
+            <div class="bulk-modal-progress">
+                <div class="bulk-modal-progress-bar" id="bulkFailedProgress"></div>
+            </div>
         </div>
     </div>
 @endsection
@@ -335,9 +343,69 @@
 
 @push('styles')
     @vite('resources/assets/frontend/css/pages/tools/go-quick-upload.css')
+    <style>
+        /* Modal progress bar animation */
+        @keyframes bulk-modal-progress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+        
+        .bulk-modal-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+        
+        .bulk-modal-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #227447 0%, #2ecc71 100%);
+            width: 100%;
+            border-radius: 2px;
+        }
+        
+        .bulk-modal-content {
+            position: relative;
+        }
+        
+        .bulk-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .bulk-modal-close:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+        
+        #bulkFailedModal .bulk-modal-progress-bar {
+            background: linear-gradient(90deg, #EB5757 0%, #ff6b6b 100%);
+        }
+    </style>
 @endpush
 
 @push('scripts')
+    @vite('resources/assets/frontend/js/go-quick-async.js')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tabButtons = document.querySelectorAll('.tab-button');
@@ -1225,16 +1293,7 @@
                 }
 
                 uploadProgress = 0;
-                updateBulkProgress(0);
-
-                uploadInterval = setInterval(() => {
-                    uploadProgress += Math.random() * 10;
-                    if (uploadProgress >= 90) {
-                        uploadProgress = 90;
-                        clearInterval(uploadInterval);
-                    }
-                    updateBulkProgress(uploadProgress);
-                }, 200);
+                updateBulkProgress(0, 'Đang chuẩn bị...');
 
                 try {
                     const fileName = file.name.toLowerCase();
@@ -1244,13 +1303,14 @@
                     const isZip = fileName.endsWith('.zip') || file.type === 'application/zip' || 
                                  file.type === 'application/x-zip-compressed';
 
-                    let apiUrl = '';
+                    // Sử dụng Async API với polling (ổn định hơn SSE streaming)
+                    let endpoint = '';
                     if (isPDF) {
-                        apiUrl = '{{ route("tools.go-quick.process-pdf") }}';
+                        endpoint = 'process-pdf-async';
                     } else if (isExcel) {
-                        apiUrl = '{{ route("tools.go-quick.process-excel") }}';
+                        endpoint = 'process-excel-async';
                     } else if (isZip) {
-                        apiUrl = '{{ route("tools.go-quick.process-cccd") }}';
+                        endpoint = 'process-cccd-async';
                     } else {
                         throw new Error('Vui lòng chọn file PDF, Excel hoặc ZIP');
                     }
@@ -1263,101 +1323,153 @@
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
                     formData.append('_token', csrfToken);
 
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
+                    // Tạo async handler
+                    // Base URL là /go-quick (không có /process-cccd-async)
+                    const baseUrl = '{{ url("/go-quick") }}';
+                    const handler = new GoQuickAsyncHandler({
+                        baseUrl: baseUrl,
+                        pollInterval: 2000, // Poll mỗi 2 giây
+                        maxPollAttempts: 600, // Tối đa 20 phút (600 * 2s)
+                        onProgress: (data) => {
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                handler.stopPolling();
+                                return;
+                            }
+                            
+                            let safeProgress = Math.min(100, Math.max(0, data.progress || 0));
+                            
+                            if (data.total_cccd && data.total_cccd > 0 && data.processed_cccd !== undefined && data.processed_cccd !== null) {
+                                safeProgress = Math.min(100, Math.max(0, (data.processed_cccd / data.total_cccd) * 100));
+                            }
+                            
+                            updateBulkProgress(safeProgress, data.message || 'Đang xử lý...');
+                            
+                            updateBulkProgressInfo({
+                                total_cccd: data.total_cccd,
+                                processed_cccd: data.processed_cccd,
+                                total_images: data.total_images,
+                                processed_images: data.processed_images,
+                                total_rows: data.total_rows,
+                                estimated_cccd: data.estimated_cccd,
+                                processed: data.processed,
+                                message: data.message
+                            });
                         },
-                        credentials: 'same-origin',
-                        body: formData,
-                        redirect: 'follow',
-                        signal: currentAbortController.signal
+                        onComplete: (result, jobId) => {
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                return;
+                            }
+                            
+                            updateBulkProgress(100, 'Hoàn thành!');
+                            
+                            if (result && result.status === 'success') {
+                                window.bulkResult = result.data || result;
+                                showBulkSuccess();
+                            } else if (result) {
+                                showBulkFailed(result.message || 'Xử lý thất bại');
+                            } else {
+                                showBulkFailed('Không nhận được kết quả từ server');
+                            }
+                            
+                            // Cleanup
+                            window.currentAsyncHandler = null;
+                        },
+                        onError: (error, jobId) => {
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                return;
+                            }
+                            
+                            showBulkFailed(error.message || 'Có lỗi xảy ra khi xử lý');
+                            
+                            // Cleanup
+                            window.currentAsyncHandler = null;
+                        }
                     });
 
-                    clearInterval(uploadInterval);
-                    uploadProgress = 100;
-                    updateBulkProgress(100);
+                    // Lưu handler để có thể cancel
+                    window.currentAsyncHandler = handler;
 
-                    if (response.status === 401 || response.status === 403) {
-                        let errorMessage = 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.';
-                        try {
-                            const responseClone = response.clone();
-                            const contentType = response.headers.get('content-type');
-                            
-                            if (contentType && contentType.includes('application/json')) {
-                                const errorResult = await responseClone.json();
-                                if (errorResult && errorResult.message) {
-                                    errorMessage = errorResult.message;
-                                }
-                            } else {
-                                const text = await responseClone.text();
-                                if (text) {
-                                    try {
-                                        const errorResult = JSON.parse(text);
-                                        if (errorResult && errorResult.message) {
-                                            errorMessage = errorResult.message;
-                                        }
-                                    } catch (e) {
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            
+                    try {
+                        // Start job và tự động poll
+                        updateBulkProgress(0, 'Đang khởi tạo job...');
+                        updateBulkProgressInfo({ message: 'Đang khởi tạo job...' });
+                        const result = await handler.processWithPolling(endpoint, formData);
+                        
+                        // onComplete đã được gọi, không cần xử lý thêm
+                    } catch (error) {
+                        if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
+                            handler.stopPolling();
+                            window.currentAsyncHandler = null;
+                            return;
                         }
-                        throw new Error(errorMessage);
-                    }
-
-                    if (!response.ok) {
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const errorResult = await response.json();
-                            throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
-                        } else {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                    }
-
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        const text = await response.text();
-                        console.error('Non-JSON response:', text);
-                        if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
-                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
-                        }
-                        throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
-                    }
-
-                    const result = await response.json();
-
-                    if (currentAbortController && currentAbortController.signal.aborted) {
-                        return;
-                    }
-
-                    if (result.status === 'success') {
-                        window.bulkResult = result.data || result;
-                        showBulkSuccess();
-                    } else {
-                        showBulkFailed(result.message || 'Xử lý thất bại');
+                        
+                        showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
+                        window.currentAsyncHandler = null;
                     }
                 } catch (error) {
                     if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
                         return;
                     }
                     
-                    clearInterval(uploadInterval);
                     showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
                 } finally {
                     currentAbortController = null;
                 }
             }
+            
+            function updateBulkProgressInfo(eventData) {
+                const fileNameEl = document.getElementById('bulkFileName');
+                if (fileNameEl && eventData.message) {
+                }
+                
+                const fileSizeEl = document.getElementById('bulkFileSize');
+                if (!fileSizeEl) return;
+                
+                const hasProgressInfo = (
+                    (eventData.total_cccd !== undefined && eventData.total_cccd !== null) ||
+                    (eventData.total_images !== undefined && eventData.total_images !== null) ||
+                    (eventData.estimated_cccd !== undefined && eventData.estimated_cccd !== null) ||
+                    (eventData.total_rows !== undefined && eventData.total_rows !== null)
+                );
+                
+                if (hasProgressInfo) {
+                    if (eventData.processed_cccd !== undefined && eventData.total_cccd !== undefined && eventData.total_cccd > 0) {
+                        fileSizeEl.textContent = `Đã xử lý ${eventData.processed_cccd}/${eventData.total_cccd} CCCD`;
+                    } else if (eventData.total_cccd !== undefined && eventData.total_cccd > 0) {
+                        const processed = eventData.processed_cccd || 0;
+                        fileSizeEl.textContent = `Đã xử lý ${processed}/${eventData.total_cccd} CCCD`;
+                    } else if (eventData.estimated_cccd !== undefined && eventData.estimated_cccd > 0) {
+                        const processed = eventData.processed_images || eventData.processed || 0;
+                        const total = eventData.total_images || 0;
+                        fileSizeEl.textContent = `~${eventData.estimated_cccd} CCCD | ${processed}/${total} ảnh`;
+                    } else if (eventData.total_images !== undefined && eventData.total_images > 0) {
+                        const processed = eventData.processed_images || eventData.processed || 0;
+                        fileSizeEl.textContent = `${processed}/${eventData.total_images} ảnh`;
+                    } else if (eventData.total_rows !== undefined && eventData.total_rows > 0) {
+                        const processed = eventData.processed || 0;
+                        fileSizeEl.textContent = `${processed}/${eventData.total_rows} dòng`;
+                    } else {
+                        fileSizeEl.textContent = 'Đang xử lý...';
+                    }
+                } else if (eventData.message) {
+                    if (eventData.message.includes('khởi tạo') || eventData.message.includes('Đang')) {
+                        fileSizeEl.textContent = 'Đang xử lý...';
+                    }
+                }
+            }
 
-            function updateBulkProgress(percent) {
+            function updateBulkProgress(percent, message = null) {
                 const fill = document.getElementById('bulkProgressFill');
                 const text = document.getElementById('bulkProgressPercent');
-                if (fill) fill.style.width = percent + '%';
-                if (text) text.textContent = Math.round(percent) + '%';
+                const safePercent = Math.min(100, Math.max(0, percent));
+                if (fill) fill.style.width = safePercent + '%';
+                if (text) text.textContent = Math.round(safePercent) + '%';
+                
+                if (message) {
+                    const fileNameEl = document.getElementById('bulkFileName');
+                    if (fileNameEl && currentBulkFile) {
+                    }
+                }
             }
 
             document.getElementById('bulkCancelBtn').addEventListener('click', function() {
@@ -1371,33 +1483,190 @@
                     uploadInterval = null;
                 }
                 
+                // Stop any async handler polling
+                if (window.currentAsyncHandler) {
+                    window.currentAsyncHandler.stopPolling();
+                    window.currentAsyncHandler = null;
+                }
+                
                 bulkProgressSection.classList.add('d-none');
                 bulkUploadBox.classList.remove('d-none');
                 resetBulkUpload();
             });
 
-            function showBulkSuccess(message, showDownloadSection = true) {
-                const modalMessage = bulkSuccessModal.querySelector('.bulk-modal-message');
+            // Biến lưu timeout và progress state cho modal
+            let modalTimeouts = {};
+            let modalProgressStates = {};
+            
+            // Event delegation cho các nút close modal
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('[data-modal-close]')) {
+                    const btn = e.target.closest('[data-modal-close]');
+                    const modalId = btn.getAttribute('data-modal-close');
+                    if (modalId) {
+                        closeModal(modalId);
+                    }
+                }
+            });
+            
+            function closeModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (!modal) return;
+                
+                // Clear timeout
+                if (modalTimeouts[modalId]) {
+                    clearTimeout(modalTimeouts[modalId]);
+                    delete modalTimeouts[modalId];
+                }
+                
+                // Stop animation
+                const progressBar = modal.querySelector('.bulk-modal-progress-bar');
+                if (progressBar) {
+                    progressBar.style.animation = 'none';
+                }
+                
+                // Remove event listeners
+                const modalContent = modal.querySelector('.bulk-modal-content');
+                if (modalContent && modal._hoverEnter) {
+                    modalContent.removeEventListener('mouseenter', modal._hoverEnter);
+                    modalContent.removeEventListener('mouseleave', modal._hoverLeave);
+                    delete modal._hoverEnter;
+                    delete modal._hoverLeave;
+                }
+                
+                // Hide modal
+                modal.classList.remove('show');
+                
+                // Lấy state trước khi xóa
+                const state = modalProgressStates[modalId];
+                
+                // Clear state
+                delete modalProgressStates[modalId];
+                
+                // Xử lý logic sau khi đóng modal
+                if (modalId === 'bulkSuccessModal') {
+                    bulkUploadTab.classList.add('d-none');
+                    bulkDownloadSection.classList.remove('d-none');
+                } else if (modalId === 'bulkFailedModal') {
+                    // Kiểm tra resetUpload flag
+                    const shouldReset = state ? state.resetUpload !== false : true;
+                    if (shouldReset) {
+                        bulkProgressSection.classList.add('d-none');
+                        bulkUploadBox.classList.remove('d-none');
+                        resetBulkUpload();
+                    }
+                }
+            }
+            
+            // Setup hover pause/resume cho modal - chỉ dừng khi hover vào modal content
+            function setupModalHover(modalId, duration) {
+                const modal = document.getElementById(modalId);
+                if (!modal) return;
+                
+                const modalContent = modal.querySelector('.bulk-modal-content');
+                if (!modalContent) return;
+                
+                const progressBar = modal.querySelector('.bulk-modal-progress-bar');
+                
+                // Remove old listeners nếu có
+                if (modal._hoverEnter) {
+                    modalContent.removeEventListener('mouseenter', modal._hoverEnter);
+                    modalContent.removeEventListener('mouseleave', modal._hoverLeave);
+                }
+                
+                // Hover enter vào modal content - pause
+                modal._hoverEnter = function() {
+                    const state = modalProgressStates[modalId];
+                    if (!state || !state.startTime || state.paused) return;
+                    
+                    // Calculate elapsed time
+                    state.elapsed += Date.now() - state.startTime;
+                    state.paused = true;
+                    
+                    // Pause animation
+                    if (progressBar) {
+                        progressBar.style.animationPlayState = 'paused';
+                    }
+                    
+                    // Clear auto-close timeout
+                    if (modalTimeouts[modalId]) {
+                        clearTimeout(modalTimeouts[modalId]);
+                    }
+                };
+                
+                // Hover leave khỏi modal content - resume
+                modal._hoverLeave = function() {
+                    const state = modalProgressStates[modalId];
+                    if (!state || !state.paused) return;
+                    
+                    state.paused = false;
+                    state.startTime = Date.now();
+                    
+                    // Resume animation
+                    if (progressBar) {
+                        progressBar.style.animationPlayState = 'running';
+                    }
+                    
+                    // Calculate remaining time
+                    const remaining = Math.max(0, state.duration - state.elapsed);
+                    
+                    // Set new timeout
+                    modalTimeouts[modalId] = setTimeout(() => {
+                        closeModal(modalId);
+                    }, remaining);
+                };
+                
+                modalContent.addEventListener('mouseenter', modal._hoverEnter);
+                modalContent.addEventListener('mouseleave', modal._hoverLeave);
+            }
+            
+            function showBulkSuccess(message, showDownloadSectionFlag = true) {
+                const modal = bulkSuccessModal;
+                const modalMessage = modal.querySelector('.bulk-modal-message');
                 if (modalMessage && message) {
                     modalMessage.textContent = message;
                 } else if (modalMessage && !message) {
                     modalMessage.textContent = 'File của bạn đã trích xuất dữ liệu thành công!';
                 }
+                
+                const duration = 3000; // 3 giây
+                const progressBar = modal.querySelector('.bulk-modal-progress-bar');
+                
+                // Reset progress state
+                modalProgressStates['bulkSuccessModal'] = {
+                    duration: duration,
+                    elapsed: 0,
+                    paused: false,
+                    startTime: null
+                };
+                
+                // Reset và start animation
+                if (progressBar) {
+                    progressBar.style.animation = 'none';
+                    progressBar.offsetHeight; // Force reflow
+                    setTimeout(() => {
+                        progressBar.style.animation = `bulk-modal-progress ${duration}ms linear forwards`;
+                        modalProgressStates['bulkSuccessModal'].startTime = Date.now();
+                    }, 10);
+                }
+                
+                // Setup hover pause/resume
+                setupModalHover('bulkSuccessModal', duration);
 
-                bulkSuccessModal.classList.add('show');
-
-                setTimeout(() => {
-                    bulkSuccessModal.classList.remove('show');
-
-                    if (showDownloadSection) {
-                        bulkUploadTab.classList.add('d-none');
-                        bulkDownloadSection.classList.remove('d-none');
-                    }
-                }, 2000);
+                modal.classList.add('show');
+                
+                // Clear previous timeout
+                if (modalTimeouts['bulkSuccessModal']) {
+                    clearTimeout(modalTimeouts['bulkSuccessModal']);
+                }
+                
+                // Auto close after duration
+                modalTimeouts['bulkSuccessModal'] = setTimeout(() => {
+                    closeModal('bulkSuccessModal');
+                }, duration);
             }
 
             async function handleMultipleImagesUpload(imageFiles) {
-                let progressInterval = null;
                 try {
                     bulkUploadBox.classList.add('d-none');
                     bulkProgressSection.classList.remove('d-none');
@@ -1419,26 +1688,16 @@
                     formData.append('_token', csrfToken);
 
                     uploadProgress = 0;
-                    updateBulkProgress(0);
+                    updateBulkProgress(0, 'Đang chuẩn bị...');
 
                     currentAbortController = new AbortController();
 
-                    progressInterval = setInterval(() => {
-                        uploadProgress += Math.random() * 10;
-                        if (uploadProgress >= 90) {
-                            uploadProgress = 90;
-                            if (progressInterval) {
-                                clearInterval(progressInterval);
-                            }
-                        }
-                        updateBulkProgress(uploadProgress);
-                    }, 200);
-
-                    const response = await fetch('{{ route("tools.go-quick.process-cccd-multiple-images") }}', {
+                    // Sử dụng SSE streaming API
+                    const response = await fetch('{{ route("tools.go-quick.process-images-stream") }}', {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
+                            'Accept': 'text/event-stream',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         credentials: 'same-origin',
@@ -1446,116 +1705,133 @@
                         signal: currentAbortController.signal
                     });
 
-                    if (progressInterval) {
-                        clearInterval(progressInterval);
-                        progressInterval = null;
-                    }
-                    uploadProgress = 100;
-                    updateBulkProgress(100);
-
                     if (response.status === 401 || response.status === 403) {
-                        let errorMessage = 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.';
-                        try {
-                            const responseClone = response.clone();
-                            const contentType = response.headers.get('content-type');
-                            
-                            if (contentType && contentType.includes('application/json')) {
-                                const errorResult = await responseClone.json();
-                                if (errorResult && errorResult.message) {
-                                    errorMessage = errorResult.message;
-                                }
-                            } else {
-                                const text = await responseClone.text();
-                                if (text) {
-                                    try {
-                                        const errorResult = JSON.parse(text);
-                                        if (errorResult && errorResult.message) {
-                                            errorMessage = errorResult.message;
-                                        }
-                                    } catch (e) {
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            
-                        }
-                        throw new Error(errorMessage);
-                    }
-
-                    if (response.status === 302 || response.redirected) {
                         throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
                     }
 
                     if (!response.ok) {
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const errorResult = await response.json();
-                            throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
-                        } else {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        const text = await response.text();
-                        console.error('Non-JSON response:', text);
-                        if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
-                            throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
-                        }
-                        throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
-                    }
+                    // Đọc SSE stream
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let finalResult = null;
 
-                    const result = await response.json();
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) {
+                            break;
+                        }
+
+                        if (currentAbortController && currentAbortController.signal.aborted) {
+                            return;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        
+                        // Parse SSE events
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const eventData = JSON.parse(line.slice(6));
+                                    
+                                    if (eventData.type === 'progress') {
+                                        updateBulkProgress(eventData.percent || 0, eventData.message || 'Đang xử lý...');
+                                        
+                                        if (eventData.total_images !== undefined) {
+                                            updateBulkProgressInfo(eventData);
+                                        }
+                                    } else if (eventData.type === 'complete') {
+                                        finalResult = eventData.data;
+                                        updateBulkProgress(100, 'Hoàn thành!');
+                                    } else if (eventData.type === 'error') {
+                                        throw new Error(eventData.message || 'Có lỗi xảy ra');
+                                    } else if (eventData.type === 'start') {
+                                        updateBulkProgress(5, eventData.message || 'Bắt đầu xử lý...');
+                                    }
+                                } catch (e) {
+                                    if (e.message && !e.message.includes('JSON')) {
+                                        throw e;
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     if (currentAbortController && currentAbortController.signal.aborted) {
                         return;
                     }
 
-                    if (result.status === 'success') {
-                        window.bulkResult = result.data || result;
+                    if (finalResult && finalResult.status === 'success') {
+                        window.bulkResult = finalResult.data || finalResult;
                         showBulkSuccess();
+                    } else if (finalResult) {
+                        showBulkFailed(finalResult.message || 'Xử lý thất bại');
                     } else {
-                        showBulkFailed(result.message || 'Xử lý thất bại');
+                        showBulkFailed('Không nhận được kết quả từ server');
                     }
                 } catch (error) {
                     if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
                         return;
                     }
                     
-                    if (progressInterval) {
-                        clearInterval(progressInterval);
-                        progressInterval = null;
-                    }
                     showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
                 } finally {
-                    if (progressInterval) {
-                        clearInterval(progressInterval);
-                        progressInterval = null;
-                    }
                     currentAbortController = null;
                 }
             }
 
             function showBulkFailed(message, resetUpload = true) {
-                const modalMessage = bulkFailedModal.querySelector('.bulk-modal-message');
+                const modal = bulkFailedModal;
+                const modalMessage = modal.querySelector('.bulk-modal-message');
                 if (modalMessage && message) {
                     modalMessage.innerHTML = `Trích xuất dữ liệu thất bại!<br>${message}`;
                 } else if (modalMessage && !message) {
                     modalMessage.innerHTML = 'Trích xuất dữ liệu thất bại!<br>Vui lòng kiểm tra lại file';
                 }
+                
+                const duration = 3000; // 3 giây
+                const progressBar = modal.querySelector('.bulk-modal-progress-bar');
+                
+                // Reset progress state
+                modalProgressStates['bulkFailedModal'] = {
+                    duration: duration,
+                    elapsed: 0,
+                    paused: false,
+                    startTime: null,
+                    resetUpload: resetUpload
+                };
+                
+                // Reset và start animation
+                if (progressBar) {
+                    progressBar.style.animation = 'none';
+                    progressBar.offsetHeight; // Force reflow
+                    setTimeout(() => {
+                        progressBar.style.animation = `bulk-modal-progress ${duration}ms linear forwards`;
+                        modalProgressStates['bulkFailedModal'].startTime = Date.now();
+                    }, 10);
+                }
+                
+                // Setup hover pause/resume
+                setupModalHover('bulkFailedModal', duration);
 
-                bulkFailedModal.classList.add('show');
-
-                setTimeout(() => {
-                    bulkFailedModal.classList.remove('show');
-
-                    if (resetUpload) {
-                        bulkProgressSection.classList.add('d-none');
-                        bulkUploadBox.classList.remove('d-none');
-                        resetBulkUpload();
-                    }
-                }, 2000);
+                modal.classList.add('show');
+                
+                // Clear previous timeout
+                if (modalTimeouts['bulkFailedModal']) {
+                    clearTimeout(modalTimeouts['bulkFailedModal']);
+                }
+                
+                // Auto close after duration
+                modalTimeouts['bulkFailedModal'] = setTimeout(() => {
+                    closeModal('bulkFailedModal');
+                }, duration);
             }
 
             function resetBulkUpload() {
@@ -1595,6 +1871,12 @@
                 if (uploadInterval) {
                     clearInterval(uploadInterval);
                     uploadInterval = null;
+                }
+                
+                // Stop async handler nếu có
+                if (window.currentAsyncHandler) {
+                    window.currentAsyncHandler.stopPolling();
+                    window.currentAsyncHandler = null;
                 }
             }
 
