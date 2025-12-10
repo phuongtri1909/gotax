@@ -518,7 +518,8 @@
     background: var(--White, #FFF);
     box-shadow: -2px 2px 15px -1px rgba(113, 113, 113, 0.12);
     padding: 48px 48px 25px 48px;
-    max-width: 600px;
+    width: 600px;
+    max-width: 90vw;
     position: relative;
 }
 
@@ -911,56 +912,54 @@
 
 .bulk-modal-close {
     position: absolute;
-    top: 16px;
-    right: 16px;
-    background: none;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
     border: none;
-    font-size: 28px;
-    color: #9CA3AF;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
     cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
+    font-size: 20px;
+    line-height: 1;
+    color: #666;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s;
-    z-index: 1;
+    transition: all 0.2s ease;
 }
 
 .bulk-modal-close:hover {
-    color: #374151;
+    background: rgba(0, 0, 0, 0.2);
+    color: #333;
 }
 
 .bulk-modal-progress {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    width: 100%;
     height: 4px;
-    background: #E5E7EB;
-    border-radius: 0 0 16px 16px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
     overflow: hidden;
+    margin-top: 16px;
 }
 
 .bulk-modal-progress-bar {
     height: 100%;
-    background: var(--primary-color, #227447);
+    background: linear-gradient(90deg, #227447 0%, #2ecc71 100%);
     width: 100%;
-    transform-origin: left;
-    animation: bulk-modal-progress linear forwards;
+    border-radius: 2px;
 }
 
-.bulk-modal.failed .bulk-modal-progress-bar {
-    background: #EB5757;
+#goSoftFailedModal .bulk-modal-progress-bar {
+    background: linear-gradient(90deg, #EB5757 0%, #ff6b6b 100%);
 }
 
 @keyframes bulk-modal-progress {
     from {
-        transform: scaleX(1);
+        width: 100%;
     }
     to {
-        transform: scaleX(0);
+        width: 0%;
     }
 }
 

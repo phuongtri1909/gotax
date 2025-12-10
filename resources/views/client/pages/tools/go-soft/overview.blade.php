@@ -492,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Disable và show loading cho cả submit button và refresh button
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Đang tạo session...';
+            submitBtn.textContent = 'Đang xử lý...';
             
             if (captchaRefreshBtn) {
                 captchaRefreshBtn.disabled = true;
@@ -1634,6 +1634,23 @@ document.addEventListener('DOMContentLoaded', function() {
             // Đảm bảo loai được set đúng
             const currentLoai = loai || 'to-khai';
             
+            // Reset progress tracking state khi bắt đầu crawl mới
+            let currentTotal = 0;
+            let currentDownloaded = 0;
+            let accumulatedTotal = 0;
+            let accumulatedDownloaded = 0;
+            let currentRangeInfo = '';
+            
+            // Reset progress bar về 0% khi bắt đầu crawl mới
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+            const progressCount = document.getElementById('progressCount');
+            if (progressCount) {
+                progressCount.textContent = '0/0 (0%)';
+            }
+            
             // Tạo URL với query params cho SSE
             const params = new URLSearchParams();
             params.append('session_id', requestBody.session_id);
@@ -1762,22 +1779,73 @@ document.addEventListener('DOMContentLoaded', function() {
                             break;
                             
                         case 'progress':
-                            if (event.total) {
-                                updateProgressBar(event.current || 0, event.total);
-                            }
+                            // Chỉ update message, không update progress bar (progress bar chỉ chạy khi download)
                             if (event.message) {
                                 updateProgressMessage(event.message);
                             }
                             break;
                         
-                        // Xử lý download progress (cho thông báo và giấy nộp tiền)
                         case 'download_start':
-                            updateProgressMessage(`Bắt đầu tải ${event.total_to_download} ${loaiLabel}...`);
+                            // Lấy tổng số file sẽ download
+                            currentTotal = event.total_to_download || 0;
+                            currentDownloaded = 0;
+                            
+                            // Reset accumulated về 0 nếu là lần đầu tiên (range_index === 1)
+                            if (event.range_index === 1) {
+                                accumulatedDownloaded = 0;
+                                accumulatedTotal = 0;
+                            }
+                            
+                            // Cập nhật tổng tích lũy từ backend
+                            if (event.accumulated_total !== undefined && event.accumulated_total > 0) {
+                                accumulatedTotal = event.accumulated_total;
+                            } else {
+                                // Nếu backend chưa gửi accumulated_total, tính từ currentTotal
+                                accumulatedTotal = currentTotal;
+                            }
+                            
+                            // Lưu thông tin khoảng thời gian
+                            if (event.date_range) {
+                                currentRangeInfo = event.date_range;
+                            }
+                            
+                            // Tính % hiện tại dựa trên accumulated (bắt đầu từ 0% cho lần này)
+                            const startPercent = accumulatedTotal > 0 ? Math.round((accumulatedDownloaded / accumulatedTotal) * 100) : 0;
+                            
+                            // Hiển thị progress bar với % hiện tại (0% nếu lần đầu, hoặc % tích lũy nếu lần sau)
+                            updateProgressBar(accumulatedDownloaded, accumulatedTotal);
+                            updateProgressCount(accumulatedDownloaded, accumulatedTotal, startPercent, currentRangeInfo, event.range_index, event.total_ranges);
+                            updateProgressMessage(`Bắt đầu tải ${currentTotal} ${loaiLabel}${currentRangeInfo ? ` (${currentRangeInfo})` : ''}...`);
                             break;
                             
                         case 'download_progress':
-                            updateProgressBar(event.downloaded || 0, event.total || 1);
-                            updateProgressMessage(`Đã tải ${event.downloaded}/${event.total} ${loaiLabel} (${event.percent}%)`);
+                            // Cập nhật số đã download
+                            currentDownloaded = event.downloaded || 0;
+                            currentTotal = event.total || currentTotal;
+                            
+                            // Cập nhật tổng tích lũy
+                            if (event.accumulated_downloaded !== undefined) {
+                                accumulatedDownloaded = event.accumulated_downloaded;
+                            } else {
+                                accumulatedDownloaded = currentDownloaded;
+                            }
+                            
+                            if (event.accumulated_total !== undefined) {
+                                accumulatedTotal = event.accumulated_total;
+                            }
+                            
+                            // Tính % từ tổng tích lũy
+                            const progressPercent = accumulatedTotal > 0 ? Math.round((accumulatedDownloaded / accumulatedTotal) * 100) : 0;
+                            
+                            // Cập nhật progress bar và count
+                            updateProgressBar(accumulatedDownloaded, accumulatedTotal);
+                            updateProgressCount(accumulatedDownloaded, accumulatedTotal, progressPercent, currentRangeInfo, event.range_index, event.total_ranges);
+                            
+                            // Cập nhật message
+                            if (event.date_range) {
+                                currentRangeInfo = event.date_range;
+                            }
+                            updateProgressMessage(`Đã tải ${accumulatedDownloaded}/${accumulatedTotal} ${loaiLabel} (${progressPercent}%)${currentRangeInfo ? ` - ${currentRangeInfo}` : ''}`);
                             break;
                             
                         case 'download_complete':
@@ -1937,33 +2005,29 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.id = 'progressModal';
             modal.className = 'go-soft-modal';
             modal.innerHTML = `
-                <div class="go-soft-modal-content" style="max-width: 400px; text-align: center;">
-                    <div class="progress-spinner" style="margin: 20px auto;">
-                        <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin 1s linear infinite;">
-                            <circle cx="25" cy="25" r="20" fill="none" stroke="#227447" stroke-width="4" stroke-dasharray="80 40" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <p id="progressMessage" style="margin: 15px 0; color: #333; font-size: 14px;">Đang kết nối...</p>
-                    <div id="progressBarContainer" style="display: none; margin: 15px 0;">
+                <div class="go-soft-modal-content" style="text-align: center;">
+                    <p id="progressMessage" style="color: #333; font-size: 14px;">Đang kết nối...</p>
+                    <div id="progressBarContainer" style="display: block; margin: 15px 0;">
                         <div style="background: #e5e7eb; border-radius: 10px; height: 8px; overflow: hidden;">
                             <div id="progressBar" style="background: linear-gradient(90deg, #10A142, #227447); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                         </div>
-                        <p id="progressCount" style="margin-top: 10px; color: #666; font-size: 12px;"></p>
+                        <p id="progressCount" style="margin-top: 10px; color: #666; font-size: 12px;">0/0 (0%)</p>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
-            
-            // Add spinner animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-            `;
-            document.head.appendChild(style);
         }
+        
+        // Reset progress bar về 0% mỗi khi show modal
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
+        const progressCount = document.getElementById('progressCount');
+        if (progressCount) {
+            progressCount.textContent = '0/0 (0%)';
+        }
+        
         modal.classList.add('show');
     }
     
@@ -1983,17 +2047,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('progressBarContainer');
         const bar = document.getElementById('progressBar');
         if (container) container.style.display = 'block';
-        if (bar && total > 0) {
-            bar.style.width = Math.min((current / total) * 100, 100) + '%';
+        if (bar) {
+            if (total > 0) {
+                const percent = Math.min((current / total) * 100, 100);
+                bar.style.width = percent + '%';
+            } else {
+                // Nếu total = 0, reset về 0%
+                bar.style.width = '0%';
+            }
         }
     }
     
-    function updateProgressCount(count, message) {
+    function updateProgressCount(downloaded, total, percent, dateRange, rangeIndex, totalRanges) {
         const el = document.getElementById('progressCount');
-        if (el) el.textContent = message || `Đã tải ${count} file...`;
-        
-        const msgEl = document.getElementById('progressMessage');
-        if (msgEl) msgEl.textContent = message || `Đang tải tờ khai...`;
+        if (el) {
+            // Đảm bảo các giá trị là số hợp lệ
+            const downloadedNum = Number(downloaded) || 0;
+            const totalNum = Number(total) || 0;
+            const percentNum = Number(percent) || 0;
+            
+            let text = `${downloadedNum}/${totalNum} (${percentNum}%)`;
+            if (rangeIndex && totalRanges && totalRanges > 1) {
+                text += ` - Lần ${rangeIndex}/${totalRanges}`;
+            }
+            if (dateRange) {
+                text += ` - ${dateRange}`;
+            }
+            el.textContent = text;
+        }
     }
     
     // Hàm update progress modal với message và percent (dùng cho batch crawl)
@@ -2065,6 +2146,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+    
+    function updateDayOptions(daySelect, monthSelect, yearSelect) {
+        if (!daySelect || !monthSelect || !yearSelect) return;
+        
+        const currentDay = parseInt(daySelect.value) || 1;
+        const month = parseInt(monthSelect.value) || 1;
+        const year = parseInt(yearSelect.value) || new Date().getFullYear();
+        
+        const daysInMonth = getDaysInMonth(year, month);
+        
+        daySelect.innerHTML = '';
+        
+        for (let i = 1; i <= daysInMonth; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i.toString().padStart(2, '0');
+            
+            if (i === Math.min(currentDay, daysInMonth)) {
+                option.selected = true;
+            }
+            
+            daySelect.appendChild(option);
+        }
+    }
+    
     function initDateSelects() {
         const selects = document.querySelectorAll('.date-select');
         const currentDate = new Date();
@@ -2074,7 +2183,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Start date - first day of current month
         if (selects[0]) {
-            for (let i = 1; i <= 31; i++) {
+            const daysInStartMonth = getDaysInMonth(currentYear, currentMonth);
+            for (let i = 1; i <= daysInStartMonth; i++) {
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = i.toString().padStart(2, '0');
@@ -2103,7 +2213,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // End date - current date
         if (selects[3]) {
-            for (let i = 1; i <= 31; i++) {
+            const daysInEndMonth = getDaysInMonth(currentYear, currentMonth);
+            for (let i = 1; i <= daysInEndMonth; i++) {
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = i.toString().padStart(2, '0');
@@ -2128,6 +2239,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (i === currentYear) option.selected = true;
                 selects[5].appendChild(option);
             }
+        }
+        
+        if (selects[1]) {
+            selects[1].addEventListener('change', function() {
+                updateDayOptions(selects[0], selects[1], selects[2]);
+            });
+        }
+        if (selects[2]) {
+            selects[2].addEventListener('change', function() {
+                updateDayOptions(selects[0], selects[1], selects[2]);
+            });
+        }
+        
+        if (selects[4]) {
+            selects[4].addEventListener('change', function() {
+                updateDayOptions(selects[3], selects[4], selects[5]);
+            });
+        }
+        if (selects[5]) {
+            selects[5].addEventListener('change', function() {
+                updateDayOptions(selects[3], selects[4], selects[5]);
+            });
         }
     }
     
