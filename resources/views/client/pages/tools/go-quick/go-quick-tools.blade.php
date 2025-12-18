@@ -99,7 +99,11 @@
                     </div>
 
                     <div class="bulk-progress-section d-none" id="bulkProgressSection">
-                        <div class="bulk-file-card">
+                        <!-- Container cho nhiều batch -->
+                        <div id="batchProgressContainer"></div>
+                        
+                        <!-- Single batch (backward compatibility) -->
+                        <div class="bulk-file-card" id="singleBatchCard">
                             <div class="bulk-file-info">
                                 <img src="{{ asset('images/d/go-quick/pdf.png') }}" alt="PDF" class="bulk-file-thumb">
                                 <div class="w-100">
@@ -114,6 +118,51 @@
                                         </div>
                                         <div class="bulk-progress-info">
                                             <span class="bulk-progress-percent" id="bulkProgressPercent">0%</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar 4 Giai Đoạn -->
+                                    <div id="stageProgressBar" style="display: none;">
+                                        <div class="stage-progress-container">
+                                            <div class="stage-item" data-stage="1" id="stage1">
+                                                <div class="stage-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                                        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                                                        <path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </div>
+                                                <span class="stage-label">Detect CCCD</span>
+                                            </div>
+                                            <div class="stage-connector"></div>
+                                            <div class="stage-item" data-stage="2" id="stage2">
+                                                <div class="stage-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                                        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                                                        <path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </div>
+                                                <span class="stage-label">Detect Corners</span>
+                                            </div>
+                                            <div class="stage-connector"></div>
+                                            <div class="stage-item" data-stage="3" id="stage3">
+                                                <div class="stage-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                                        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                                                        <path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </div>
+                                                <span class="stage-label">Detect Lines</span>
+                                            </div>
+                                            <div class="stage-connector"></div>
+                                            <div class="stage-item" data-stage="4" id="stage4">
+                                                <div class="stage-icon">
+                                                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                                        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                                                        <path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </div>
+                                                <span class="stage-label">OCR</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -401,11 +450,110 @@
         #bulkFailedModal .bulk-modal-progress-bar {
             background: linear-gradient(90deg, #EB5757 0%, #ff6b6b 100%);
         }
+        
+        /* Stage Progress Bar Styles */
+        .stage-progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+        
+        .stage-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .stage-icon {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+        
+        .stage-icon svg {
+            width: 14px;
+            height: 14px;
+        }
+        
+        .stage-label {
+            font-size: 8px;
+            color: #999;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
+            line-height: 1.2;
+        }
+        
+        .stage-item.active .stage-icon {
+            background: #227447;
+            color: white;
+        }
+        
+        .stage-item.active .stage-label {
+            color: #227447;
+            font-weight: 600;
+        }
+        
+        .stage-item.completed .stage-icon {
+            background: #227447;
+            color: white;
+        }
+        
+        .stage-item.completed .stage-label {
+            color: #227447;
+        }
+        
+        .stage-connector {
+            flex: 1;
+            height: 2px;
+            background: #e0e0e0;
+            position: relative;
+            top: -5px;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .stage-connector.active {
+            background: #227447;
+        }
+        
+        @media (max-width: 768px) {
+            .stage-label {
+                font-size: 9px;
+            }
+            
+            .stage-icon {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .stage-icon svg {
+                width: 12px;
+                height: 12px;
+            }
+            
+            .stage-progress-container {
+                padding: 4px 0;
+            }
+        }
     </style>
 @endpush
 
 @push('scripts')
     @vite('resources/assets/frontend/js/go-quick-async.js')
+    <!-- Load XLSX library for batch download -->
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tabButtons = document.querySelectorAll('.tab-button');
@@ -727,9 +875,7 @@
                 document.querySelectorAll('.result-copy-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const value = this.dataset.value;
-                        navigator.clipboard.writeText(value).then(() => {
-                            console.log('Copied:', value);
-                        });
+                        navigator.clipboard.writeText(value);
                     });
                 });
 
@@ -862,9 +1008,7 @@
                 document.querySelectorAll('.result-copy-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const value = this.dataset.value;
-                        navigator.clipboard.writeText(value).then(() => {
-                            console.log('Copied:', value);
-                        });
+                        navigator.clipboard.writeText(value);
                     });
                 });
 
@@ -977,27 +1121,51 @@
                             throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
                         }
 
-                        if (!response.ok) {
+                        // Kiểm tra content-type trước khi parse
                             const contentType = response.headers.get('content-type');
-                            if (contentType && contentType.includes('application/json')) {
+                        const isJson = contentType && contentType.includes('application/json');
+                        
+                        if (!response.ok) {
+                            if (isJson) {
+                                try {
                                 const errorResult = await response.json();
                                 throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                                } catch (parseError) {
+                                    // Nếu parse JSON fail, đọc text
+                                    const text = await response.text();
+                                    console.error('[Upload Error] Non-JSON error response:', text.substring(0, 200));
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
                             } else {
+                                const text = await response.text();
+                                console.error('[Upload Error] Non-JSON error response:', text.substring(0, 200));
+                                if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
+                                    throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                                }
                                 throw new Error(`HTTP error! status: ${response.status}`);
                             }
                         }
 
-                        const contentType = response.headers.get('content-type');
-                        if (!contentType || !contentType.includes('application/json')) {
+                        // Kiểm tra content-type cho response thành công
+                        if (!isJson) {
                             const text = await response.text();
-                            console.error('Non-JSON response:', text);
+                            console.error('[Upload Error] Non-JSON success response:', text.substring(0, 200));
                             if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
                                 throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
                             }
                             throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
                         }
 
-                        const result = await response.json();
+                        // Parse JSON response
+                        let result;
+                        try {
+                            result = await response.json();
+                        } catch (parseError) {
+                            console.error('[Upload Error] Failed to parse JSON:', parseError);
+                            const text = await response.text();
+                            console.error('[Upload Error] Response text:', text.substring(0, 200));
+                            throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                        }
 
                         if (result.status === 'success') {
                             const data = result.data || result;
@@ -1120,6 +1288,7 @@
             let uploadProgress = 0;
             let uploadInterval = null;
             let currentAbortController = null;
+            let currentJobIds = []; // Track job IDs để có thể cancel
 
             document.querySelectorAll('.bulk-upload-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -1135,6 +1304,16 @@
             bulkFileInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
+                    // Clear các batch cards cũ ngay khi bắt đầu upload mới
+                    const singleBatchCard = document.getElementById('singleBatchCard');
+                    if (singleBatchCard) {
+                        singleBatchCard.style.display = 'none';
+                    }
+                    const batchContainer = document.getElementById('batchProgressContainer');
+                    if (batchContainer) {
+                        batchContainer.innerHTML = '';
+                    }
+                    
                     handleBulkFileUpload(files[0]);
                 }
             });
@@ -1142,6 +1321,16 @@
             bulkFolderInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
+                    // Clear các batch cards cũ ngay khi bắt đầu upload mới
+                    const singleBatchCard = document.getElementById('singleBatchCard');
+                    if (singleBatchCard) {
+                        singleBatchCard.style.display = 'none';
+                    }
+                    const batchContainer = document.getElementById('batchProgressContainer');
+                    if (batchContainer) {
+                        batchContainer.innerHTML = '';
+                    }
+                    
                     const imageFiles = files.filter(f => f.type.startsWith('image/'));
                     const nonImageFiles = files.filter(f => !f.type.startsWith('image/'));
                     
@@ -1173,6 +1362,16 @@
 
                 const files = Array.from(e.dataTransfer.files);
                 if (files.length > 0) {
+                    // Clear các batch cards cũ ngay khi bắt đầu upload mới
+                    const singleBatchCard = document.getElementById('singleBatchCard');
+                    if (singleBatchCard) {
+                        singleBatchCard.style.display = 'none';
+                    }
+                    const batchContainer = document.getElementById('batchProgressContainer');
+                    if (batchContainer) {
+                        batchContainer.innerHTML = '';
+                    }
+                    
                     handleBulkFileUpload(files[0]);
                 }
             });
@@ -1294,6 +1493,12 @@
 
                 uploadProgress = 0;
                 updateBulkProgress(0, 'Đang chuẩn bị...');
+                
+                // Hide stage progress bar initially
+                const stageBar = document.getElementById('stageProgressBar');
+                if (stageBar) {
+                    stageBar.style.display = 'none';
+                }
 
                 try {
                     const fileName = file.name.toLowerCase();
@@ -1303,7 +1508,7 @@
                     const isZip = fileName.endsWith('.zip') || file.type === 'application/zip' || 
                                  file.type === 'application/x-zip-compressed';
 
-                    // Sử dụng Async API với polling (ổn định hơn SSE streaming)
+                    // Sử dụng Queue System với SSE streaming
                     let endpoint = '';
                     if (isPDF) {
                         endpoint = 'process-pdf-async';
@@ -1323,89 +1528,210 @@
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
                     formData.append('_token', csrfToken);
 
-                    // Tạo async handler
-                    // Base URL là /go-quick (không có /process-cccd-async)
-                    const baseUrl = '{{ url("/go-quick") }}';
-                    const handler = new GoQuickAsyncHandler({
-                        baseUrl: baseUrl,
-                        pollInterval: 2000, // Poll mỗi 2 giây
-                        maxPollAttempts: 600, // Tối đa 20 phút (600 * 2s)
-                        onProgress: (data) => {
-                            if (currentAbortController && currentAbortController.signal.aborted) {
-                                handler.stopPolling();
-                                return;
-                            }
+                    // Step 1: Create job (dispatch to queue)
+                    updateBulkProgress(0, 'Đang khởi tạo job...');
+                    updateBulkProgressInfo({ message: 'Đang khởi tạo job...' });
+                    
+                    const createJobResponse = await fetch(`{{ url('/go-quick') }}/${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin',
+                        body: formData,
+                        signal: currentAbortController.signal
+                    });
+
+                    if (!createJobResponse.ok) {
+                        const errorData = await createJobResponse.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Lỗi khi tạo job');
+                    }
+
+                    const createJobResult = await createJobResponse.json();
+                    if (createJobResult.status !== 'success' || !createJobResult.job_id) {
+                        throw new Error(createJobResult.message || 'Không nhận được job_id');
+                    }
+
+                    const jobId = createJobResult.job_id;
+                    currentJobIds = [jobId]; // Lưu job ID để có thể cancel
+                    updateBulkProgress(0, 'Job đã được tạo, đang xử lý...');
+                    
+                    // Reset stage progress
+                    resetStageProgress();
+
+                    // Step 2: Connect to SSE stream để nhận progress
+                    const streamUrl = `{{ url('/api/job') }}/${jobId}/stream`;
+                    const eventSource = new EventSource(streamUrl);
+                    
+                    // Lưu eventSource để có thể close
+                    window.currentEventSource = eventSource;
+                    
+                    // Flag để track xem đã nhận được complete event chưa
+                    let isCompleted = false;
+
+                    eventSource.addEventListener('connected', function(e) {
+                        const data = JSON.parse(e.data);
+                        updateBulkProgress(0, 'Đang xử lý...');
+                        updateBulkProgressInfo({ message: 'Đang xử lý...' });
+                    });
+
+                    eventSource.addEventListener('progress', function(e) {
+                        if (currentAbortController && currentAbortController.signal.aborted) {
+                            eventSource.close();
+                            return;
+                        }
+
+                        try {
+                            const data = JSON.parse(e.data);
+                            const eventData = data.data || {};
                             
-                            let safeProgress = Math.min(100, Math.max(0, data.progress || 0));
+                            // Dùng percent từ backend (đã tính đúng theo 4 giai đoạn: 0-25-50-75-100)
+                            // KHÔNG tính lại từ processed_cccd/total_cccd vì backend đã tính đúng
+                            let safeProgress = Math.min(100, Math.max(0, data.percent || 0));
                             
-                            if (data.total_cccd && data.total_cccd > 0 && data.processed_cccd !== undefined && data.processed_cccd !== null) {
-                                safeProgress = Math.min(100, Math.max(0, (data.processed_cccd / data.total_cccd) * 100));
-                            }
+                            // Flatten data if needed (total_cccd, processed_cccd might be in data.data)
+                            const totalCccd = eventData.total_cccd || data.total_cccd;
+                            const processedCccd = eventData.processed_cccd || data.processed_cccd;
                             
-                            updateBulkProgress(safeProgress, data.message || 'Đang xử lý...');
+                            // Lấy message từ backend
+                            const message = data.message || eventData.message || 'Đang xử lý...';
+                            
+                            // Pass processed_cccd để frontend update kể cả khi percent không đổi
+                            updateBulkProgress(safeProgress, message, processedCccd);
                             
                             updateBulkProgressInfo({
-                                total_cccd: data.total_cccd,
-                                processed_cccd: data.processed_cccd,
-                                total_images: data.total_images,
-                                processed_images: data.processed_images,
-                                total_rows: data.total_rows,
-                                estimated_cccd: data.estimated_cccd,
-                                processed: data.processed,
-                                message: data.message
+                                total_cccd: totalCccd || eventData.total_cccd,
+                                processed_cccd: processedCccd || eventData.processed_cccd,
+                                total_images: eventData.total_images || data.total_images,
+                                processed_images: eventData.processed_images || data.processed_images,
+                                total_rows: eventData.total_rows || data.total_rows,
+                                estimated_cccd: eventData.estimated_cccd || data.estimated_cccd,
+                                processed: eventData.processed || data.processed,
+                                message: data.message || eventData.message
                             });
-                        },
-                        onComplete: (result, jobId) => {
-                            if (currentAbortController && currentAbortController.signal.aborted) {
-                                return;
-                            }
-                            
-                            updateBulkProgress(100, 'Hoàn thành!');
-                            
-                            if (result && result.status === 'success') {
-                                window.bulkResult = result.data || result;
-                                showBulkSuccess();
-                            } else if (result) {
-                                showBulkFailed(result.message || 'Xử lý thất bại');
-                            } else {
-                                showBulkFailed('Không nhận được kết quả từ server');
-                            }
-                            
-                            // Cleanup
-                            window.currentAsyncHandler = null;
-                        },
-                        onError: (error, jobId) => {
-                            if (currentAbortController && currentAbortController.signal.aborted) {
-                                return;
-                            }
-                            
-                            showBulkFailed(error.message || 'Có lỗi xảy ra khi xử lý');
-                            
-                            // Cleanup
-                            window.currentAsyncHandler = null;
+                        } catch (error) {
+                            console.error('[Progress Error - PDF/Excel/ZIP]', error, e.data);
                         }
                     });
 
-                    // Lưu handler để có thể cancel
-                    window.currentAsyncHandler = handler;
-
-                    try {
-                        // Start job và tự động poll
-                        updateBulkProgress(0, 'Đang khởi tạo job...');
-                        updateBulkProgressInfo({ message: 'Đang khởi tạo job...' });
-                        const result = await handler.processWithPolling(endpoint, formData);
-                        
-                        // onComplete đã được gọi, không cần xử lý thêm
-                    } catch (error) {
-                        if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
-                            handler.stopPolling();
-                            window.currentAsyncHandler = null;
+                    eventSource.addEventListener('complete', function(e) {
+                        if (currentAbortController && currentAbortController.signal.aborted) {
+                            eventSource.close();
                             return;
                         }
                         
-                        showBulkFailed(error.message || 'Có lỗi xảy ra khi kết nối server');
-                        window.currentAsyncHandler = null;
-                    }
+                        // Đánh dấu đã complete để tránh hiển thị error modal sau khi đóng
+                        isCompleted = true;
+                        
+                        const data = JSON.parse(e.data);
+                        updateBulkProgress(100, 'Hoàn thành!');
+                        
+                        // Get result from API
+                        fetch(`{{ url('/api/job') }}/${jobId}/result`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(async response => {
+                            // Kiểm tra content-type trước khi parse JSON
+                            const contentType = response.headers.get('content-type');
+                            if (!contentType || !contentType.includes('application/json')) {
+                                const text = await response.text();
+                                console.error('[Fetch Result Error] Non-JSON response:', text.substring(0, 200));
+                                throw new Error(`Server trả về dữ liệu không hợp lệ (${response.status}). Vui lòng thử lại.`);
+                            }
+                            
+                            if (!response.ok) {
+                                const errorText = await response.text();
+                                console.error('[Fetch Result Error] HTTP error:', response.status, errorText.substring(0, 200));
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            
+                            return response.json();
+                        })
+                        .then(result => {
+                            if (result.status === 'success' && result.data) {
+                                window.bulkResult = result.data;
+                                showBulkSuccess();
+                            } else {
+                                console.error('[Complete Event Handler - Single Batch] Result status not success:', result);
+                                showBulkFailed(result.message || 'Xử lý thất bại');
+                            }
+                        })
+                        .catch(error => {
+                            if (!isCompleted) {
+                                console.error('[Fetch Result Error]', error);
+                                showBulkFailed('Không thể lấy kết quả: ' + (error.message || 'Lỗi không xác định'));
+                            }
+                        })
+                        .finally(() => {
+                            eventSource.close();
+                            window.currentEventSource = null;
+                        });
+                    });
+
+                    eventSource.addEventListener('error', function(e) {
+                        if (currentAbortController && currentAbortController.signal.aborted) {
+                            eventSource.close();
+                            return;
+                        }
+                        
+                        // Nếu đã complete thì không hiển thị error modal (EventSource đóng bình thường)
+                        if (isCompleted) {
+                            return;
+                        }
+                        
+                        // Nếu connection đã đóng (readyState === CLOSED), có thể là đóng bình thường sau khi job hoàn thành
+                        // Không log error và không hiển thị modal
+                        if (eventSource.readyState === EventSource.CLOSED) {
+                            return;
+                        }
+                        
+                        // Kiểm tra e.data có tồn tại và là JSON hợp lệ trước khi parse
+                        let errorMessage = 'Có lỗi xảy ra khi xử lý';
+                        if (e.data && typeof e.data === 'string' && e.data.trim() !== '') {
+                            try {
+                                const data = JSON.parse(e.data);
+                                errorMessage = data.error || data.message || errorMessage;
+                            } catch (parseError) {
+                                // Nếu không parse được JSON, dùng message mặc định
+                                console.error('[Error Event] Failed to parse error data:', parseError, e.data);
+                            }
+                        }
+                        
+                        // Chỉ hiển thị error nếu chưa complete và connection chưa đóng
+                        if (!isCompleted) {
+                            console.error('[SSE Error Handler - Single Batch] Connection error:', errorMessage);
+                            showBulkFailed(errorMessage);
+                            eventSource.close();
+                            window.currentEventSource = null;
+                        }
+                    });
+
+                    eventSource.onerror = function(error) {
+                        // Nếu đã complete thì không hiển thị error modal
+                        if (isCompleted) {
+                            return;
+                        }
+
+                        // Connection error
+                        if (eventSource.readyState === EventSource.CLOSED) {
+                            return;
+                        }
+                        
+                        // Chỉ hiển thị error nếu chưa complete và connection chưa đóng
+                        if (!isCompleted) {
+                            console.error('[SSE Error Handler - Single Batch - onerror] Connection error');
+                            showBulkFailed('Lỗi kết nối đến server');
+                            eventSource.close();
+                            window.currentEventSource = null;
+                        }
+                    };
                 } catch (error) {
                     if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
                         return;
@@ -1417,6 +1743,224 @@
                 }
             }
             
+            // Track last values để chỉ update khi thay đổi
+            let lastProgressInfo = {
+                processed_cccd: null,
+                total_cccd: null,
+                processed_images: null,
+                total_images: null,
+                processed: null,
+                total_rows: null,
+                estimated_cccd: null
+            };
+            
+            // Function để tạo batch progress card
+            function createBatchProgressCard(batchIndex, totalBatches, imageCount, jobId) {
+                const card = document.createElement('div');
+                card.className = 'bulk-file-card mb-3';
+                card.id = `batchCard_${batchIndex}`;
+                card.dataset.jobId = jobId;
+                card.dataset.batchIndex = batchIndex;
+                
+                card.innerHTML = `
+                    <div class="bulk-file-info">
+                        <img src="{{ asset('images/d/go-quick/folder.png') }}" alt="Batch ${batchIndex}" class="bulk-file-thumb">
+                        <div class="w-100">
+                            <div class="bulk-file-details d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="bulk-file-name" id="batchFileName_${batchIndex}">Batch ${batchIndex}/${totalBatches} (${imageCount} ảnh)</p>
+                                    <p class="bulk-file-size" id="batchFileSize_${batchIndex}">Đang xử lý...</p>
+                                </div>
+                                <div id="batchDownloadBtn_${batchIndex}" style="display: none;">
+                                    <button class="btn btn-sm btn-primary" onclick="downloadBatchResult('${jobId}', ${batchIndex})">
+                                        <i class="fas fa-download"></i> Tải kết quả
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-2 d-flex align-items-center gap-2">
+                                <div class="bulk-progress-bar flex-grow-1">
+                                    <div class="bulk-progress-fill" id="batchProgressFill_${batchIndex}" style="width: 0%"></div>
+                                </div>
+                                <div class="bulk-progress-info">
+                                    <span class="bulk-progress-percent" id="batchProgressPercent_${batchIndex}">0%</span>
+                                </div>
+                            </div>
+                            <div id="batchStageProgressBar_${batchIndex}" style="display: none; margin-top: 8px;">
+                                <div class="stage-progress-container">
+                                    <div class="stage-item" data-stage="1" id="batchStage1_${batchIndex}">
+                                        <div class="stage-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/><path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                        <span class="stage-label">Detect CCCD</span>
+                                    </div>
+                                    <div class="stage-connector"></div>
+                                    <div class="stage-item" data-stage="2" id="batchStage2_${batchIndex}">
+                                        <div class="stage-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/><path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                        <span class="stage-label">Detect Corners</span>
+                                    </div>
+                                    <div class="stage-connector"></div>
+                                    <div class="stage-item" data-stage="3" id="batchStage3_${batchIndex}">
+                                        <div class="stage-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/><path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                        <span class="stage-label">Detect Lines</span>
+                                    </div>
+                                    <div class="stage-connector"></div>
+                                    <div class="stage-item" data-stage="4" id="batchStage4_${batchIndex}">
+                                        <div class="stage-icon"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/><path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                        <span class="stage-label">OCR</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                return card;
+            }
+            
+            // Function để update progress cho từng batch
+            function updateBatchProgress(batchIndex, percent, message, processedCccd, totalCccd) {
+                const fill = document.getElementById(`batchProgressFill_${batchIndex}`);
+                const text = document.getElementById(`batchProgressPercent_${batchIndex}`);
+                const sizeText = document.getElementById(`batchFileSize_${batchIndex}`);
+                
+                if (fill) {
+                    const safePercent = Math.min(100, Math.max(0, percent));
+                    fill.style.width = safePercent + '%';
+                }
+                
+                if (text) {
+                    text.textContent = Math.min(100, Math.max(0, percent)) + '%';
+                }
+                
+                if (sizeText) {
+                    if (totalCccd > 0) {
+                        sizeText.textContent = `Đã xử lý ${processedCccd || 0}/${totalCccd} CCCD`;
+                    } else {
+                        sizeText.textContent = message || 'Đang xử lý...';
+                    }
+                }
+                
+                // Update stage progress bar
+                updateBatchStageProgress(batchIndex, message, percent);
+            }
+            
+            // Function để update stage progress cho từng batch
+            function updateBatchStageProgress(batchIndex, message, percent) {
+                const stageBar = document.getElementById(`batchStageProgressBar_${batchIndex}`);
+                if (!stageBar) return;
+                
+                stageBar.style.display = 'block';
+                
+                let currentStage = 1;
+                if (message) {
+                    const msgLower = message.toLowerCase();
+                    if (msgLower.includes('detect corners') || msgLower.includes('corners')) {
+                        currentStage = 2;
+                    } else if (msgLower.includes('detect lines') || msgLower.includes('lines')) {
+                        currentStage = 3;
+                    } else if (msgLower.includes('ocr') || msgLower.includes('xử lý ocr')) {
+                        currentStage = 4;
+                    } else if (msgLower.includes('detect cccd') || (msgLower.includes('detect') && msgLower.includes('cccd'))) {
+                        currentStage = 1;
+                    }
+                }
+                
+                // Update stage classes
+                for (let stage = 1; stage <= 4; stage++) {
+                    const stageEl = document.getElementById(`batchStage${stage}_${batchIndex}`);
+                    if (stageEl) {
+                        stageEl.classList.remove('active', 'completed');
+                        if (stage < currentStage) {
+                            stageEl.classList.add('completed');
+                        } else if (stage === currentStage) {
+                            stageEl.classList.add('active');
+                        }
+                    }
+                }
+            }
+            
+            // Function để download batch result - expose to window scope
+            window.downloadBatchResult = async function(jobId, batchIndex) {
+                try {
+                    // Kiểm tra XLSX đã được load chưa
+                    if (typeof XLSX === 'undefined') {
+                        throw new Error('Thư viện XLSX chưa được load. Vui lòng tải lại trang.');
+                    }
+                    
+                    const response = await fetch(`{{ url('/api/job') }}/${jobId}/result`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (result.status === 'success' && result.data) {
+                        const data = result.data;
+                        const customers = data.customer || [];
+                        
+                        if (customers.length === 0) {
+                            showBulkFailed('Không có dữ liệu để tải xuống', false);
+                            return;
+                        }
+                        
+                        // Map dữ liệu customer sang format Excel với các cột đúng thứ tự
+                        const excelData = customers.map((customer, index) => ({
+                            'Số': customer.id_card || customer.id || '',
+                            'Họ và tên': customer.name || '',
+                            'Ngày sinh': customer.birth_date || customer.sn || '',
+                            'Giới tính': customer.gender || customer.gioi_tinh || '',
+                            'Quốc tịch': customer.nationality || 'Việt Nam',
+                            'Quê quán': customer.hometown || customer.que_quan || '',
+                            'Nơi thường trú': customer.address || customer.thuong_tru || customer.thuong_tru2 || '',
+                            'Ngày cấp': customer.created_date || customer.ngay_cap || '',
+                            'Nơi cấp': customer.place_created || customer.noi_cap || ''
+                        }));
+                        
+                        // Tạo worksheet với headers
+                        const ws = XLSX.utils.json_to_sheet(excelData);
+                        
+                        // Set column widths
+                        const colWidths = {
+                            'A': 15,  // Số
+                            'B': 25,  // Họ và tên
+                            'C': 12,  // Ngày sinh
+                            'D': 10,  // Giới tính
+                            'E': 12,  // Quốc tịch
+                            'F': 30,  // Quê quán
+                            'G': 40,  // Nơi thường trú
+                            'H': 12,  // Ngày cấp
+                            'I': 50   // Nơi cấp
+                        };
+                        ws['!cols'] = Object.keys(colWidths).map(col => ({ wch: colWidths[col] }));
+                        
+                        // Format header row (bold)
+                        const headerRange = XLSX.utils.decode_range(ws['!ref']);
+                        for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+                            const headerCell = XLSX.utils.encode_cell({ r: 0, c: col });
+                            if (!ws[headerCell]) continue;
+                            ws[headerCell].s = {
+                                font: { bold: true },
+                                alignment: { vertical: 'center', horizontal: 'center' }
+                            };
+                        }
+                        
+                        // Tạo workbook và sheet
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, 'CCCD Data');
+                        XLSX.writeFile(wb, `cccd_batch_${batchIndex}_${new Date().getTime()}.xlsx`);
+                    } else {
+                        throw new Error(result.message || 'Không thể lấy kết quả');
+                    }
+                } catch (error) {
+                    console.error(`[Download Batch Result] Error downloading batch ${batchIndex}:`, error);
+                    showBulkFailed(`Lỗi khi tải kết quả batch ${batchIndex}: ${error.message}`, false);
+                }
+            };
+            
             function updateBulkProgressInfo(eventData) {
                 const fileNameEl = document.getElementById('bulkFileName');
                 if (fileNameEl && eventData.message) {
@@ -1425,29 +1969,65 @@
                 const fileSizeEl = document.getElementById('bulkFileSize');
                 if (!fileSizeEl) return;
                 
+                // Kiểm tra xem có thay đổi không
+                const processedCccd = eventData.processed_cccd !== undefined ? eventData.processed_cccd : null;
+                const totalCccd = eventData.total_cccd !== undefined ? eventData.total_cccd : null;
+                const processedImages = eventData.processed_images !== undefined ? eventData.processed_images : null;
+                const totalImages = eventData.total_images !== undefined ? eventData.total_images : null;
+                const processed = eventData.processed !== undefined ? eventData.processed : null;
+                const totalRows = eventData.total_rows !== undefined ? eventData.total_rows : null;
+                const estimatedCccd = eventData.estimated_cccd !== undefined ? eventData.estimated_cccd : null;
+                
+                // Chỉ update nếu có thay đổi
+                const hasChanged = (
+                    processedCccd !== lastProgressInfo.processed_cccd ||
+                    totalCccd !== lastProgressInfo.total_cccd ||
+                    processedImages !== lastProgressInfo.processed_images ||
+                    totalImages !== lastProgressInfo.total_images ||
+                    processed !== lastProgressInfo.processed ||
+                    totalRows !== lastProgressInfo.total_rows ||
+                    estimatedCccd !== lastProgressInfo.estimated_cccd
+                );
+                
+                if (!hasChanged) {
+                    // Không có thay đổi -> không update, tránh nhảy nhảy
+                    return;
+                }
+                
+                // Update last values
+                lastProgressInfo = {
+                    processed_cccd: processedCccd,
+                    total_cccd: totalCccd,
+                    processed_images: processedImages,
+                    total_images: totalImages,
+                    processed: processed,
+                    total_rows: totalRows,
+                    estimated_cccd: estimatedCccd
+                };
+                
                 const hasProgressInfo = (
-                    (eventData.total_cccd !== undefined && eventData.total_cccd !== null) ||
-                    (eventData.total_images !== undefined && eventData.total_images !== null) ||
-                    (eventData.estimated_cccd !== undefined && eventData.estimated_cccd !== null) ||
-                    (eventData.total_rows !== undefined && eventData.total_rows !== null)
+                    (totalCccd !== undefined && totalCccd !== null) ||
+                    (totalImages !== undefined && totalImages !== null) ||
+                    (estimatedCccd !== undefined && estimatedCccd !== null) ||
+                    (totalRows !== undefined && totalRows !== null)
                 );
                 
                 if (hasProgressInfo) {
-                    if (eventData.processed_cccd !== undefined && eventData.total_cccd !== undefined && eventData.total_cccd > 0) {
-                        fileSizeEl.textContent = `Đã xử lý ${eventData.processed_cccd}/${eventData.total_cccd} CCCD`;
-                    } else if (eventData.total_cccd !== undefined && eventData.total_cccd > 0) {
-                        const processed = eventData.processed_cccd || 0;
-                        fileSizeEl.textContent = `Đã xử lý ${processed}/${eventData.total_cccd} CCCD`;
-                    } else if (eventData.estimated_cccd !== undefined && eventData.estimated_cccd > 0) {
-                        const processed = eventData.processed_images || eventData.processed || 0;
-                        const total = eventData.total_images || 0;
-                        fileSizeEl.textContent = `~${eventData.estimated_cccd} CCCD | ${processed}/${total} ảnh`;
-                    } else if (eventData.total_images !== undefined && eventData.total_images > 0) {
-                        const processed = eventData.processed_images || eventData.processed || 0;
-                        fileSizeEl.textContent = `${processed}/${eventData.total_images} ảnh`;
-                    } else if (eventData.total_rows !== undefined && eventData.total_rows > 0) {
-                        const processed = eventData.processed || 0;
-                        fileSizeEl.textContent = `${processed}/${eventData.total_rows} dòng`;
+                    if (processedCccd !== null && totalCccd !== null && totalCccd > 0) {
+                        fileSizeEl.textContent = `Đã xử lý ${processedCccd}/${totalCccd} CCCD`;
+                    } else if (totalCccd !== null && totalCccd > 0) {
+                        const processed = processedCccd || 0;
+                        fileSizeEl.textContent = `Đã xử lý ${processed}/${totalCccd} CCCD`;
+                    } else if (estimatedCccd !== null && estimatedCccd > 0) {
+                        const processed = processedImages || processed || 0;
+                        const total = totalImages || 0;
+                        fileSizeEl.textContent = `~${estimatedCccd} CCCD | ${processed}/${total} ảnh`;
+                    } else if (totalImages !== null && totalImages > 0) {
+                        const processed = processedImages || processed || 0;
+                        fileSizeEl.textContent = `${processed}/${totalImages} ảnh`;
+                    } else if (totalRows !== null && totalRows > 0) {
+                        const processed = processed || 0;
+                        fileSizeEl.textContent = `${processed}/${totalRows} dòng`;
                     } else {
                         fileSizeEl.textContent = 'Đang xử lý...';
                     }
@@ -1458,12 +2038,84 @@
                 }
             }
 
-            function updateBulkProgress(percent, message = null) {
+            // Track last processed_cccd và last percent để đảm bảo update đúng
+            let lastProcessedCccd = -1;
+            let lastPercent = -1;
+            let lastStage = 0; // Track stage hiện tại để phát hiện chuyển giai đoạn
+            
+            function updateBulkProgress(percent, message = null, processedCccd = null) {
                 const fill = document.getElementById('bulkProgressFill');
                 const text = document.getElementById('bulkProgressPercent');
                 const safePercent = Math.min(100, Math.max(0, percent));
-                if (fill) fill.style.width = safePercent + '%';
-                if (text) text.textContent = Math.round(safePercent) + '%';
+                
+                // Xác định stage hiện tại từ message
+                let currentStage = 1;
+                if (message) {
+                    const msgLower = message.toLowerCase();
+                    if (msgLower.includes('detect corners') || msgLower.includes('corners')) {
+                        currentStage = 2;
+                    } else if (msgLower.includes('detect lines') || msgLower.includes('lines')) {
+                        currentStage = 3;
+                    } else if (msgLower.includes('ocr') || msgLower.includes('xử lý ocr')) {
+                        currentStage = 4;
+                    } else if (msgLower.includes('detect cccd') || (msgLower.includes('detect') && msgLower.includes('cccd'))) {
+                        currentStage = 1;
+                    }
+                }
+                
+                // Nếu chuyển giai đoạn (stage thay đổi), reset lastProcessedCccd
+                if (currentStage !== lastStage && lastStage > 0) {
+                    lastProcessedCccd = -1;
+                }
+                lastStage = currentStage;
+                
+                // Kiểm tra xem percent HOẶC processedCccd có thay đổi không
+                const percentChanged = (percent !== lastPercent);
+                const processedCccdChanged = (
+                    processedCccd !== null && 
+                    processedCccd !== undefined && 
+                    processedCccd !== lastProcessedCccd
+                );
+                
+                // CHỈ update khi một trong 2 thay đổi
+                const shouldUpdate = percentChanged || processedCccdChanged;
+                
+                // Nếu không có gì thay đổi -> không update gì cả (tránh nhảy nhảy)
+                if (!shouldUpdate) {
+                    return;
+                }
+                
+                // Có thay đổi -> update tương ứng
+                if (percentChanged) {
+                    // Percent thay đổi -> chỉ update khi percent TĂNG (tránh lùi lại khi Laravel forward lại events cũ)
+                    const percentIncreased = (percent > lastPercent);
+                    if (percentIncreased) {
+                        // Percent tăng -> update percent bar
+                        if (fill) fill.style.width = safePercent + '%';
+                        if (text) text.textContent = Math.round(safePercent) + '%';
+                        lastPercent = percent;
+                    } else if (processedCccd === null || processedCccd === undefined) {
+                        // Percent thay đổi nhưng không có processedCccd -> update percent bar (trường hợp đặc biệt)
+                        if (fill) fill.style.width = safePercent + '%';
+                        if (text) text.textContent = Math.round(safePercent) + '%';
+                        lastPercent = percent;
+                    }
+                    
+                    // Update stage progress bar khi percent thay đổi
+                    updateStageProgress(safePercent, message);
+                }
+                
+                if (processedCccdChanged) {
+                    // processedCccd thay đổi -> chỉ lưu khi tăng để tránh lùi lại
+                    if (processedCccd > lastProcessedCccd || lastProcessedCccd === -1) {
+                        lastProcessedCccd = processedCccd;
+                    }
+                    
+                    // Nếu percent không thay đổi nhưng processedCccd thay đổi -> vẫn update stage progress bar
+                    if (!percentChanged) {
+                        updateStageProgress(safePercent, message);
+                    }
+                }
                 
                 if (message) {
                     const fileNameEl = document.getElementById('bulkFileName');
@@ -1471,8 +2123,155 @@
                     }
                 }
             }
+            
+            function resetStageProgress() {
+                // Reset tracking variables khi bắt đầu job mới
+                lastProcessedCccd = -1;
+                lastPercent = -1;
+                lastStage = 0;
+                lastProgressInfo = {
+                    processed_cccd: null,
+                    total_cccd: null,
+                    processed_images: null,
+                    total_images: null,
+                    processed: null,
+                    total_rows: null,
+                    estimated_cccd: null
+                };
+                
+                const stageBar = document.getElementById('stageProgressBar');
+                if (stageBar) {
+                    stageBar.style.display = 'none';
+                }
+                
+                // Reset all stages
+                for (let i = 1; i <= 4; i++) {
+                    const stageItem = document.getElementById(`stage${i}`);
+                    if (stageItem) {
+                        stageItem.classList.remove('active', 'completed');
+                    }
+                }
+                
+                // Reset all connectors
+                const connectors = document.querySelectorAll('.stage-connector');
+                connectors.forEach(connector => {
+                    connector.classList.remove('active');
+                });
+            }
+            
+            function updateStageProgress(percent, message = null) {
+                const stageBar = document.getElementById('stageProgressBar');
+                if (!stageBar) return;
+                
+                // Show stage progress bar when processing starts
+                if (percent > 0 || (message && (message.includes('detect') || message.includes('OCR') || message.includes('xử lý')))) {
+                    stageBar.style.display = 'block';
+                }
+                
+                // Determine current stage based on percent or message
+                let currentStage = 1;
+                
+                if (message) {
+                    const msgLower = message.toLowerCase();
+                    // Parse message từ backend: 
+                    // "Đang detect CCCD... (X/total CCCD - Y%)"
+                    // "Đang detect corners... (X/total CCCD - Y%)"
+                    // "Đang detect lines... (X/total CCCD - Y%)"
+                    // "Đang xử lý OCR... (X/total CCCD - Y%)"
+                    
+                    // Ưu tiên parse từ message trước
+                    if (msgLower.includes('detect corners') || msgLower.includes('corners')) {
+                        currentStage = 2;
+                    } else if (msgLower.includes('detect lines') || msgLower.includes('lines')) {
+                        currentStage = 3;
+                    } else if (msgLower.includes('ocr') || msgLower.includes('xử lý ocr')) {
+                        currentStage = 4;
+                    } else if (msgLower.includes('detect cccd') || (msgLower.includes('detect') && msgLower.includes('cccd'))) {
+                        currentStage = 1;
+                    } else {
+                        // Nếu không parse được từ message, dùng percent
+                        if (percent >= 0 && percent < 25) {
+                            currentStage = 1;
+                        } else if (percent >= 25 && percent < 50) {
+                            currentStage = 2;
+                        } else if (percent >= 50 && percent < 75) {
+                            currentStage = 3;
+                        } else if (percent >= 75) {
+                            currentStage = 4;
+                        }
+                    }
+                } else {
+                    // Determine stage by percent
+                    if (percent >= 0 && percent < 25) {
+                        currentStage = 1;
+                    } else if (percent >= 25 && percent < 50) {
+                        currentStage = 2;
+                    } else if (percent >= 50 && percent < 75) {
+                        currentStage = 3;
+                    } else if (percent >= 75) {
+                        currentStage = 4;
+                    }
+                }
+                
+                // Update all stages
+                for (let i = 1; i <= 4; i++) {
+                    const stageItem = document.getElementById(`stage${i}`);
+                    
+                    if (stageItem) {
+                        // Remove all classes
+                        stageItem.classList.remove('active', 'completed');
+                        
+                        if (i < currentStage) {
+                            // Completed stages
+                            stageItem.classList.add('completed');
+                        } else if (i === currentStage) {
+                            // Current active stage
+                            stageItem.classList.add('active');
+                        }
+                    }
+                }
+                
+                // Update connectors (connectors are between stages)
+                const connectors = document.querySelectorAll('.stage-connector');
+                connectors.forEach((connector, index) => {
+                    // Connector index 0 is between stage 1 and 2, index 1 is between 2 and 3, etc.
+                    if (index + 1 < currentStage) {
+                        connector.classList.add('active');
+                    } else {
+                        connector.classList.remove('active');
+                    }
+                });
+            }
 
-            document.getElementById('bulkCancelBtn').addEventListener('click', function() {
+            // Function để cancel jobs
+            async function cancelJobs(jobIds) {
+                if (!jobIds || jobIds.length === 0) return;
+                
+                // Cancel từng job
+                const cancelPromises = jobIds.map(jobId => {
+                    return fetch(`{{ url('/api/job') }}/${jobId}/cancel`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+                        },
+                        credentials: 'same-origin'
+                    }).catch(err => {
+                        console.error(`Error cancelling job ${jobId}:`, err);
+                    });
+                });
+                
+                await Promise.all(cancelPromises);
+            }
+            
+            document.getElementById('bulkCancelBtn').addEventListener('click', async function() {
+                // Cancel jobs trước
+                if (currentJobIds.length > 0) {
+                    await cancelJobs(currentJobIds);
+                    currentJobIds = [];
+                }
+                
                 if (currentAbortController) {
                     currentAbortController.abort();
                     currentAbortController = null;
@@ -1483,7 +2282,20 @@
                     uploadInterval = null;
                 }
                 
-                // Stop any async handler polling
+                // Stop SSE stream(s) - có thể có nhiều event sources nếu chia batch
+                if (window.currentEventSources && Array.isArray(window.currentEventSources)) {
+                    window.currentEventSources.forEach(es => {
+                        if (es && es.close) es.close();
+                    });
+                    window.currentEventSources = null;
+                }
+                
+                if (window.currentEventSource) {
+                    window.currentEventSource.close();
+                    window.currentEventSource = null;
+                }
+                
+                // Stop any async handler polling (fallback)
                 if (window.currentAsyncHandler) {
                     window.currentAsyncHandler.stopPolling();
                     window.currentAsyncHandler = null;
@@ -1667,6 +2479,16 @@
             }
 
             async function handleMultipleImagesUpload(imageFiles) {
+                // Clear các batch cards cũ ngay khi bắt đầu upload mới
+                const singleBatchCard = document.getElementById('singleBatchCard');
+                if (singleBatchCard) {
+                    singleBatchCard.style.display = 'none';
+                }
+                const batchContainer = document.getElementById('batchProgressContainer');
+                if (batchContainer) {
+                    batchContainer.innerHTML = '';
+                }
+                
                 try {
                     bulkUploadBox.classList.add('d-none');
                     bulkProgressSection.classList.remove('d-none');
@@ -1678,26 +2500,51 @@
                     if (thumbnailElement) {
                         thumbnailElement.src = '{{ asset("images/d/go-quick/folder.png") }}';
                     }
-
-                    const formData = new FormData();
-                    imageFiles.forEach((file) => {
-                        formData.append('images[]', file);
-                    });
                     
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-                    formData.append('_token', csrfToken);
 
                     uploadProgress = 0;
                     updateBulkProgress(0, 'Đang chuẩn bị...');
 
                     currentAbortController = new AbortController();
 
-                    // Sử dụng SSE streaming API
-                    const response = await fetch('{{ route("tools.go-quick.process-images-stream") }}', {
+                    // Chia batch ở frontend để tránh vấn đề max_file_uploads
+                    const BATCH_SIZE = 4; // Giảm xuống 2 để test, sau đó tăng lại 150
+                    const batches = [];
+                    
+                    // Chia thành các batch
+                    for (let i = 0; i < imageFiles.length; i += BATCH_SIZE) {
+                        batches.push(imageFiles.slice(i, i + BATCH_SIZE));
+                    }
+
+                    // Step 1: Upload từng batch và collect job_ids
+                    updateBulkProgress(0, `Đang upload ${batches.length} batch...`);
+                    updateBulkProgressInfo({ message: `Đang upload ${batches.length} batch...` });
+                    
+                    const allJobIds = [];
+                    const jobIdToBatchIndex = {}; // Map jobId -> batchIndex (1-based)
+                    const batchJobIds = []; // Array để lưu jobId cho mỗi batch: [batch1JobId, batch2JobId, ...]
+                    const errors = [];
+                    
+                    for (let i = 0; i < batches.length; i++) {
+                        const batch = batches[i];
+                        const formData = new FormData();
+                        
+                        batch.forEach((file) => {
+                            formData.append('images[]', file);
+                        });
+                        formData.append('_token', csrfToken);
+                        formData.append('batch_index', i + 1);
+                        formData.append('total_batches', batches.length);
+                        
+                        updateBulkProgress(0, `Đang upload batch ${i + 1}/${batches.length}...`);
+                        
+                        try {
+                            const createJobResponse = await fetch('{{ route("tools.go-quick.process-images-stream") }}', {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'text/event-stream',
+                                    'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         credentials: 'same-origin',
@@ -1705,77 +2552,490 @@
                         signal: currentAbortController.signal
                     });
 
-                    if (response.status === 401 || response.status === 403) {
+                            if (createJobResponse.status === 401 || createJobResponse.status === 403) {
                         throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
                     }
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    // Đọc SSE stream
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let buffer = '';
-                    let finalResult = null;
-
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        
-                        if (done) {
-                            break;
-                        }
-
-                        if (currentAbortController && currentAbortController.signal.aborted) {
-                            return;
-                        }
-
-                        buffer += decoder.decode(value, { stream: true });
-                        
-                        // Parse SSE events
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop();
-                        
-                        for (const line of lines) {
-                            if (line.startsWith('data: ')) {
-                                try {
-                                    const eventData = JSON.parse(line.slice(6));
-                                    
-                                    if (eventData.type === 'progress') {
-                                        updateBulkProgress(eventData.percent || 0, eventData.message || 'Đang xử lý...');
-                                        
-                                        if (eventData.total_images !== undefined) {
-                                            updateBulkProgressInfo(eventData);
-                                        }
-                                    } else if (eventData.type === 'complete') {
-                                        finalResult = eventData.data;
-                                        updateBulkProgress(100, 'Hoàn thành!');
-                                    } else if (eventData.type === 'error') {
-                                        throw new Error(eventData.message || 'Có lỗi xảy ra');
-                                    } else if (eventData.type === 'start') {
-                                        updateBulkProgress(5, eventData.message || 'Bắt đầu xử lý...');
+                            // Clone response để có thể đọc nhiều lần nếu cần
+                            const responseClone = createJobResponse.clone();
+                            
+                            // Kiểm tra content-type trước khi parse JSON
+                            const contentType = createJobResponse.headers.get('content-type');
+                            const isJson = contentType && contentType.includes('application/json');
+                            
+                            if (!createJobResponse.ok) {
+                                if (isJson) {
+                                    try {
+                                        const errorData = await createJobResponse.json();
+                                        throw new Error(errorData.message || `HTTP error! status: ${createJobResponse.status}`);
+                                    } catch (parseError) {
+                                        const text = await responseClone.text();
+                                        console.error(`[Batch ${i + 1}] Error response:`, text.substring(0, 500));
+                                        throw new Error(`HTTP error! status: ${createJobResponse.status}`);
                                     }
-                                } catch (e) {
-                                    if (e.message && !e.message.includes('JSON')) {
-                                        throw e;
-                                    }
+                                } else {
+                                    const text = await responseClone.text();
+                                    console.error(`[Batch ${i + 1}] Non-JSON error:`, text.substring(0, 500));
+                                    throw new Error(`HTTP error! status: ${createJobResponse.status}`);
                                 }
                             }
+                            
+                            // Parse JSON response
+                            let responseText = await createJobResponse.text();
+                            
+                            // Strip PHP warnings nếu có
+                            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                            if (jsonMatch) {
+                                responseText = jsonMatch[0];
+                            }
+                            
+                            const result = JSON.parse(responseText);
+                            
+                            if (result.status !== 'success') {
+                                throw new Error(result.message || `Lỗi khi upload batch ${i + 1}`);
+                            }
+                            
+                            // Collect job_ids từ batch này và map với batchIndex
+                            const batchJobIdsFromResult = result.job_ids || [result.job_id];
+                            const batchIndex = i + 1; // 1-based
+                            
+                            // Lưu jobId đầu tiên của batch này (thường chỉ có 1 jobId mỗi batch)
+                            const batchJobId = batchJobIdsFromResult[0];
+                            batchJobIds[batchIndex - 1] = batchJobId; // Lưu vào array (0-based index)
+                            
+                            // Map mỗi jobId với batchIndex
+                            batchJobIdsFromResult.forEach(jobId => {
+                                jobIdToBatchIndex[jobId] = batchIndex;
+                                allJobIds.push(jobId);
+                            });
+                            
+                        } catch (batchError) {
+                            console.error(`[Batch ${i + 1}] Error:`, batchError);
+                            errors.push(`Batch ${i + 1}: ${batchError.message}`);
+                            // Tiếp tục với batch tiếp theo
                         }
                     }
-
-                    if (currentAbortController && currentAbortController.signal.aborted) {
-                        return;
+                    
+                    // Kiểm tra xem có job nào được tạo thành công không
+                    if (allJobIds.length === 0) {
+                        throw new Error('Không thể tạo job nào. ' + (errors.length > 0 ? errors.join('; ') : ''));
                     }
-
-                    if (finalResult && finalResult.status === 'success') {
-                        window.bulkResult = finalResult.data || finalResult;
-                        showBulkSuccess();
-                    } else if (finalResult) {
-                        showBulkFailed(finalResult.message || 'Xử lý thất bại');
+                    
+                    // Nếu có một số batch thất bại nhưng vẫn có job thành công
+                    if (errors.length > 0) {
+                        console.warn('Một số batch thất bại:', errors);
+                    }
+                    
+                    // Lưu job IDs để có thể cancel
+                    currentJobIds = allJobIds;
+                    const totalBatches = batches.length;
+                    
+                    // Nếu có nhiều batch, tạo UI riêng cho từng batch
+                    if (totalBatches > 1) {
+                        // Ẩn single batch card
+                        const singleBatchCard = document.getElementById('singleBatchCard');
+                        if (singleBatchCard) {
+                            singleBatchCard.style.display = 'none';
+                        }
+                        
+                        // Tạo container cho nhiều batch
+                        const batchContainer = document.getElementById('batchProgressContainer');
+                        if (batchContainer) {
+                            batchContainer.innerHTML = ''; // Clear trước
+                            
+                            // Tạo bulk-file-info cho mỗi batch
+                            batches.forEach((batch, batchIndex) => {
+                                const batchJobId = batchJobIds[batchIndex]; // Lấy jobId đúng cho batch này
+                                if (batchJobId) {
+                                    const batchCard = createBatchProgressCard(batchIndex + 1, totalBatches, batch.length, batchJobId);
+                                    batchContainer.appendChild(batchCard);
+                                } else {
+                                    console.warn(`[Batch ${batchIndex + 1}] No jobId found, skipping card creation`);
+                                }
+                            });
+                        }
                     } else {
-                        showBulkFailed('Không nhận được kết quả từ server');
+                        // Chỉ có 1 batch, giữ nguyên flow hiện tại
+                        const singleBatchCard = document.getElementById('singleBatchCard');
+                        if (singleBatchCard) {
+                            singleBatchCard.style.display = 'block';
+                        }
+                        const batchContainer = document.getElementById('batchProgressContainer');
+                        if (batchContainer) {
+                            batchContainer.innerHTML = '';
+                        }
+                        
+                        updateBulkProgress(0, `Đã tạo ${allJobIds.length} job, đang xử lý...`);
                     }
+                    
+                    // Reset stage progress
+                    resetStageProgress();
+
+                    // Step 2: Connect to SSE stream cho tất cả các job
+                    const eventSources = [];
+                    const jobProgress = {}; // Track progress của từng job: {jobId: {percent, processed_cccd, total_cccd}}
+                    const jobResults = {}; // Track kết quả của từng job
+                    let completedJobs = 0;
+                    let isCompleted = false;
+                    
+                    // Khởi tạo progress cho từng job
+                    allJobIds.forEach(jobId => {
+                        jobProgress[jobId] = {
+                            percent: 0,
+                            processed_cccd: 0,
+                            total_cccd: 0
+                        };
+                    });
+                    
+                    // Hàm tính progress tổng hợp
+                    function calculateAggregatedProgress() {
+                        let totalProcessed = 0;
+                        let totalCccd = 0;
+                        let totalPercent = 0;
+                        
+                        Object.values(jobProgress).forEach(progress => {
+                            totalProcessed += progress.processed_cccd || 0;
+                            totalCccd += progress.total_cccd || 0;
+                            totalPercent += progress.percent || 0;
+                        });
+                        
+                        // Tính percent trung bình
+                        const activeJobCount = Object.keys(jobProgress).length;
+                        const avgPercent = activeJobCount > 0 ? Math.round(totalPercent / activeJobCount) : 0;
+                        
+                        return {
+                            percent: avgPercent,
+                            processed_cccd: totalProcessed,
+                            total_cccd: totalCccd
+                        };
+                    }
+                    
+                    // Lưu eventSources để có thể close khi cancel
+                    window.currentEventSources = eventSources;
+                    
+                    // jobIdToBatchIndex đã được khai báo và map ở trên (dòng 2485)
+                    // Không cần khai báo lại, chỉ cần đảm bảo mapping đã đúng
+                    // (Mapping đã được thực hiện trong vòng lặp upload batches)
+                    
+                    // Tạo EventSource cho mỗi job
+                    allJobIds.forEach((jobId, index) => {
+                        // Sử dụng jobIdToBatchIndex đã được map ở trên, fallback về index + 1 nếu không có
+                        const batchIndex = jobIdToBatchIndex[jobId] || (index + 1);
+                        const streamUrl = `{{ url('/api/job') }}/${jobId}/stream`;
+                        
+                        const eventSource = new EventSource(streamUrl);
+                        eventSources.push(eventSource);
+                        
+                        // Lưu eventSource để có thể close
+                        if (index === 0) {
+                            window.currentEventSource = eventSource; // Giữ lại cho backward compatibility
+                        }
+                        
+                        // Capture các giá trị vào biến local để tránh closure issues
+                        const currentJobId = jobId;
+                        const currentBatchIndex = batchIndex;
+                        const currentIndex = index;
+
+                        eventSource.addEventListener('connected', function(e) {
+                            const data = JSON.parse(e.data);
+                            if (totalBatches === 1) {
+                                updateBulkProgress(0, 'Đang xử lý...');
+                                updateBulkProgressInfo({ message: 'Đang xử lý...' });
+                            } else {
+                                // Update batch progress
+                                updateBatchProgress(currentBatchIndex, 0, 'Đang xử lý...', 0, 0);
+                            }
+                        });
+
+                        eventSource.addEventListener('progress', function(e) {
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                eventSource.close();
+                                return;
+                            }
+
+                            try {
+                                const data = JSON.parse(e.data);
+                                const eventData = data.data || {};
+                                
+                                // Cập nhật progress cho job này
+                                jobProgress[currentJobId] = {
+                                    percent: data.percent || 0,
+                                    processed_cccd: eventData.processed_cccd || data.processed_cccd || 0,
+                                    total_cccd: eventData.total_cccd || data.total_cccd || 0
+                                };
+                                
+                                // Lấy message từ backend
+                                const message = data.message || eventData.message || 'Đang xử lý...';
+                                
+                                // Tính aggregated progress (cần cho cả 2 trường hợp)
+                                const aggregated = calculateAggregatedProgress();
+                                
+                                // Nếu có nhiều batch, update progress riêng cho batch này
+                                if (totalBatches > 1) {
+                                    updateBatchProgress(
+                                        currentBatchIndex,
+                                        data.percent || 0,
+                                        message,
+                                        eventData.processed_cccd || data.processed_cccd || 0,
+                                        eventData.total_cccd || data.total_cccd || 0
+                                    );
+                                } else {
+                                    // Chỉ có 1 batch, update progress tổng hợp như cũ
+                                    updateBulkProgress(aggregated.percent, message, aggregated.processed_cccd);
+                                }
+                                
+                                // Update progress info (chỉ cho single batch)
+                                if (totalBatches === 1) {
+                                    updateBulkProgressInfo({
+                                        total_cccd: aggregated.total_cccd,
+                                        processed_cccd: aggregated.processed_cccd,
+                                        total_images: eventData.total_images || data.total_images,
+                                        processed_images: eventData.processed_images || data.processed_images,
+                                        total_rows: eventData.total_rows || data.total_rows,
+                                        estimated_cccd: eventData.estimated_cccd || data.estimated_cccd,
+                                        processed: eventData.processed || data.processed,
+                                        message: message
+                                    });
+                                }
+                            } catch (error) {
+                                console.error('[Progress Error - Image Upload]', error, e.data);
+                            }
+                        });
+
+                        // Track xem job này đã nhận complete event chưa (tránh duplicate)
+                        let jobCompleted = false;
+                        
+                        eventSource.addEventListener('complete', function(e) {
+                            // Nếu job này đã complete rồi, bỏ qua (tránh duplicate processing)
+                            if (jobCompleted) {
+                                return;
+                            }
+                            
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                eventSource.close();
+                                return;
+                            }
+                            
+                            // Đánh dấu job này đã complete
+                            jobCompleted = true;
+                            
+                            // Set isCompleted = true NGAY khi nhận được complete event để tránh error handlers trigger
+                            // (trước khi fetch result, vì trong lúc fetch SSE connection có thể trigger error)
+                            if (!isCompleted) {
+                                isCompleted = true;
+                            }
+                            
+                            completedJobs++;
+                            
+                            // Get result từ job này
+                            fetch(`{{ url('/api/job') }}/${currentJobId}/result`, {
+                                method: 'GET',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                credentials: 'same-origin'
+                            })
+                            .then(async response => {
+                                // Clone response để có thể đọc nhiều lần
+                                const responseClone = response.clone();
+                                
+                                // Kiểm tra content-type trước khi parse JSON
+                                const contentType = response.headers.get('content-type');
+                                const isJson = contentType && contentType.includes('application/json');
+                                
+                                if (!response.ok) {
+                                    // Response không ok, đọc error message
+                                    try {
+                                        if (isJson) {
+                                            const errorResult = await response.json();
+                                            throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                                        } else {
+                                            const errorText = await response.text();
+                                            console.error('[Fetch Result Error] HTTP error response:', response.status, errorText.substring(0, 200));
+                                            if (errorText.includes('<!DOCTYPE') || errorText.includes('<html') || errorText.includes('login')) {
+                                                throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                                            }
+                                            throw new Error(`HTTP error! status: ${response.status}`);
+                                        }
+                                    } catch (parseError) {
+                                        if (parseError.message.includes('HTTP error') || parseError.message.includes('đăng nhập')) {
+                                            throw parseError;
+                                        }
+                                        // Nếu parse fail, đọc text từ clone
+                                        const errorText = await responseClone.text();
+                                        console.error('[Fetch Result Error] Failed to parse error:', parseError, errorText.substring(0, 200));
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                }
+                                
+                                // Response ok, kiểm tra content-type
+                                if (!isJson) {
+                                    const text = await response.text();
+                                    console.error('[Fetch Result Error] Non-JSON success response:', text.substring(0, 200));
+                                    if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('login')) {
+                                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                                    }
+                                    throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                                }
+                                
+                                // Parse JSON response
+                                try {
+                                    return await response.json();
+                                } catch (parseError) {
+                                    console.error('[Fetch Result Error] Failed to parse JSON:', parseError);
+                                    const text = await responseClone.text();
+                                    console.error('[Fetch Result Error] Response text:', text.substring(0, 500));
+                                    throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                                }
+                            })
+                            .then(result => {
+                                
+                                if (result && result.status === 'success' && result.data) {
+                                    jobResults[currentJobId] = result.data;
+                                    
+                                    // Nếu có nhiều batch, hiển thị nút download cho batch này
+                                    if (totalBatches > 1) {
+                                        const downloadBtn = document.getElementById(`batchDownloadBtn_${currentBatchIndex}`);
+                                        if (downloadBtn) {
+                                            downloadBtn.style.display = 'block';
+                                        }
+                                        updateBatchProgress(currentBatchIndex, 100, 'Hoàn thành!', 
+                                            result.data.processed_cccd || result.data.total_cccd || 0,
+                                            result.data.total_cccd || 0);
+                                    }
+                                    
+                                    // Nếu tất cả job đã hoàn thành
+                                    if (completedJobs === allJobIds.length) {
+                                        // isCompleted đã được set sớm khi nhận complete event
+                                        // Đảm bảo isCompleted = true trước khi đóng event sources
+                                        if (!isCompleted) {
+                                            isCompleted = true;
+                                        }
+                                        
+                                        if (totalBatches === 1) {
+                                            // Chỉ có 1 batch, giữ nguyên flow hiện tại
+                                            window.bulkResult = result.data;
+                                            updateBulkProgress(100, 'Hoàn thành!');
+                                            showBulkSuccess();
+                                        }
+                                        
+                                        // Đóng tất cả event sources SAU khi set isCompleted và delay một chút
+                                        setTimeout(() => {
+                                            eventSources.forEach((es) => {
+                                                if (es && es.readyState !== EventSource.CLOSED) {
+                                                    es.close();
+                                                }
+                                            });
+                                            window.currentEventSource = null;
+                                        }, 200); // Delay 200ms để đảm bảo isCompleted đã được set
+                                    } else {
+                                        // Cập nhật progress khi một job hoàn thành
+                                        if (totalBatches === 1) {
+                                            const aggregated = calculateAggregatedProgress();
+                                            updateBulkProgress(aggregated.percent, 
+                                                `Đã hoàn thành ${completedJobs}/${totalBatches} batch...`, 
+                                                aggregated.processed_cccd);
+                                        }
+                                    }
+                                } else {
+                                    // Nếu một job thất bại hoặc format không đúng
+                                    console.error('[Fetch Result Error] Invalid result format:', result);
+                                    const errorMsg = (result && result.message) ? result.message : 'Xử lý thất bại - kết quả không hợp lệ';
+                                    // Không show error ngay, chỉ log và tiếp tục chờ các batch khác
+                                    console.warn(`[Batch ${index + 1}] ${errorMsg}`);
+                                    // Nếu tất cả job đã hoàn thành mà vẫn có lỗi thì mới show (nhưng chỉ khi chưa complete)
+                                    if (completedJobs === allJobIds.length && !isCompleted) {
+                                        showBulkFailed(errorMsg);
+                                        eventSources.forEach(es => es.close());
+                                        window.currentEventSource = null;
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                // Nếu đã complete thì không hiển thị error
+                                if (isCompleted) {
+                                    return;
+                                }
+                                
+                                console.error('[Fetch Result Error]', error, `JobId: ${currentJobId}, Batch: ${currentBatchIndex}`);
+                                // Không show error ngay, chỉ log
+                                // Chỉ show error nếu tất cả batch đã hoàn thành và chưa complete
+                                if (completedJobs === allJobIds.length && !isCompleted) {
+                                    console.error('[Complete Event Handler - Multiple Batches] Showing error modal because all jobs completed but fetch failed');
+                                    showBulkFailed('Không thể lấy kết quả từ batch ' + currentBatchIndex + ': ' + (error.message || 'Lỗi không xác định'));
+                                    eventSources.forEach(es => es.close());
+                                    window.currentEventSource = null;
+                                } else {
+                                    console.warn(`[Batch ${currentBatchIndex}] Lỗi khi lấy kết quả, tiếp tục chờ các batch khác...`);
+                                }
+                            });
+                        });
+
+                        eventSource.addEventListener('error', function(e) {
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                eventSource.close();
+                                return;
+                            }
+
+                            // Nếu đã complete thì không hiển thị error modal (EventSource đóng bình thường)
+                            if (isCompleted) {
+                                return;
+                            }
+                            
+                            // Nếu connection đã đóng (readyState === CLOSED), có thể là đóng bình thường sau khi job hoàn thành
+                            // Không log error và không hiển thị modal
+                            if (eventSource.readyState === EventSource.CLOSED) {
+                                return;
+                            }
+                            
+                            // Kiểm tra e.data có tồn tại và là JSON hợp lệ trước khi parse
+                            let errorMessage = 'Có lỗi xảy ra khi xử lý';
+                            if (e.data && typeof e.data === 'string' && e.data.trim() !== '') {
+                                try {
+                                    const data = JSON.parse(e.data);
+                                    errorMessage = data.error || data.message || errorMessage;
+                                } catch (parseError) {
+                                    // Nếu không parse được JSON, dùng message mặc định
+                                    console.error('[Error Event] Failed to parse error data:', parseError, e.data);
+                                }
+                            }
+                            
+                            // Chỉ hiển thị error nếu chưa complete và connection chưa đóng
+                            if (!isCompleted) {
+                                console.error('[SSE Error Handler] Connection error:', errorMessage);
+                                showBulkFailed(errorMessage + (totalBatches > 1 ? ` (Batch ${currentBatchIndex}/${totalBatches})` : ''));
+                                eventSources.forEach(es => es.close());
+                                window.currentEventSource = null;
+                            }
+                        });
+
+                        eventSource.onerror = function(error) {
+                            // Nếu đã complete thì không hiển thị error modal
+                            if (isCompleted) {
+                                return;
+                            }
+
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                eventSource.close();
+                                return;
+                            }
+
+                            // Nếu connection đã đóng (readyState === CLOSED), có thể là đóng bình thường sau khi job hoàn thành
+                            // Không log error và không hiển thị modal
+                            if (eventSource.readyState === EventSource.CLOSED) {
+                                return;
+                            }
+                            
+                            // Chỉ hiển thị error nếu chưa complete và connection chưa đóng
+                            if (!isCompleted) {
+                                console.error('[SSE Error Handler - onerror] Connection error');
+                                showBulkFailed('Lỗi kết nối với server' + (totalBatches > 1 ? ` (Batch ${currentBatchIndex}/${totalBatches})` : '') + '. Vui lòng thử lại.');
+                                eventSources.forEach(es => es.close());
+                                window.currentEventSource = null;
+                            }
+                        };
+                    }); // End forEach jobIds
                 } catch (error) {
                     if (error.name === 'AbortError' || (currentAbortController && currentAbortController.signal.aborted)) {
                         return;
@@ -1835,6 +3095,9 @@
             }
 
             function resetBulkUpload() {
+                // Reset job IDs
+                currentJobIds = [];
+                
                 const title = bulkUploadBox.querySelector('.bulk-upload-title');
                 const subtitle = bulkUploadBox.querySelector('.bulk-upload-subtitle');
                 if (title) title.textContent = 'Kéo và thả tệp của bạn vào đây!';
@@ -1873,7 +3136,20 @@
                     uploadInterval = null;
                 }
                 
-                // Stop async handler nếu có
+                // Stop SSE stream(s) nếu có - có thể có nhiều event sources nếu chia batch
+                if (window.currentEventSources && Array.isArray(window.currentEventSources)) {
+                    window.currentEventSources.forEach(es => {
+                        if (es && es.close) es.close();
+                    });
+                    window.currentEventSources = null;
+                }
+                
+                if (window.currentEventSource) {
+                    window.currentEventSource.close();
+                    window.currentEventSource = null;
+                }
+                
+                // Stop async handler nếu có (fallback)
                 if (window.currentAsyncHandler) {
                     window.currentAsyncHandler.stopPolling();
                     window.currentAsyncHandler = null;
@@ -1958,6 +3234,30 @@
                     promoBanner.style.display = 'none';
                 }
             }
+            
+            // Cancel jobs khi user close/reload trang
+            window.addEventListener('beforeunload', function(e) {
+                if (currentJobIds.length > 0) {
+                    // Gửi cancel request (navigator.sendBeacon để đảm bảo gửi được khi đóng trang)
+                    currentJobIds.forEach(jobId => {
+                        const cancelUrl = `{{ url('/api/job') }}/${jobId}/cancel`;
+                        const formData = new FormData();
+                        formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}');
+                        
+                        // Sử dụng sendBeacon để gửi request khi đóng trang
+                        if (navigator.sendBeacon) {
+                            navigator.sendBeacon(cancelUrl, formData);
+                        } else {
+                            // Fallback: dùng fetch với keepalive
+                            fetch(cancelUrl, {
+                                method: 'POST',
+                                body: formData,
+                                keepalive: true
+                            }).catch(() => {});
+                        }
+                    });
+                }
+            });
         });
     </script>
 @endpush

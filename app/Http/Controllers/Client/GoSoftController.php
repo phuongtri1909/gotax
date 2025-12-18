@@ -218,6 +218,54 @@ class GoSoftController extends Controller
     }
 
     /**
+     * Crawl tờ khai với Queue System (mới)
+     * Tạo job và trả về job_id, frontend sẽ dùng SSE để stream progress
+     */
+    public function crawlTokhaiQueue(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+            'tokhai_type' => 'nullable|string',
+        ]);
+
+        try {
+            // Create job record
+            $job = \App\Models\JobTool::create([
+                'user_id' => auth()->id() ?? 0,
+                'tool' => 'go-soft',
+                'action' => 'crawl_tokhai',
+                'status' => 'pending',
+                'progress' => 0,
+                'params' => [
+                    'session_id' => $request->session_id,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                    'tokhai_type' => $request->tokhai_type ?? '00',
+                ],
+            ]);
+
+            // Dispatch job to queue
+            Log::info("Dispatching GoSoftCrawlJob for job_id: {$job->id}");
+            \App\Jobs\GoSoftCrawlJob::dispatch($job->id, $job->params);
+            Log::info("GoSoftCrawlJob dispatched successfully for job_id: {$job->id}");
+
+            return response()->json([
+                'status' => 'success',
+                'job_id' => $job->id,
+                'message' => 'Job đã được tạo và đang xử lý',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Go Soft Crawl Queue Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi tạo job: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Crawl tờ khai với SSE streaming (để tránh timeout và hiển thị progress realtime)
      */
     public function crawlTokhai(Request $request)
@@ -534,6 +582,51 @@ class GoSoftController extends Controller
     }
 
     /**
+     * Crawl thông báo với queue Redis
+     */
+    public function crawlThongbaoQueue(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+        ]);
+
+        try {
+            // Create job record
+            $job = \App\Models\JobTool::create([
+                'user_id' => auth()->id() ?? 0,
+                'tool' => 'go-soft',
+                'action' => 'crawl_thongbao',
+                'status' => 'pending',
+                'progress' => 0,
+                'params' => [
+                    'session_id' => $request->session_id,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                ],
+            ]);
+
+            // Dispatch job to queue
+            Log::info("Dispatching GoSoftCrawlJob for job_id: {$job->id}");
+            \App\Jobs\GoSoftCrawlJob::dispatch($job->id, $job->params);
+            Log::info("GoSoftCrawlJob dispatched successfully for job_id: {$job->id}");
+
+            return response()->json([
+                'status' => 'success',
+                'job_id' => $job->id,
+                'message' => 'Job đã được tạo và đang xử lý',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Go Soft Crawl Thongbao Queue Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi tạo job: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Crawl thông báo với SSE streaming
      */
     public function crawlThongbaoSSE(Request $request)
@@ -670,6 +763,51 @@ class GoSoftController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Lỗi khi crawl giấy nộp tiền thuế: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Crawl giấy nộp tiền với queue Redis
+     */
+    public function crawlGiayNopTienQueue(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'start_date' => 'required|string',
+            'end_date' => 'required|string',
+        ]);
+
+        try {
+            // Create job record
+            $job = \App\Models\JobTool::create([
+                'user_id' => auth()->id() ?? 0,
+                'tool' => 'go-soft',
+                'action' => 'crawl_giaynoptien',
+                'status' => 'pending',
+                'progress' => 0,
+                'params' => [
+                    'session_id' => $request->session_id,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                ],
+            ]);
+
+            // Dispatch job to queue
+            Log::info("Dispatching GoSoftCrawlJob for job_id: {$job->id}");
+            \App\Jobs\GoSoftCrawlJob::dispatch($job->id, $job->params);
+            Log::info("GoSoftCrawlJob dispatched successfully for job_id: {$job->id}");
+
+            return response()->json([
+                'status' => 'success',
+                'job_id' => $job->id,
+                'message' => 'Job đã được tạo và đang xử lý',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Go Soft Crawl GiayNopTien Queue Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi tạo job: ' . $e->getMessage(),
             ], 500);
         }
     }

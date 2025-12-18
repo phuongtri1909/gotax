@@ -15,6 +15,8 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Illuminate\Validation\ValidationException;
 use App\Models\GoQuickUse;
+use App\Models\JobTool;
+use App\Jobs\ProcessGoQuickJob;
 use Illuminate\Support\Facades\Auth;
 
 class GoQuickController extends Controller
@@ -1064,13 +1066,255 @@ class GoQuickController extends Controller
      */
     public function processImagesStream(Request $request)
     {
-        return $this->streamImagesApiRequest($request, '/process-images-stream');
+        ini_set('display_errors', '0');
+        error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+        
+        set_time_limit(300); // 5 minutes
+        ini_set('memory_limit', '512M');
+        
+        $currentMaxFiles = ini_get('max_file_uploads');
+        if ($currentMaxFiles < 200) {
+            ini_set('max_file_uploads', '200');
+        }
+        
+        try {
+            $usageCheck = $this->checkUsage(1);
+            if (!$usageCheck['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $usageCheck['message']
+                ], 403);
+            }
+
+            if (!$request->hasFile('images')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Vui lòng chọn ít nhất một ảnh'
+                ], 400);
+            }
+
+            $images = $request->file('images');
+            
+            if (!is_array($images)) {
+                $images = [$images];
+            }
+            
+            $images = array_filter($images, function($image) {
+                return $image !== null && $image->isValid();
+            });
+            
+            if (empty($images)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Không có ảnh hợp lệ nào được chọn'
+                ], 400);
+            }
+            
+            try {
+                $request->validate([
+                    'images.*' => 'required|image|mimes:jpeg,jpg,png|max:10240'
+                ], [
+                    'images.*.required' => 'Vui lòng chọn ảnh',
+                    'images.*.image' => 'File phải là ảnh',
+                    'images.*.mimes' => 'Ảnh phải có định dạng: jpeg, jpg, png',
+                    'images.*.max' => 'Kích thước ảnh không được vượt quá 10MB'
+                ]);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Lỗi validation: ' . $e->getMessage(),
+                    'errors' => $e->errors()
+                ], 422);
+            }
+
+            $batchIndexFromRequest = $request->input('batch_index', 1);
+            $totalBatchesFromRequest = $request->input('total_batches', 1);
+            
+            if ($totalBatchesFromRequest > 1) {
+                $batches = [$images];
+                $totalBatches = $totalBatchesFromRequest;
+            } else {
+                $maxImagesPerBatch = 150;
+                $maxSizePerBatch = 1024 * 1024 * 1024;
+                
+                $batches = [];
+                $currentBatch = [];
+                $currentBatchSize = 0;
+                
+                foreach ($images as $image) {
+                    $imageSize = $image->getSize();
+                    
+                    if (count($currentBatch) >= $maxImagesPerBatch || 
+                        ($currentBatchSize + $imageSize) > $maxSizePerBatch) {
+                        if (!empty($currentBatch)) {
+                            $batches[] = $currentBatch;
+                            $currentBatch = [];
+                            $currentBatchSize = 0;
+                        }
+                    }
+                    
+                    $currentBatch[] = $image;
+                    $currentBatchSize += $imageSize;
+                }
+                
+                if (!empty($currentBatch)) {
+                    $batches[] = $currentBatch;
+                }
+                
+                $totalBatches = count($batches);
+            }
+            
+            $jobIds = [];
+            $errors = [];
+            
+            foreach ($batches as $batchIndex => $batch) {
+                try {
+                    $zipPath = storage_path('app/temp/go_quick_' . uniqid() . '_batch_' . ($batchIndex + 1) . '_images.zip');
+                    $zip = new \ZipArchive();
+                    if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== TRUE) {
+                        $errors[] = "Không thể tạo file ZIP cho batch " . ($batchIndex + 1);
+                        Log::error("Failed to create ZIP for batch " . ($batchIndex + 1));
+                        continue;
+                    }
+
+                    foreach ($batch as $image) {
+                        try {
+                            $imageName = $image->getClientOriginalName();
+                            $realPath = $image->getRealPath();
+                            if ($realPath && file_exists($realPath)) {
+                                $zip->addFile($realPath, $imageName);
+                            } else {
+                                Log::warning("Image file not found: " . $imageName);
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning("Error adding image to ZIP: " . $e->getMessage());
+                        }
+                    }
+                    $zip->close();
+
+                    $job = JobTool::create([
+                        'user_id' => auth()->id(),
+                        'tool' => 'go-quick',
+                        'action' => 'process-cccd',
+                        'status' => 'pending',
+                        'progress' => 0,
+                        'params' => [
+                            'file_path' => $zipPath,
+                            'file_type' => 'zip',
+                            'batch_index' => $batchIndex + 1,
+                            'total_batches' => $totalBatches,
+                        ],
+                    ]);
+
+                    ProcessGoQuickJob::dispatch($job->id, $job->params);
+                    
+                    $jobIds[] = $job->id;
+                    Log::info("Created job for batch " . ($batchIndex + 1) . "/{$totalBatches}: {$job->id}");
+                } catch (\Exception $e) {
+                    $errors[] = "Lỗi khi tạo batch " . ($batchIndex + 1) . ": " . $e->getMessage();
+                    Log::error("Error creating batch " . ($batchIndex + 1) . ": " . $e->getMessage());
+                }
+            }
+            
+            if (empty($jobIds)) {
+                Log::error("processImagesStream: No jobs created", ['errors' => $errors]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Không thể tạo job nào. ' . implode('; ', $errors)
+                ], 500, [
+                    'Content-Type' => 'application/json; charset=utf-8',
+                    'X-Content-Type-Options' => 'nosniff'
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            
+            $response = [
+                'status' => 'success',
+                'job_ids' => $jobIds,
+                'job_id' => $jobIds[0],
+                'total_batches' => $totalBatches,
+                'created_batches' => count($jobIds),
+                'message' => "Đã chia thành {$totalBatches} batch và tạo " . count($jobIds) . " job để xử lý"
+            ];
+            
+            if (!empty($errors)) {
+                $response['warnings'] = $errors;
+            }
+            
+            Log::info("processImagesStream completed: " . count($jobIds) . " jobs created from {$totalBatches} batches", [
+                'job_ids' => $jobIds,
+                'total_batches' => $totalBatches,
+                'response' => $response
+            ]);
+            
+            try {
+                $jsonString = json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                if ($jsonString === false) {
+                    $jsonError = json_last_error_msg();
+                    Log::error("JSON encode error: " . $jsonError, ['response' => $response]);
+                    throw new \Exception("Không thể encode JSON: " . $jsonError);
+                }
+                
+                Log::debug("processImagesStream returning JSON response", [
+                    'json_length' => strlen($jsonString),
+                    'job_count' => count($jobIds),
+                    'json_preview' => substr($jsonString, 0, 500),
+                    'json_full' => $jsonString
+                ]);
+                
+                return response()->json($response, 200, [
+                    'Content-Type' => 'application/json; charset=utf-8',
+                    'X-Content-Type-Options' => 'nosniff',
+                    'Content-Length' => strlen($jsonString),
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0'
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            } catch (\Exception $jsonError) {
+                Log::error('Error creating JSON response: ' . $jsonError->getMessage(), [
+                    'response' => $response
+                ]);
+                $fallbackResponse = [
+                    'status' => 'success',
+                    'job_ids' => $jobIds,
+                    'job_id' => $jobIds[0] ?? null,
+                    'total_batches' => $totalBatches,
+                    'message' => "Đã tạo " . count($jobIds) . " job"
+                ];
+                return response()->json($fallbackResponse, 200, [
+                    'Content-Type' => 'application/json; charset=utf-8'
+                ]);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error in processImagesStream: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422, [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'X-Content-Type-Options' => 'nosniff'
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } catch (\Exception $e) {
+            Log::error('Error in processImagesStream: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Có lỗi xảy ra khi xử lý: ' . $e->getMessage()
+            ], 500, [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'X-Content-Type-Options' => 'nosniff'
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
     }
 
     // ==================== ASYNC JOB METHODS ====================
     
     /**
-     * Start async job để xử lý CCCD - trả về job_id ngay lập tức
+     * Start async job để xử lý CCCD với Queue System
+     * Tạo job và trả về job_id, frontend sẽ dùng SSE để stream progress
      */
     public function processCCCDAsync(Request $request)
     {
@@ -1095,39 +1339,38 @@ class GoQuickController extends Controller
                     'file.max' => 'File ZIP không được vượt quá 100MB',
                 ]);
                 
-                $response = Http::timeout(30)
-                    ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                    ->post($this->getApiUrl() . '/process-cccd-async');
-            }
-            elseif ($request->has('inp_path')) {
-                $request->validate([
-                    'inp_path' => 'required|string'
-                ]);
+                $tempPath = storage_path('app/temp/go_quick_' . uniqid() . '_' . $file->getClientOriginalName());
+                $file->move(storage_path('app/temp'), basename($tempPath));
                 
-                $response = Http::timeout(30)
-                    ->post($this->getApiUrl() . '/process-cccd-async', [
-                        'inp_path' => $request->inp_path
-                    ]);
+                $job = \App\Models\JobTool::create([
+                    'user_id' => auth()->id() ?? 0,
+                    'tool' => 'go-quick',
+                    'action' => 'process-cccd',
+                    'status' => 'pending',
+                    'progress' => 0,
+                    'params' => [
+                        'file_path' => $tempPath,
+                        'file_type' => 'zip',
+                    ],
+                ]);
+
+                $jobId = $job->id ?? $job->getKey();
+                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}");
+                \App\Jobs\ProcessGoQuickJob::dispatch($jobId, $job->params);
+                Log::info("ProcessGoQuickJob dispatched successfully for job_id: {$jobId}");
+
+                return response()->json([
+                    'status' => 'success',
+                    'job_id' => $job->id,
+                    'message' => 'Job đã được tạo và đang xử lý',
+                ]);
             }
             else {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Vui lòng cung cấp file hoặc base64 string'
+                    'message' => 'Vui lòng cung cấp file ZIP'
                 ], 400);
             }
-            
-            if ($response->successful()) {
-                $result = $response->json();
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $result
-                ]);
-            }
-            
-            return response()->json([
-                'status' => 'error',
-                'message' => $response->json()['message'] ?? 'Lỗi tạo job'
-            ], $response->status());
             
         } catch (ValidationException $e) {
             return response()->json([
@@ -1140,13 +1383,14 @@ class GoQuickController extends Controller
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi xử lý: ' . $e->getMessage()
+                'message' => 'Lỗi khi tạo job: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Start async job để xử lý PDF
+     * Start async job để xử lý PDF với Queue System
+     * Tạo job và trả về job_id, frontend sẽ dùng SSE để stream progress
      */
     public function processPDFAsync(Request $request)
     {
@@ -1171,39 +1415,38 @@ class GoQuickController extends Controller
                     'file.max' => 'File PDF không được vượt quá 100MB',
                 ]);
                 
-                $response = Http::timeout(30)
-                    ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                    ->post($this->getApiUrl() . '/process-pdf-async');
-            }
-            elseif ($request->has('inp_path')) {
-                $request->validate([
-                    'inp_path' => 'required|string'
-                ]);
+                $tempPath = storage_path('app/temp/go_quick_' . uniqid() . '_' . $file->getClientOriginalName());
+                $file->move(storage_path('app/temp'), basename($tempPath));
                 
-                $response = Http::timeout(30)
-                    ->post($this->getApiUrl() . '/process-pdf-async', [
-                        'inp_path' => $request->inp_path
-                    ]);
+                $job = \App\Models\JobTool::create([
+                    'user_id' => auth()->id() ?? 0,
+                    'tool' => 'go-quick',
+                    'action' => 'process-pdf',
+                    'status' => 'pending',
+                    'progress' => 0,
+                    'params' => [
+                        'file_path' => $tempPath,
+                        'file_type' => 'pdf',
+                    ],
+                ]);
+
+                $jobId = $job->id ?? $job->getKey();
+                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}");
+                \App\Jobs\ProcessGoQuickJob::dispatch($jobId, $job->params);
+                Log::info("ProcessGoQuickJob dispatched successfully for job_id: {$jobId}");
+
+                return response()->json([
+                    'status' => 'success',
+                    'job_id' => $job->id,
+                    'message' => 'Job đã được tạo và đang xử lý',
+                ]);
             }
             else {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Vui lòng cung cấp file PDF hoặc base64 string'
+                    'message' => 'Vui lòng cung cấp file PDF'
                 ], 400);
             }
-            
-            if ($response->successful()) {
-                $result = $response->json();
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $result
-                ]);
-            }
-            
-            return response()->json([
-                'status' => 'error',
-                'message' => $response->json()['message'] ?? 'Lỗi tạo job'
-            ], $response->status());
             
         } catch (ValidationException $e) {
             return response()->json([
@@ -1216,13 +1459,14 @@ class GoQuickController extends Controller
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi xử lý: ' . $e->getMessage()
+                'message' => 'Lỗi khi tạo job: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Start async job để xử lý Excel
+     * Start async job để xử lý Excel với Queue System
+     * Tạo job và trả về job_id, frontend sẽ dùng SSE để stream progress
      */
     public function processExcelAsync(Request $request)
     {
@@ -1247,39 +1491,38 @@ class GoQuickController extends Controller
                     'file.max' => 'File Excel không được vượt quá 10MB',
                 ]);
                 
-                $response = Http::timeout(30)
-                    ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                    ->post($this->getApiUrl() . '/process-excel-async');
-            }
-            elseif ($request->has('inp_path')) {
-                $request->validate([
-                    'inp_path' => 'required|string'
-                ]);
+                $tempPath = storage_path('app/temp/go_quick_' . uniqid() . '_' . $file->getClientOriginalName());
+                $file->move(storage_path('app/temp'), basename($tempPath));
                 
-                $response = Http::timeout(30)
-                    ->post($this->getApiUrl() . '/process-excel-async', [
-                        'inp_path' => $request->inp_path
-                    ]);
+                $job = \App\Models\JobTool::create([
+                    'user_id' => auth()->id() ?? 0,
+                    'tool' => 'go-quick',
+                    'action' => 'process-excel',
+                    'status' => 'pending',
+                    'progress' => 0,
+                    'params' => [
+                        'file_path' => $tempPath,
+                        'file_type' => 'excel',
+                    ],
+                ]);
+
+                $jobId = $job->id ?? $job->getKey();
+                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}");
+                \App\Jobs\ProcessGoQuickJob::dispatch($jobId, $job->params);
+                Log::info("ProcessGoQuickJob dispatched successfully for job_id: {$jobId}");
+
+                return response()->json([
+                    'status' => 'success',
+                    'job_id' => $job->id,
+                    'message' => 'Job đã được tạo và đang xử lý',
+                ]);
             }
             else {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Vui lòng cung cấp file Excel hoặc base64 string'
+                    'message' => 'Vui lòng cung cấp file Excel'
                 ], 400);
             }
-            
-            if ($response->successful()) {
-                $result = $response->json();
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $result
-                ]);
-            }
-            
-            return response()->json([
-                'status' => 'error',
-                'message' => $response->json()['message'] ?? 'Lỗi tạo job'
-            ], $response->status());
             
         } catch (ValidationException $e) {
             return response()->json([
@@ -1292,27 +1535,61 @@ class GoQuickController extends Controller
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi xử lý: ' . $e->getMessage()
+                'message' => 'Lỗi khi tạo job: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Lấy status của job
+     * Lấy status của job từ Redis (không cần gọi API server nữa)
      */
     public function getJobStatus($jobId)
     {
         try {
-            $response = Http::timeout(10)->get($this->getApiUrl() . '/job-status/' . $jobId);
-            
-            if ($response->successful()) {
-                return response()->json($response->json());
+            $job = \App\Models\JobTool::find($jobId);
+            if (!$job) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Job không tồn tại'
+                ], 404);
             }
             
-            return response()->json([
-                'status' => 'error',
-                'message' => $response->json()['message'] ?? 'Lỗi lấy status'
-            ], $response->status());
+            try {
+                $redis = \Illuminate\Support\Facades\Redis::connection()->client();
+                $status = $redis->get("job:{$jobId}:status");
+                $result = $redis->get("job:{$jobId}:result");
+                
+                if ($status) {
+                    $status = $status->decode('utf-8');
+                }
+                
+                $responseData = [
+                    'status' => 'success',
+                    'data' => [
+                        'job_id' => $jobId,
+                        'status' => $status ?: $job->status,
+                        'progress' => $job->progress,
+                        'message' => $job->message ?? 'Đang xử lý...',
+                    ]
+                ];
+                
+                if ($result) {
+                    $resultData = json_decode($result->decode('utf-8'), true);
+                    $responseData['data']['result'] = $resultData;
+                }
+                
+                return response()->json($responseData);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [
+                        'job_id' => $jobId,
+                        'status' => $job->status,
+                        'progress' => $job->progress,
+                        'message' => $job->message ?? 'Đang xử lý...',
+                    ]
+                ]);
+            }
             
         } catch (\Exception $e) {
             Log::error('Go Quick Get Job Status Error: ' . $e->getMessage());

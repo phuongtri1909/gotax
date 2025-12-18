@@ -70,6 +70,13 @@ return [
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
             'after_commit' => false,
+
+            'queues' => [
+                'go-soft:jobs',
+                'go-quick:jobs',
+                'go-invoice:jobs',
+                'go-bot:jobs',
+            ],
         ],
 
     ],

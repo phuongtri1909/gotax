@@ -18,6 +18,7 @@ use App\Http\Controllers\Client\PricingController;
 use App\Http\Controllers\Client\DocumentationController;
 use App\Http\Controllers\Client\PolicyController;
 use App\Http\Controllers\Client\FileUploadController;
+use App\Http\Controllers\JobStreamController;
 
 Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('robots.txt', [SitemapController::class, 'robots'])->name('robots');
@@ -194,12 +195,27 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('/login/submit', [GoSoftController::class, 'submitLogin'])->name('tools.go-soft.login.submit');
         Route::get('/tokhai/types', [GoSoftController::class, 'getTokhaiTypes'])->name('tools.go-soft.tokhai.types');
         Route::post('/crawl/tokhai', [GoSoftController::class, 'crawlTokhai'])->name('tools.go-soft.crawl.tokhai');
+        Route::post('/crawl/tokhai/queue', [GoSoftController::class, 'crawlTokhaiQueue'])->name('tools.go-soft.crawl.tokhai.queue');
         Route::post('/crawl/tokhai/info', [GoSoftController::class, 'crawlTokhaiInfo'])->name('tools.go-soft.crawl.tokhai.info');
         Route::post('/crawl/tokhai/download', [GoSoftController::class, 'downloadTokhaiFiles'])->name('tools.go-soft.crawl.tokhai.download');
         Route::post('/crawl/thongbao', [GoSoftController::class, 'crawlThongbao'])->name('tools.go-soft.crawl.thongbao');
+        Route::post('/crawl/thongbao/queue', [GoSoftController::class, 'crawlThongbaoQueue'])->name('tools.go-soft.crawl.thongbao.queue');
         Route::post('/crawl/giaynoptien', [GoSoftController::class, 'crawlGiayNopTien'])->name('tools.go-soft.crawl.giaynoptien');
+        Route::post('/crawl/giaynoptien/queue', [GoSoftController::class, 'crawlGiayNopTienQueue'])->name('tools.go-soft.crawl.giaynoptien.queue');
         Route::post('/crawl/batch', [GoSoftController::class, 'crawlBatch'])->name('tools.go-soft.crawl.batch');
     });
+    
+    // Job Queue System Routes (for all tools)
+    // Download endpoint không cần auth (public download link)
+    Route::prefix('api/job')->group(function () {
+        Route::get('/{jobId}/stream', [JobStreamController::class, 'stream'])->name('job.stream');
+        Route::get('/{jobId}/status', [JobStreamController::class, 'status'])->name('job.status');
+        Route::get('/{jobId}/result', [JobStreamController::class, 'result'])->name('job.result');
+        Route::post('/{jobId}/cancel', [JobStreamController::class, 'cancel'])->name('job.cancel');
+    });
+    
+    // Download endpoint - không cần auth (public download link)
+    Route::get('/api/job/{jobId}/download', [JobStreamController::class, 'download'])->name('job.download');
 });
 
 

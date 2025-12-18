@@ -937,7 +937,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    function showDownloadSection(downloadData, zipFilename = null, mode = 'single') {
+    function showDownloadSection(downloadData, zipFilename = null, mode = 'single', downloadUrl = null) {
         const mainRow = document.getElementById('goSoftMainRow');
         const downloadSection = document.getElementById('downloadSection');
         const formSection = document.querySelector('.overview-form-section');
@@ -958,6 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const loai = downloadData.loai || 'to-khai';
         const zipBase64 = downloadData.zip_base64;
+        const downloadUrlToUse = downloadUrl || downloadData.downloadUrl || downloadData.download_url;
         const total = downloadData.total || 0;
         const batchResults = downloadData.batch_results || {};
         
@@ -1006,6 +1007,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Single mode - hiển thị 1 loại
         const hasZipBase64 = zipBase64 && typeof zipBase64 === 'string' && zipBase64.trim().length > 0;
+        const hasDownloadUrl = downloadUrlToUse && typeof downloadUrlToUse === 'string' && downloadUrlToUse.trim().length > 0;
+        const canDownload = hasZipBase64 || hasDownloadUrl;  // Có thể download nếu có zipBase64 HOẶC downloadUrl
         
         document.querySelectorAll('.download-file-item').forEach(item => {
             const dataType = item.getAttribute('data-type');
@@ -1015,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.style.display = 'flex';
                 
                 if (button) {
-                    if (!hasZipBase64) {
+                    if (!canDownload) {
                         button.disabled = true;
                         button.style.opacity = '0.5';
                         button.style.cursor = 'not-allowed';
@@ -1024,8 +1027,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         button.style.opacity = '1';
                         button.style.cursor = 'pointer';
                             
-                            // Lưu zip_base64 vào button
+                        // Lưu zip_base64 và downloadUrl vào button
+                        if (hasZipBase64) {
                             button.dataset.zipBase64 = zipBase64;
+                        }
+                        if (hasDownloadUrl) {
+                            button.dataset.downloadUrl = downloadUrlToUse;
+                        }
                             button.dataset.loai = loai;
                             button.dataset.total = total;
                     }
@@ -1040,20 +1048,56 @@ document.addEventListener('DOMContentLoaded', function() {
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
-            newBtn.addEventListener('click', function() {
-                // Lấy zip_base64 từ dataset (batch mode) hoặc từ downloadData (single mode)
+            newBtn.addEventListener('click', async function() {
+                // Lấy zip_base64 hoặc downloadUrl từ dataset
                 let zipBase64ToUse = this.dataset.zipBase64;
+                let downloadUrlToUse = this.dataset.downloadUrl;
                 let loaiToUse = this.dataset.loai;
                 let totalToUse = parseInt(this.dataset.total) || 0;
                 let crawlType = this.dataset.crawlType;
                 
                 // Nếu không có trong dataset (single mode), dùng từ downloadData
-                if (!zipBase64ToUse && mode === 'single') {
-                    zipBase64ToUse = zipBase64;
-                    loaiToUse = loai;
-                    totalToUse = total;
+                if (mode === 'single') {
+                    if (!zipBase64ToUse) zipBase64ToUse = zipBase64;
+                    if (!downloadUrlToUse) downloadUrlToUse = downloadUrl;
+                    if (!loaiToUse) loaiToUse = loai;
+                    if (!totalToUse) totalToUse = total;
                 }
                 
+                // Nếu có downloadUrl, download trực tiếp từ URL (không cần zip_base64)
+                if (downloadUrlToUse && typeof downloadUrlToUse === 'string' && downloadUrlToUse.trim().length > 0) {
+                    try {
+                        // Disable button và show loading
+                        this.disabled = true;
+                        const originalText = this.querySelector('span').textContent;
+                        this.querySelector('span').textContent = 'Đang tải...';
+                        
+                        // Tạo link download và trigger download
+                        const fullDownloadUrl = downloadUrlToUse.startsWith('http') 
+                            ? downloadUrlToUse 
+                            : `${window.location.origin}${downloadUrlToUse}`;
+                        
+                        const link = document.createElement('a');
+                        link.href = fullDownloadUrl;
+                        link.download = zipFilename || `download_${Date.now()}.zip`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Restore button
+                        this.disabled = false;
+                        this.querySelector('span').textContent = originalText;
+                        return;
+                    } catch (err) {
+                        console.error('Error downloading from URL:', err);
+                        showGoSoftFailed('Lỗi khi tải file: ' + err.message);
+                        this.disabled = false;
+                        this.querySelector('span').textContent = originalText;
+                        return;
+                }
+                }
+                
+                // Fallback: dùng zip_base64 nếu không có downloadUrl
                 if (!zipBase64ToUse || typeof zipBase64ToUse !== 'string' || zipBase64ToUse.trim().length === 0) {
                     showGoSoftFailed('Không có dữ liệu để tải xuống');
                     return;
@@ -1278,11 +1322,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 let routeUrl;
             
             if (loai === 'to-khai') {
-                routeUrl = '{{ route("tools.go-soft.crawl.tokhai") }}';
+                // Dùng queue system mới
+                routeUrl = '{{ route("tools.go-soft.crawl.tokhai.queue") }}'; 
                 if (tokhaiType) {
                     requestBody.tokhai_type = String(tokhaiType);
                 }
-                    await performLookupWithSSE(routeUrl, requestBody, loai);
+                await performLookupWithQueue(routeUrl, requestBody, loai);
             } else if (loai === 'thong-bao') {
                 routeUrl = '{{ route("tools.go-soft.crawl.thongbao") }}';
                     await performLookupWithSSE(routeUrl, requestBody, loai);
@@ -1619,7 +1664,301 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // SSE streaming lookup - hiển thị progress realtime
+    // Queue-based lookup - tạo job và stream progress từ Redis
+    async function performLookupWithQueue(routeUrl, requestBody, loai) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Step 1: Tạo job
+                updateProgressMessage('Đang tạo job...');
+                
+                const createJobResponse = await fetch(routeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!createJobResponse.ok) {
+                    const errorData = await createJobResponse.json();
+                    throw new Error(errorData.message || 'Lỗi khi tạo job');
+                }
+                
+                const jobData = await createJobResponse.json();
+                const jobId = jobData.job_id;
+                
+                if (!jobId) {
+                    throw new Error('Không nhận được job_id');
+                }
+                
+                updateProgressMessage('Job đã được tạo, đang kết nối...');
+                
+                // Step 2: Connect SSE để stream progress
+                const sseUrl = `/api/job/${jobId}/stream`;
+                await performJobSSEStream(sseUrl, jobId, loai, resolve, reject);
+                
+            } catch (error) {
+                hideProgressModal();
+                showGoSoftFailed(error.message || 'Có lỗi xảy ra');
+                reject(error);
+            }
+        });
+    }
+    
+    // SSE stream từ job endpoint
+    async function performJobSSEStream(sseUrl, jobId, loai, resolve, reject) {
+        // Reset state
+        let results = [];
+        let totalCount = 0;
+        let zipBase64 = null;
+        let zipFilename = null;
+        let hasError = false;
+        const currentLoai = loai || 'to-khai';
+        
+        // Reset progress
+        let currentTotal = 0;
+        let currentDownloaded = 0;
+        let accumulatedTotal = 0;
+        let accumulatedDownloaded = 0;
+        
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
+        const progressCount = document.getElementById('progressCount');
+        if (progressCount) {
+            progressCount.textContent = '0/0 (0%)';
+        }
+        
+        // Connect SSE
+        const eventSource = new EventSource(sseUrl);
+        
+        eventSource.onopen = () => {
+            updateProgressMessage('Đã kết nối, đang xử lý...');
+        };
+        
+        eventSource.addEventListener('connected', (e) => {
+            updateProgressMessage('Đã kết nối với job stream');
+        });
+        
+        eventSource.addEventListener('progress', (e) => {
+            try {
+                const event = JSON.parse(e.data);
+                const percent = event.percent || 0;
+                const message = event.message || 'Đang xử lý...';
+                const data = event.data || {};
+                
+                updateProgressMessage(message);
+                
+                // Update progress bar
+                if (progressBar) {
+                    progressBar.style.width = `${percent}%`;
+                }
+                
+                // Update progress count nếu có data
+                if (data.accumulated_total !== undefined && data.accumulated_downloaded !== undefined) {
+                    accumulatedTotal = data.accumulated_total;
+                    accumulatedDownloaded = data.accumulated_downloaded;
+                    const progressPercent = accumulatedTotal > 0 
+                        ? Math.round((accumulatedDownloaded / accumulatedTotal) * 100) 
+                        : 0;
+                    
+                    if (progressCount) {
+                        progressCount.textContent = `${accumulatedDownloaded}/${accumulatedTotal} (${progressPercent}%)`;
+                    }
+                } else if (percent > 0) {
+                    if (progressCount) {
+                        progressCount.textContent = `${percent}%`;
+                    }
+                }
+            } catch (err) {
+                console.error('Error parsing progress event:', err);
+            }
+        });
+        
+        eventSource.addEventListener('complete', async (e) => {
+            try {
+                const event = JSON.parse(e.data);
+                const result = event.result || {};
+                const downloadUrl = event.download_url || null;
+                
+                totalCount = result.total || 0;
+                zipFilename = result.zip_filename || null;
+                const hasZip = result.has_zip || false;
+                
+                console.log('Complete event received:', {
+                    totalCount,
+                    zipFilename,
+                    hasZip,
+                    downloadUrl,
+                    result,
+                    fullEvent: event
+                });
+                
+                updateProgressMessage(`Hoàn thành! Tổng cộng ${totalCount} ${getLoaiLabel('tokhai')}. Đang tải file...`);
+                
+                if (progressBar) {
+                    progressBar.style.width = '100%';
+                }
+                
+                eventSource.close();
+                
+                // Download zip file from separate endpoint (not via SSE to avoid large payload)
+                // Normalize downloadUrl
+                const normalizedDownloadUrl = downloadUrl ? String(downloadUrl).trim() : null;
+                const hasValidDownloadUrl = normalizedDownloadUrl && normalizedDownloadUrl.length > 0;
+                
+                console.log('Checking download conditions:', { 
+                    hasZip, 
+                    downloadUrl, 
+                    normalizedDownloadUrl,
+                    hasValidDownloadUrl,
+                    hasZipType: typeof hasZip,
+                    downloadUrlType: typeof downloadUrl,
+                    condition: hasValidDownloadUrl,  // Chỉ cần downloadUrl, không cần hasZip
+                    conditionResult: !!hasValidDownloadUrl
+                });
+                
+                // Nếu có downloadUrl thì download (không cần hasZip)
+                if (hasValidDownloadUrl) {
+                    try {
+                        console.log('Starting download from:', normalizedDownloadUrl);
+                        updateProgressMessage('Đang tải file zip...');
+                        
+                        // Ensure downloadUrl is absolute if it's relative
+                        const fullDownloadUrl = normalizedDownloadUrl.startsWith('http') 
+                            ? normalizedDownloadUrl 
+                            : `${window.location.origin}${normalizedDownloadUrl}`;
+                        
+                        console.log('Full download URL:', fullDownloadUrl);
+                        const downloadResponse = await fetch(fullDownloadUrl);
+                        
+                        console.log('Download response status:', downloadResponse.status, downloadResponse.ok);
+                        
+                        if (!downloadResponse.ok) {
+                            throw new Error('Không thể tải file');
+                        }
+                        
+                        // Get blob and convert to base64 for showDownloadSection
+                        console.log('Getting blob from response...');
+                        const blob = await downloadResponse.blob();
+                        console.log('Blob received:', { size: blob.size, type: blob.type });
+                        
+                        const reader = new FileReader();
+                        reader.onload = function() {
+                            console.log('FileReader onload called');
+                            try {
+                                const base64 = reader.result.split(',')[1]; // Remove data URL prefix
+                                console.log('Base64 extracted, length:', base64 ? base64.length : 0);
+                                zipBase64 = base64;
+                                
+                                console.log('Calling showDownloadSection with:', { 
+                                    zipBase64Length: zipBase64 ? zipBase64.length : 0, 
+                                    zipFilename, 
+                                    totalCount, 
+                                    currentLoai 
+                                });
+                                
+                                hideProgressModal();
+                                
+                                // showDownloadSection expects: downloadData (object), zipFilename, mode
+                                const downloadData = {
+                                    zip_base64: zipBase64,
+                                    loai: currentLoai || 'to-khai',
+                                    total: totalCount,
+                                    results: results || []
+                                };
+                                
+                                console.log('Calling showDownloadSection with downloadData:', {
+                                    hasZipBase64: !!downloadData.zip_base64,
+                                    zipBase64Length: downloadData.zip_base64 ? downloadData.zip_base64.length : 0,
+                                    loai: downloadData.loai,
+                                    total: downloadData.total
+                                });
+                                
+                                showDownloadSection(downloadData, zipFilename, 'single');
+                                console.log('showDownloadSection called successfully');
+                                resolve({ total: totalCount, results, zipBase64, zipFilename });
+                            } catch (err) {
+                                console.error('Error in FileReader onload:', err);
+                                hideProgressModal();
+                                showGoSoftFailed('Lỗi khi xử lý file: ' + err.message);
+                                reject(err);
+                            }
+                        };
+                        reader.onerror = function(error) {
+                            console.error('FileReader onerror called:', error);
+                            hideProgressModal();
+                            showGoSoftFailed('Lỗi khi đọc file tải xuống');
+                            reject(new Error('FileReader error'));
+                        };
+                        reader.onprogress = function(e) {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                console.log('FileReader progress:', percent + '%');
+                            }
+                        };
+                        
+                        console.log('Starting FileReader.readAsDataURL...');
+                        reader.readAsDataURL(blob);
+                        console.log('FileReader.readAsDataURL called');
+                    } catch (downloadErr) {
+                        console.error('Error downloading zip:', downloadErr);
+                        hideProgressModal();
+                        showGoSoftFailed('Lỗi khi tải file: ' + downloadErr.message);
+                        reject(downloadErr);
+                    }
+                } else {
+                    console.error('Download conditions not met:', { 
+                        hasZip, 
+                        downloadUrl, 
+                        normalizedDownloadUrl,
+                        hasValidDownloadUrl,
+                        totalCount, 
+                        zipFilename,
+                        reason: !hasZip ? 'hasZip is false' : (!hasValidDownloadUrl ? 'downloadUrl is invalid' : 'unknown')
+                    });
+                    hideProgressModal();
+                    showGoSoftFailed('Không có dữ liệu để tải xuống');
+                    reject(new Error('No download available'));
+                }
+            } catch (err) {
+                console.error('Error parsing complete event:', err);
+                eventSource.close();
+                hideProgressModal();
+                reject(err);
+            }
+        });
+        
+        eventSource.addEventListener('error', (e) => {
+            try {
+                const event = JSON.parse(e.data);
+                hasError = true;
+                eventSource.close();
+                hideProgressModal();
+                showGoSoftFailed(event.message || event.error || 'Có lỗi xảy ra');
+                reject(new Error(event.message || event.error));
+            } catch (err) {
+                console.error('Error parsing error event:', err);
+                eventSource.close();
+                hideProgressModal();
+                showGoSoftFailed('Có lỗi xảy ra khi xử lý job');
+                reject(err);
+            }
+        });
+        
+        eventSource.onerror = (error) => {
+            console.error('SSE connection error:', error);
+            eventSource.close();
+            hideProgressModal();
+            showGoSoftFailed('Mất kết nối với server');
+            reject(new Error('SSE connection error'));
+        };
+    }
+    
+    // SSE streaming lookup - hiển thị progress realtime (legacy - giữ cho các loại khác)
     async function performLookupWithSSE(routeUrl, requestBody, loai) {
         return new Promise((resolve, reject) => {
             // Reset state mỗi lần gọi
