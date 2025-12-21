@@ -1125,16 +1125,21 @@
                             const contentType = response.headers.get('content-type');
                         const isJson = contentType && contentType.includes('application/json');
                         
+                        const responseClone = response.clone();
+                        
                         if (!response.ok) {
                             if (isJson) {
                                 try {
-                                const errorResult = await response.json();
-                                throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                                    const errorResult = await response.json();
+                                    throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
                                 } catch (parseError) {
-                                    // Nếu parse JSON fail, đọc text
-                                    const text = await response.text();
-                                    console.error('[Upload Error] Non-JSON error response:', text.substring(0, 200));
-                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                    try {
+                                        const text = await responseClone.text();
+                                        console.error('[Upload Error] Non-JSON error response:', text.substring(0, 200));
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    } catch (textError) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
                                 }
                             } else {
                                 const text = await response.text();
@@ -1162,9 +1167,13 @@
                             result = await response.json();
                         } catch (parseError) {
                             console.error('[Upload Error] Failed to parse JSON:', parseError);
-                            const text = await response.text();
-                            console.error('[Upload Error] Response text:', text.substring(0, 200));
-                            throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                            try {
+                                const text = await responseClone.text();
+                                console.error('[Upload Error] Response text:', text.substring(0, 200));
+                                throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                            } catch (textError) {
+                                throw new Error('Server trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+                            }
                         }
 
                         if (result.status === 'success') {
@@ -1652,6 +1661,9 @@
                             credentials: 'same-origin'
                         })
                         .then(async response => {
+                            // Clone response để có thể đọc nhiều lần nếu cần
+                            const responseClone = response.clone();
+                            
                             // Kiểm tra content-type trước khi parse JSON
                             const contentType = response.headers.get('content-type');
                             if (!contentType || !contentType.includes('application/json')) {
@@ -1661,9 +1673,19 @@
                             }
                             
                             if (!response.ok) {
-                                const errorText = await response.text();
-                                console.error('[Fetch Result Error] HTTP error:', response.status, errorText.substring(0, 200));
-                                throw new Error(`HTTP error! status: ${response.status}`);
+                                try {
+                                    const errorResult = await response.json();
+                                    throw new Error(errorResult.message || `HTTP error! status: ${response.status}`);
+                                } catch (parseError) {
+                                    // Nếu parse JSON fail, đọc text từ clone
+                                    try {
+                                        const errorText = await responseClone.text();
+                                        console.error('[Fetch Result Error] HTTP error:', response.status, errorText.substring(0, 200));
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    } catch (textError) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                }
                             }
                             
                             return response.json();

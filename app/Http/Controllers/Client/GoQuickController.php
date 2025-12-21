@@ -100,8 +100,19 @@ class GoQuickController extends Controller
             return 0;
         }
 
+        // Kiểm tra customer ở top level (cho batch jobs)
         if (isset($apiResponse['customer']) && is_array($apiResponse['customer'])) {
             return count($apiResponse['customer']);
+        }
+
+        // Kiểm tra customer trong data (cho /read-quick API)
+        if (isset($apiResponse['data']['customer']) && is_array($apiResponse['data']['customer'])) {
+            return count($apiResponse['data']['customer']);
+        }
+
+        // Kiểm tra data trực tiếp là customer array (fallback)
+        if (isset($apiResponse['data']) && is_array($apiResponse['data']) && isset($apiResponse['data']['customer']) && is_array($apiResponse['data']['customer'])) {
+            return count($apiResponse['data']['customer']);
         }
 
         return 0;
@@ -496,7 +507,9 @@ class GoQuickController extends Controller
     public function processCCCDImages(Request $request)
     {
         try {
-            $usageCheck = $this->checkUsage(1);
+            // Trừ cccd_limit trước (estimated = 1 cho 1 CCCD)
+            $estimatedCccd = 1;
+            $usageCheck = $this->checkUsageAndDeduct($estimatedCccd);
             if (!$usageCheck['success']) {
                 return response()->json([
                     'status' => 'error',
@@ -521,64 +534,72 @@ class GoQuickController extends Controller
             $frontImage = $request->file('mt');
             $backImage = $request->file('ms');
 
-            // Tạo thư mục temp để lưu file
-            $tempDir = storage_path('app/temp/go_quick_' . uniqid());
-            if (!file_exists($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
-
+            // Gọi API read-quick trực tiếp với 2 ảnh (không cần tạo ZIP)
             try {
-                // Đổi tên và lưu file
-                $frontPath = $tempDir . '/1mt.' . $frontImage->getClientOriginalExtension();
-                $backPath = $tempDir . '/1ms.' . $backImage->getClientOriginalExtension();
-
-                copy($frontImage->getRealPath(), $frontPath);
-                copy($backImage->getRealPath(), $backPath);
-
-                // Tạo file ZIP
-                $zipPath = $tempDir . '/images.zip';
-                $zip = new ZipArchive();
+                $apiUrl = $this->getApiUrl() . '/read-quick';
                 
-                if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
-                    throw new \Exception('Không thể tạo file ZIP');
-                }
-
-                $zip->addFile($frontPath, '1mt.' . $frontImage->getClientOriginalExtension());
-                $zip->addFile($backPath, '1ms.' . $backImage->getClientOriginalExtension());
-                $zip->close();
-
-                // Gửi file ZIP qua API process-cccd
-                try {
-                    $apiUrl = $this->getApiUrl() . '/process-cccd';
-                    
-                    $response = Http::timeout(600)
-                        ->attach('file', file_get_contents($zipPath), 'images.zip')
-                        ->post($apiUrl);
-
-                    // Xóa thư mục temp
-                    $this->deleteDirectory($tempDir);
+                $response = Http::timeout(600)
+                    ->attach('mt', file_get_contents($frontImage->getRealPath()), $frontImage->getClientOriginalName())
+                    ->attach('ms', file_get_contents($backImage->getRealPath()), $backImage->getClientOriginalName())
+                    ->post($apiUrl);
 
                     if ($response->successful()) {
                         $apiResult = $response->json();
-                        $customerCount = $this->getCustomerCount($apiResult);
                         
-                        if ($customerCount > 0) {
-                            $usageCheck = $this->checkUsage($customerCount);
-                            if (!$usageCheck['success']) {
-                                return response()->json([
-                                    'status' => 'error',
-                                    'message' => $usageCheck['message']
-                                ], 403);
+                        // Debug: Log response để kiểm tra
+                        $dataHasCustomer = isset($apiResult['data']) && isset($apiResult['data']['customer']);
+                        Log::info("Quick read API response", [
+                            'status' => $apiResult['status'] ?? 'unknown',
+                            'has_data' => isset($apiResult['data']),
+                            'has_customer' => isset($apiResult['customer']),
+                            'data_has_customer' => $dataHasCustomer,
+                            'customer_count_direct' => isset($apiResult['customer']) ? count($apiResult['customer']) : 0,
+                            'customer_count_nested' => $dataHasCustomer ? count($apiResult['data']['customer']) : 0,
+                        ]);
+                        
+                        $actualCccd = $this->getCustomerCount($apiResult);
+                        
+                        // Adjust cccd_limit dựa trên actual vs estimated
+                        $use = $usageCheck['use'];
+                        $diff = $actualCccd - $estimatedCccd;
+                        
+                        if ($diff > 0) {
+                            // Thực tế > ước tính → trừ thêm
+                            $use->cccd_limit -= $diff;
+                            Log::info("Quick read: Actual ({$actualCccd}) > Estimated ({$estimatedCccd}), trừ thêm {$diff}");
+                        } elseif ($diff < 0) {
+                            // Thực tế < ước tính → refund
+                            $refundAmount = abs($diff);
+                            $use->cccd_limit += $refundAmount;
+                            Log::info("Quick read: Actual ({$actualCccd}) < Estimated ({$estimatedCccd}), refund {$refundAmount}");
+                        }
+                        
+                        $use->total_used += 1;
+                        $use->total_cccd_extracted += $actualCccd;
+                        $use->save();
+                        
+                        // Nếu API trả về nested structure, flatten nó
+                        $responseData = $apiResult;
+                        if (isset($apiResult['data']) && is_array($apiResult['data'])) {
+                            // API trả về {"status": "success", "data": {"customer": [...]}}
+                            // Flatten thành {"status": "success", "customer": [...]}
+                            $responseData = $apiResult['data'];
+                            if (isset($apiResult['status'])) {
+                                $responseData['status'] = $apiResult['status'];
                             }
-                            
-                            $this->updateUsage($customerCount);
                         }
                         
                         return response()->json([
                             'status' => 'success',
-                            'data' => $apiResult
+                            'data' => $responseData
                         ]);
                     }
+                    
+                    // API lỗi → refund lại
+                    $use = $usageCheck['use'];
+                    $use->cccd_limit += $estimatedCccd;
+                    $use->save();
+                    Log::info("Quick read: API lỗi (status: {$response->status()}), refund {$estimatedCccd}");
 
                     // Log chi tiết lỗi từ API
                     $statusCode = $response->status();
@@ -618,23 +639,21 @@ class GoQuickController extends Controller
                         'error' => $errorJson ?: ['raw_body' => substr($errorBody, 0, 500)]
                     ], $statusCode >= 400 && $statusCode < 600 ? $statusCode : 500);
                 } catch (\Illuminate\Http\Client\ConnectionException $e) {
-                    // Xóa thư mục temp
-                    $this->deleteDirectory($tempDir);
+                    // Connection error → refund
+                    $use = $usageCheck['use'];
+                    $use->cccd_limit += $estimatedCccd;
+                    $use->save();
+                    Log::info("Quick read: Connection error, refund {$estimatedCccd}");
                     Log::error('API Connection Error: ' . $e->getMessage());
                     throw new \Exception('Không thể kết nối đến API server. Vui lòng kiểm tra API server có đang chạy không.');
                 } catch (\Exception $e) {
-                    // Xóa thư mục temp
-                    $this->deleteDirectory($tempDir);
+                    // Any error → refund
+                    $use = $usageCheck['use'];
+                    $use->cccd_limit += $estimatedCccd;
+                    $use->save();
+                    Log::info("Quick read: Exception, refund {$estimatedCccd}");
                     throw $e;
                 }
-
-            } catch (\Exception $e) {
-                // Xóa thư mục temp nếu có lỗi
-                if (file_exists($tempDir)) {
-                    $this->deleteDirectory($tempDir);
-                }
-                throw $e;
-            }
             
         } catch (ValidationException $e) {
             return response()->json([
