@@ -1304,14 +1304,15 @@
             bulkFileInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
-                    // Clear các batch cards cũ ngay khi bắt đầu upload mới
-                    const singleBatchCard = document.getElementById('singleBatchCard');
-                    if (singleBatchCard) {
-                        singleBatchCard.style.display = 'none';
-                    }
+                    // Chỉ clear batch container, giữ singleBatchCard để hiển thị ngay
                     const batchContainer = document.getElementById('batchProgressContainer');
                     if (batchContainer) {
                         batchContainer.innerHTML = '';
+                    }
+                    // Hiển thị singleBatchCard ngay từ đầu
+                    const singleBatchCard = document.getElementById('singleBatchCard');
+                    if (singleBatchCard) {
+                        singleBatchCard.style.display = 'block';
                     }
                     
                     handleBulkFileUpload(files[0]);
@@ -1321,14 +1322,15 @@
             bulkFolderInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
-                    // Clear các batch cards cũ ngay khi bắt đầu upload mới
-                    const singleBatchCard = document.getElementById('singleBatchCard');
-                    if (singleBatchCard) {
-                        singleBatchCard.style.display = 'none';
-                    }
+                    // Chỉ clear batch container, giữ singleBatchCard để hiển thị ngay
                     const batchContainer = document.getElementById('batchProgressContainer');
                     if (batchContainer) {
                         batchContainer.innerHTML = '';
+                    }
+                    // Hiển thị singleBatchCard ngay từ đầu
+                    const singleBatchCard = document.getElementById('singleBatchCard');
+                    if (singleBatchCard) {
+                        singleBatchCard.style.display = 'block';
                     }
                     
                     const imageFiles = files.filter(f => f.type.startsWith('image/'));
@@ -1362,14 +1364,15 @@
 
                 const files = Array.from(e.dataTransfer.files);
                 if (files.length > 0) {
-                    // Clear các batch cards cũ ngay khi bắt đầu upload mới
-                    const singleBatchCard = document.getElementById('singleBatchCard');
-                    if (singleBatchCard) {
-                        singleBatchCard.style.display = 'none';
-                    }
+                    // Chỉ clear batch container, giữ singleBatchCard để hiển thị ngay
                     const batchContainer = document.getElementById('batchProgressContainer');
                     if (batchContainer) {
                         batchContainer.innerHTML = '';
+                    }
+                    // Hiển thị singleBatchCard ngay từ đầu
+                    const singleBatchCard = document.getElementById('singleBatchCard');
+                    if (singleBatchCard) {
+                        singleBatchCard.style.display = 'block';
                     }
                     
                     handleBulkFileUpload(files[0]);
@@ -1482,6 +1485,17 @@
             async function startBulkUpload(file) {
                 bulkUploadBox.classList.add('d-none');
                 bulkProgressSection.classList.remove('d-none');
+
+                // Hiển thị singleBatchCard ngay từ đầu với 0%
+                const singleBatchCard = document.getElementById('singleBatchCard');
+                if (singleBatchCard) {
+                    singleBatchCard.style.display = 'block';
+                }
+                // Clear batch container (chỉ dùng khi có nhiều batches)
+                const batchContainer = document.getElementById('batchProgressContainer');
+                if (batchContainer) {
+                    batchContainer.innerHTML = '';
+                }
 
                 document.getElementById('bulkFileName').textContent = file.name;
                 document.getElementById('bulkFileSize').textContent = `${(file.size / 1024).toFixed(2)} KB`;
@@ -1849,8 +1863,14 @@
                 
                 stageBar.style.display = 'block';
                 
+                const isCompleted = percent >= 100 || (message && (
+                    message.toLowerCase().includes('hoàn thành') || 
+                    message.toLowerCase().includes('completed') ||
+                    message.toLowerCase().includes('xong')
+                ));
+                
                 let currentStage = 1;
-                if (message) {
+                if (!isCompleted && message) {
                     const msgLower = message.toLowerCase();
                     if (msgLower.includes('detect corners') || msgLower.includes('corners')) {
                         currentStage = 2;
@@ -1868,12 +1888,33 @@
                     const stageEl = document.getElementById(`batchStage${stage}_${batchIndex}`);
                     if (stageEl) {
                         stageEl.classList.remove('active', 'completed');
-                        if (stage < currentStage) {
+                        if (isCompleted) {
+                            // Khi complete, tất cả stage đều là completed
+                            stageEl.classList.add('completed');
+                        } else if (stage < currentStage) {
                             stageEl.classList.add('completed');
                         } else if (stage === currentStage) {
                             stageEl.classList.add('active');
                         }
                     }
+                }
+                
+                // Update connectors
+                const connectors = stageBar.querySelectorAll('.stage-connector');
+                if (isCompleted) {
+                    // Khi complete, tất cả connector đều active
+                    connectors.forEach(connector => {
+                        connector.classList.add('active');
+                    });
+                } else {
+                    // Update connectors based on current stage
+                    connectors.forEach((connector, index) => {
+                        if (index < currentStage - 1) {
+                            connector.classList.add('active');
+                        } else {
+                            connector.classList.remove('active');
+                        }
+                    });
                 }
             }
             
@@ -2479,14 +2520,15 @@
             }
 
             async function handleMultipleImagesUpload(imageFiles) {
-                // Clear các batch cards cũ ngay khi bắt đầu upload mới
-                const singleBatchCard = document.getElementById('singleBatchCard');
-                if (singleBatchCard) {
-                    singleBatchCard.style.display = 'none';
-                }
+                // Chỉ clear batch container, giữ singleBatchCard để hiển thị ngay
                 const batchContainer = document.getElementById('batchProgressContainer');
                 if (batchContainer) {
                     batchContainer.innerHTML = '';
+                }
+                // Hiển thị singleBatchCard ngay từ đầu với 0%
+                const singleBatchCard = document.getElementById('singleBatchCard');
+                if (singleBatchCard) {
+                    singleBatchCard.style.display = 'block';
                 }
                 
                 try {
@@ -2509,13 +2551,16 @@
                     currentAbortController = new AbortController();
 
                     // Chia batch ở frontend để tránh vấn đề max_file_uploads
-                    const BATCH_SIZE = 4; // Giảm xuống 2 để test, sau đó tăng lại 150
+                    const BATCH_SIZE = 150;
                     const batches = [];
                     
                     // Chia thành các batch
                     for (let i = 0; i < imageFiles.length; i += BATCH_SIZE) {
                         batches.push(imageFiles.slice(i, i + BATCH_SIZE));
                     }
+
+                    // Tính tổng estimated_cccd cho TẤT CẢ batch (mỗi CCCD = 2 ảnh)
+                    const totalEstimatedCccd = Math.ceil(imageFiles.length / 2);
 
                     // Step 1: Upload từng batch và collect job_ids
                     updateBulkProgress(0, `Đang upload ${batches.length} batch...`);
@@ -2536,6 +2581,7 @@
                         formData.append('_token', csrfToken);
                         formData.append('batch_index', i + 1);
                         formData.append('total_batches', batches.length);
+                        formData.append('total_estimated_cccd', totalEstimatedCccd); // Gửi tổng estimated cho backend check
                         
                         updateBulkProgress(0, `Đang upload batch ${i + 1}/${batches.length}...`);
                         
@@ -2552,32 +2598,51 @@
                         signal: currentAbortController.signal
                     });
 
-                            if (createJobResponse.status === 401 || createJobResponse.status === 403) {
-                        throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
-                    }
-
-                            // Clone response để có thể đọc nhiều lần nếu cần
                             const responseClone = createJobResponse.clone();
                             
-                            // Kiểm tra content-type trước khi parse JSON
                             const contentType = createJobResponse.headers.get('content-type');
                             const isJson = contentType && contentType.includes('application/json');
                             
                             if (!createJobResponse.ok) {
+                                let errorMessage = `HTTP error! status: ${createJobResponse.status}`;
+                                
                                 if (isJson) {
                                     try {
                                         const errorData = await createJobResponse.json();
-                                        throw new Error(errorData.message || `HTTP error! status: ${createJobResponse.status}`);
+                                        errorMessage = errorData.message || errorMessage;
                                     } catch (parseError) {
-                                        const text = await responseClone.text();
-                                        console.error(`[Batch ${i + 1}] Error response:`, text.substring(0, 500));
-                                        throw new Error(`HTTP error! status: ${createJobResponse.status}`);
+                                        try {
+                                            const text = await responseClone.text();
+                                            const jsonMatch = text.match(/\{[\s\S]*\}/);
+                                            if (jsonMatch) {
+                                                const errorData = JSON.parse(jsonMatch[0]);
+                                                errorMessage = errorData.message || errorMessage;
+                                            } else {
+                                                //console.error(`[Batch ${i + 1}] Error response:`, text.substring(0, 500));
+                                            }
+                                        } catch (e) {
+                                            const text = await responseClone.text();
+                                           // console.error(`[Batch ${i + 1}] Error response:`, text.substring(0, 500));
+                                        }
                                     }
                                 } else {
                                     const text = await responseClone.text();
                                     console.error(`[Batch ${i + 1}] Non-JSON error:`, text.substring(0, 500));
-                                    throw new Error(`HTTP error! status: ${createJobResponse.status}`);
+                                    try {
+                                        const jsonMatch = text.match(/\{[\s\S]*\}/);
+                                        if (jsonMatch) {
+                                            const errorData = JSON.parse(jsonMatch[0]);
+                                            errorMessage = errorData.message || errorMessage;
+                                        }
+                                    } catch (e) {
+                                    }
                                 }
+                                
+                                if (createJobResponse.status === 401 || (createJobResponse.status === 403 && errorMessage.includes('đăng nhập'))) {
+                                    throw new Error('Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập và thử lại.');
+                                }
+                                
+                                throw new Error(errorMessage);
                             }
                             
                             // Parse JSON response
@@ -2612,7 +2677,15 @@
                         } catch (batchError) {
                             console.error(`[Batch ${i + 1}] Error:`, batchError);
                             errors.push(`Batch ${i + 1}: ${batchError.message}`);
-                            // Tiếp tục với batch tiếp theo
+                            
+                            if (i === 0 && (
+                                batchError.message.includes('hết lượt') || 
+                                batchError.message.includes('không đủ') ||
+                                batchError.message.includes('cần') && batchError.message.includes('lượt')
+                            )) {
+                                console.error('[Batch 1] Failed with limit error, stopping batch uploads');
+                                break; 
+                            }
                         }
                     }
                     

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use App\Models\JobTool;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Client\GoQuickController;
 
 class JobStreamController extends Controller
 {
@@ -137,6 +138,16 @@ class JobStreamController extends Controller
                                     'status' => 'cancelled',
                                     'progress' => $lastProgress
                                 ]);
+                                
+                                // Refund usage khi connection aborted
+                                if ($job->tool === 'go-quick') {
+                                    try {
+                                        $goQuickController = new GoQuickController();
+                                        $goQuickController->refundUsageOnCancel($jobId);
+                                    } catch (\Exception $e) {
+                                        Log::error("Error refunding usage on connection aborted for job {$jobId}: " . $e->getMessage());
+                                    }
+                                }
                             }
                         } catch (\Exception $e) {
                             Log::error("SSE: Error cancelling job {$jobId}: " . $e->getMessage());
@@ -324,6 +335,32 @@ class JobStreamController extends Controller
                             $completeData['data'] = $actualResult;
                         }
                         
+                        // Update usage khi job complete (adjust chênh lệch)
+                        // LUÔN gọi updateUsageOnComplete dù actualCccd = 0 (để refund nếu không detect được)
+                        if ($job && $job->tool === 'go-quick') {
+                            try {
+                                // Lấy actual_cccd từ result
+                                $actualCccd = 0;
+                                if (isset($actualResult['customer']) && is_array($actualResult['customer'])) {
+                                    $actualCccd = count($actualResult['customer']);
+                                } elseif (isset($result['total_cccd'])) {
+                                    $actualCccd = (int) $result['total_cccd'];
+                                } elseif (isset($result['total_rows'])) {
+                                    $actualCccd = (int) $result['total_rows'];
+                                } elseif (isset($result['total_images'])) {
+                                    $actualCccd = (int) ($result['total_images'] / 2);
+                                }
+                                
+                                // LUÔN gọi updateUsageOnComplete (kể cả khi actualCccd = 0 để refund)
+                                $goQuickController = new GoQuickController();
+                                $goQuickController->updateUsageOnComplete($jobId, $actualCccd);
+                                
+                                Log::info("Job {$jobId}: Updated usage on complete, actual_cccd={$actualCccd}");
+                            } catch (\Exception $e) {
+                                Log::error("Error updating usage on complete for job {$jobId}: " . $e->getMessage());
+                            }
+                        }
+                        
                         echo "event: complete\n";
                         echo "data: " . json_encode($completeData) . "\n\n";
                         flush();
@@ -344,6 +381,16 @@ class JobStreamController extends Controller
                                 'status' => 'failed',
                                 'error' => $error,
                             ]);
+                            
+                            // Refund usage khi job failed
+                            if ($job->tool === 'go-quick') {
+                                try {
+                                    $goQuickController = new GoQuickController();
+                                    $goQuickController->refundUsageOnCancel($jobId);
+                                } catch (\Exception $e) {
+                                    Log::error("Error refunding usage on failed for job {$jobId}: " . $e->getMessage());
+                                }
+                            }
                         }
                         
                         echo "event: error\n";
@@ -657,6 +704,16 @@ class JobStreamController extends Controller
                     'status' => 'cancelled',
                     'progress' => $job->progress ?? 0
                 ]);
+                
+                // Refund usage khi job cancelled
+                if ($job->tool === 'go-quick') {
+                    try {
+                        $goQuickController = new GoQuickController();
+                        $goQuickController->refundUsageOnCancel($jobId);
+                    } catch (\Exception $e) {
+                        Log::error("Error refunding usage on cancel for job {$jobId}: " . $e->getMessage());
+                    }
+                }
                 
                 Log::info("Job {$jobId} cancelled by user");
                 

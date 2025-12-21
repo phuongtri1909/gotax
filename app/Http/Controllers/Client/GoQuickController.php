@@ -15,9 +15,11 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Illuminate\Validation\ValidationException;
 use App\Models\GoQuickUse;
+use App\Models\GoQuickUsageHistory;
 use App\Models\JobTool;
 use App\Jobs\ProcessGoQuickJob;
 use Illuminate\Support\Facades\Auth;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class GoQuickController extends Controller
 {
@@ -26,7 +28,10 @@ class GoQuickController extends Controller
         return config('services.go_quick.url', env('GO_QUICK_API_URL', 'http://127.0.0.1:5000/api/go-quick'));
     }
 
-    private function checkUsage($requiredCount = 1)
+    /**
+     * Check usage và TRỪ NGAY nếu đủ (reserve limit)
+     */
+    private function checkUsageAndDeduct($requiredCount)
     {
         $user = Auth::user();
         if (!$user) {
@@ -52,10 +57,23 @@ class GoQuickController extends Controller
             ];
         }
 
+        // TRỪ NGAY khi đủ
+        $use->cccd_limit -= $requiredCount;
+        $use->save();
+
         return [
             'success' => true,
-            'use' => $use
+            'use' => $use,
+            'deducted' => $requiredCount
         ];
+    }
+
+    /**
+     * Legacy method - giữ lại để backward compatibility
+     */
+    private function checkUsage($requiredCount = 1)
+    {
+        return $this->checkUsageAndDeduct($requiredCount);
     }
 
     private function updateUsage($customerCount)
@@ -87,6 +105,242 @@ class GoQuickController extends Controller
         }
 
         return 0;
+    }
+
+    /**
+     * Ước tính số CCCD từ images
+     * Mỗi CCCD = 2 ảnh (mt + ms)
+     */
+    private function estimateCccdFromImages($images)
+    {
+        if (!is_array($images)) {
+            $images = [$images];
+        }
+
+        $validImages = array_filter($images, function($image) {
+            return $image !== null && $image->isValid();
+        });
+
+        $imageCount = count($validImages);
+        // Mỗi CCCD = 2 ảnh
+        return (int) ceil($imageCount / 2);
+    }
+
+    /**
+     * Ước tính số CCCD từ ZIP file
+     * Mỗi CCCD = 2 file (mt + ms)
+     */
+    private function estimateCccdFromZip($zipPath)
+    {
+        if (!file_exists($zipPath)) {
+            return 0;
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) !== TRUE) {
+            return 0;
+        }
+
+        $fileCount = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $filename = $zip->getNameIndex($i);
+            // Bỏ qua folder và file ẩn
+            if ($filename && strpos($filename, '/') === false && strpos($filename, '__MACOSX') === false) {
+                $fileCount++;
+            }
+        }
+        $zip->close();
+
+        // Mỗi CCCD = 2 file
+        return (int) ceil($fileCount / 2);
+    }
+
+    /**
+     * Ước tính số CCCD từ PDF file
+     * Mỗi CCCD = 2 trang (mt + ms)
+     */
+    private function estimateCccdFromPdf($pdfPath)
+    {
+        if (!file_exists($pdfPath)) {
+            return 0;
+        }
+
+        try {
+            // Sử dụng PyMuPDF (fitz) qua command line hoặc thư viện PHP
+            // Tạm thời dùng cách đơn giản: đọc file và đếm số lần xuất hiện của "/Type /Page"
+            $content = file_get_contents($pdfPath);
+            $pageCount = preg_match_all('/\/Type[\s]*\/Page[^s]/', $content);
+            
+            if ($pageCount === 0) {
+                // Fallback: thử cách khác
+                $pageCount = preg_match_all('/\/Count[\s]+(\d+)/', $content, $matches);
+                if (!empty($matches[1])) {
+                    $pageCount = (int) max($matches[1]);
+                }
+            }
+
+            // Mỗi CCCD = 2 trang
+            return (int) ceil($pageCount / 2);
+        } catch (\Exception $e) {
+            Log::warning("Error estimating CCCD from PDF: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Ước tính số CCCD từ Excel file
+     * Mỗi dòng = 1 CCCD
+     */
+    private function estimateCccdFromExcel($excelPath)
+    {
+        if (!file_exists($excelPath)) {
+            return 0;
+        }
+
+        try {
+            $spreadsheet = IOFactory::load($excelPath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            $rowCount = 0;
+            $highestRow = $worksheet->getHighestRow();
+            
+            // Đếm số dòng có data (bỏ qua header và dòng trống)
+            for ($row = 2; $row <= $highestRow; $row++) {
+                $cellValue = $worksheet->getCell('A' . $row)->getValue();
+                if (!empty(trim($cellValue))) {
+                    $rowCount++;
+                }
+            }
+
+            return $rowCount;
+        } catch (\Exception $e) {
+            Log::warning("Error estimating CCCD from Excel: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Tạo usage history record
+     */
+    private function createUsageHistory($jobId, $uploadType, $estimatedCccd, $batchIndex = null, $totalBatches = null)
+    {
+        return $this->createUsageHistoryWithDeducted($jobId, $uploadType, $estimatedCccd, $estimatedCccd, $batchIndex, $totalBatches);
+    }
+
+    /**
+     * Tạo usage history record với cccd_deducted tùy chỉnh
+     */
+    private function createUsageHistoryWithDeducted($jobId, $uploadType, $estimatedCccd, $cccdDeducted, $batchIndex = null, $totalBatches = null)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return null;
+        }
+
+        $use = GoQuickUse::where('user_id', $user->id)->first();
+        if (!$use) {
+            return null;
+        }
+
+        return GoQuickUsageHistory::create([
+            'user_id' => $user->id,
+            'go_quick_use_id' => $use->id,
+            'job_id' => $jobId,
+            'upload_type' => $uploadType,
+            'batch_index' => $batchIndex,
+            'total_batches' => $totalBatches,
+            'estimated_cccd' => $estimatedCccd,
+            'actual_cccd' => null,
+            'cccd_deducted' => $cccdDeducted,
+            'status' => 'pending',
+        ]);
+    }
+
+    /**
+     * Update usage khi job complete (adjust chênh lệch)
+     */
+    public function updateUsageOnComplete($jobId, $actualCccd)
+    {
+        $history = GoQuickUsageHistory::where('job_id', $jobId)->first();
+        if (!$history) {
+            Log::warning("Usage history not found for job_id: {$jobId}");
+            return;
+        }
+
+        $use = GoQuickUse::where('user_id', $history->user_id)->first();
+        if (!$use) {
+            Log::warning("GoQuickUse not found for user_id: {$history->user_id}");
+            return;
+        }
+
+        $estimatedCccd = $history->estimated_cccd;
+        $diff = $actualCccd - $estimatedCccd;
+        
+        $cccdLimitBefore = $use->cccd_limit;
+
+        // Update history
+        $history->actual_cccd = $actualCccd;
+        $history->cccd_deducted = $actualCccd;
+        $history->status = 'completed';
+        $history->save();
+
+        // Adjust GoQuickUse
+        if ($diff > 0) {
+            // Thực tế > ước tính → trừ thêm
+            $use->cccd_limit -= $diff;
+            Log::info("Job {$jobId}: Actual ({$actualCccd}) > Estimated ({$estimatedCccd}), trừ thêm {$diff}. Limit: {$cccdLimitBefore} → {$use->cccd_limit}");
+        } elseif ($diff < 0) {
+            // Thực tế < ước tính → refund
+            $refundAmount = abs($diff);
+            $use->cccd_limit += $refundAmount;
+            Log::info("Job {$jobId}: Actual ({$actualCccd}) < Estimated ({$estimatedCccd}), refund {$refundAmount}. Limit: {$cccdLimitBefore} → {$use->cccd_limit}");
+        } else {
+            // actual = estimated, không cần adjust
+            Log::info("Job {$jobId}: Actual ({$actualCccd}) = Estimated ({$estimatedCccd}), không cần adjust. Limit: {$cccdLimitBefore}");
+        }
+
+        $use->total_used += 1;
+        $use->total_cccd_extracted += $actualCccd;
+        $use->save();
+        
+        Log::info("Job {$jobId}: Usage updated. total_used: {$use->total_used}, total_cccd_extracted: {$use->total_cccd_extracted}");
+    }
+
+    /**
+     * Refund usage khi job cancelled hoặc failed
+     */
+    public function refundUsageOnCancel($jobId)
+    {
+        $history = GoQuickUsageHistory::where('job_id', $jobId)->first();
+        if (!$history) {
+            Log::warning("Usage history not found for job_id: {$jobId}");
+            return;
+        }
+
+        if ($history->cccd_deducted <= 0) {
+            // Chưa trừ gì, chỉ update status
+            $history->status = $history->status === 'processing' ? 'cancelled' : $history->status;
+            $history->save();
+            return;
+        }
+
+        $use = GoQuickUse::where('user_id', $history->user_id)->first();
+        if (!$use) {
+            Log::warning("GoQuickUse not found for user_id: {$history->user_id}");
+            return;
+        }
+
+        // Refund toàn bộ
+        $refundAmount = $history->cccd_deducted;
+        $use->cccd_limit += $refundAmount;
+        $use->save();
+
+        // Update history
+        $history->cccd_deducted = 0;
+        $history->status = $history->status === 'processing' ? 'cancelled' : $history->status;
+        $history->save();
+
+        Log::info("Job {$jobId}: Refunded {$refundAmount} CCCD limit");
     }
 
     public function healthCheck()
@@ -1078,14 +1332,6 @@ class GoQuickController extends Controller
         }
         
         try {
-            $usageCheck = $this->checkUsage(1);
-            if (!$usageCheck['success']) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $usageCheck['message']
-                ], 403);
-            }
-
             if (!$request->hasFile('images')) {
                 return response()->json([
                     'status' => 'error',
@@ -1127,8 +1373,10 @@ class GoQuickController extends Controller
                 ], 422);
             }
 
+            // Chia thành batches
             $batchIndexFromRequest = $request->input('batch_index', 1);
             $totalBatchesFromRequest = $request->input('total_batches', 1);
+            $totalEstimatedCccdFromRequest = $request->input('total_estimated_cccd', null); // Frontend gửi tổng estimated
             
             if ($totalBatchesFromRequest > 1) {
                 $batches = [$images];
@@ -1163,7 +1411,96 @@ class GoQuickController extends Controller
                 
                 $totalBatches = count($batches);
             }
+
+            // Estimate total_cccd cho batch hiện tại
+            $batchEstimates = [];
+            $currentBatchEstimatedCccd = 0;
+            foreach ($batches as $batchIndex => $batch) {
+                $estimatedCccd = $this->estimateCccdFromImages($batch);
+                $batchEstimates[$batchIndex] = $estimatedCccd;
+                $currentBatchEstimatedCccd += $estimatedCccd;
+            }
+
+            // Nếu có nhiều batch, cần check tổng estimated của TẤT CẢ batch
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bạn cần đăng nhập để sử dụng tính năng này.'
+                ], 403);
+            }
             
+            if ($totalBatchesFromRequest > 1) {
+                // Frontend đã gửi total_estimated_cccd, dùng nó để check
+                if ($totalEstimatedCccdFromRequest !== null) {
+                    $totalEstimatedCccd = (int) $totalEstimatedCccdFromRequest;
+                } else {
+                    // Fallback: ước tính dựa trên batch hiện tại và total_batches
+                    // Giả sử mỗi batch có số CCCD tương tự
+                    $avgCccdPerBatch = $currentBatchEstimatedCccd;
+                    $totalEstimatedCccd = $avgCccdPerBatch * $totalBatchesFromRequest;
+                }
+                
+                // Check limit cho TẤT CẢ batch (chỉ check ở batch đầu tiên)
+                if ($batchIndexFromRequest == 1) {
+                    $usageCheck = $this->checkUsageAndDeduct($totalEstimatedCccd);
+                    if (!$usageCheck['success']) {
+                        Log::info("processImagesStream: Batch 1 - Usage check failed for total batches", [
+                            'user_id' => $user->id,
+                            'total_batches' => $totalBatchesFromRequest,
+                            'total_estimated_cccd' => $totalEstimatedCccd,
+                            'message' => $usageCheck['message']
+                        ]);
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => $usageCheck['message']
+                        ], 403);
+                    }
+                    Log::info("processImagesStream: Batch 1 - Reserved limit for all batches", [
+                        'user_id' => $user->id,
+                        'total_batches' => $totalBatchesFromRequest,
+                        'total_estimated_cccd' => $totalEstimatedCccd,
+                        'deducted' => $usageCheck['deducted'] ?? $totalEstimatedCccd
+                    ]);
+                } else {
+                    // Batch 2 trở đi: verify rằng batch 1 đã được tạo và đã trừ limit
+                    // Tìm history của batch 1 cùng user và total_batches
+                    $batch1History = GoQuickUsageHistory::where('user_id', $user->id)
+                        ->where('total_batches', $totalBatchesFromRequest)
+                        ->where('batch_index', 1)
+                        ->where('status', '!=', 'cancelled')
+                        ->first();
+                    
+                    if (!$batch1History || $batch1History->cccd_deducted <= 0) {
+                        // Batch 1 chưa được tạo hoặc chưa trừ limit → return error
+                        Log::warning("processImagesStream: Batch {$batchIndexFromRequest} - Batch 1 not found or not deducted", [
+                            'user_id' => $user->id,
+                            'total_batches' => $totalBatchesFromRequest,
+                            'batch1_history' => $batch1History ? $batch1History->toArray() : null
+                        ]);
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Batch đầu tiên chưa được xử lý. Vui lòng thử lại từ đầu.'
+                        ], 403);
+                    }
+                    
+                    Log::info("processImagesStream: Batch {$batchIndexFromRequest} - Verified batch 1 exists and limit deducted", [
+                        'user_id' => $user->id,
+                        'total_batches' => $totalBatchesFromRequest,
+                        'batch1_cccd_deducted' => $batch1History->cccd_deducted
+                    ]);
+                }
+            } else {
+                // Single batch: check như bình thường
+                $usageCheck = $this->checkUsageAndDeduct($currentBatchEstimatedCccd);
+                if (!$usageCheck['success']) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $usageCheck['message']
+                    ], 403);
+                }
+            }
+
             $jobIds = [];
             $errors = [];
             
@@ -1208,11 +1545,63 @@ class GoQuickController extends Controller
 
                     ProcessGoQuickJob::dispatch($job->id, $job->params);
                     
+                    // Tạo usage history với estimated_cccd
+                    $estimatedCccd = $batchEstimates[$batchIndex];
+                    $uploadType = $totalBatches > 1 ? 'images_batch' : 'images_single';
+                    $jobId = $job->id ?? $job->getKey();
+                    
+                    try {
+                        // Nếu có nhiều batch:
+                        // - Batch 1: cccd_deducted = total_estimated_cccd (đã trừ tổng ở batch 1)
+                        // - Batch 2 trở đi: cccd_deducted = 0 (chưa trừ, vì đã trừ ở batch 1)
+                        $cccdDeducted = 0;
+                        if ($totalBatches > 1) {
+                            if ($batchIndexFromRequest == 1) {
+                                // Batch 1: đã trừ tổng estimated của TẤT CẢ batch
+                                $cccdDeducted = $totalEstimatedCccd ?? $totalEstimatedCccdFromRequest ?? $estimatedCccd;
+                            } else {
+                                // Batch 2 trở đi: chưa trừ (đã trừ ở batch 1)
+                                $cccdDeducted = 0;
+                            }
+                        } else {
+                            // Single batch: trừ như bình thường
+                            $cccdDeducted = $estimatedCccd;
+                        }
+                        
+                        $history = $this->createUsageHistoryWithDeducted(
+                            $jobId,
+                            $uploadType,
+                            $estimatedCccd,
+                            $cccdDeducted,
+                            $totalBatches > 1 ? $batchIndexFromRequest : null,
+                            $totalBatches > 1 ? $totalBatches : null
+                        );
+                        if (!$history) {
+                            Log::warning("Failed to create usage history for batch " . ($batchIndex + 1) . ", job_id: {$jobId}");
+                        }
+                    } catch (\Exception $historyError) {
+                        Log::error("Error creating usage history for batch " . ($batchIndex + 1) . ": " . $historyError->getMessage());
+                        // Không throw exception, chỉ log vì job đã được tạo
+                    }
+                    
                     $jobIds[] = $job->id;
-                    Log::info("Created job for batch " . ($batchIndex + 1) . "/{$totalBatches}: {$job->id}");
+                    Log::info("Created job for batch " . ($batchIndex + 1) . "/{$totalBatches}: {$job->id}, estimated_cccd: {$estimatedCccd}");
                 } catch (\Exception $e) {
-                    $errors[] = "Lỗi khi tạo batch " . ($batchIndex + 1) . ": " . $e->getMessage();
-                    Log::error("Error creating batch " . ($batchIndex + 1) . ": " . $e->getMessage());
+                    $errorMsg = $e->getMessage();
+                    // Log chi tiết để debug
+                    Log::error("Error creating batch " . ($batchIndex + 1) . ": " . $errorMsg, [
+                        'user_id' => auth()->id(),
+                        'batch_index' => $batchIndex + 1,
+                        'total_batches' => $totalBatches,
+                        'exception_class' => get_class($e),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Nếu lỗi là về authentication, có thể là session timeout
+                    if (strpos($errorMsg, 'đăng nhập') !== false || strpos($errorMsg, 'authentication') !== false) {
+                        $errorMsg = "Lỗi xác thực khi tạo batch " . ($batchIndex + 1) . ". Vui lòng thử lại.";
+                    }
+                    $errors[] = "Batch " . ($batchIndex + 1) . ": " . $errorMsg;
                 }
             }
             
@@ -1319,14 +1708,6 @@ class GoQuickController extends Controller
     public function processCCCDAsync(Request $request)
     {
         try {
-            $usageCheck = $this->checkUsage(1);
-            if (!$usageCheck['success']) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $usageCheck['message']
-                ], 403);
-            }
-
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 
@@ -1342,6 +1723,20 @@ class GoQuickController extends Controller
                 $tempPath = storage_path('app/temp/go_quick_' . uniqid() . '_' . $file->getClientOriginalName());
                 $file->move(storage_path('app/temp'), basename($tempPath));
                 
+                // Estimate total_cccd
+                $estimatedCccd = $this->estimateCccdFromZip($tempPath);
+                
+                // Check và TRỪ trước khi tạo job
+                $usageCheck = $this->checkUsageAndDeduct($estimatedCccd);
+                if (!$usageCheck['success']) {
+                    // Xóa temp file nếu không đủ limit
+                    @unlink($tempPath);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $usageCheck['message']
+                    ], 403);
+                }
+                
                 $job = \App\Models\JobTool::create([
                     'user_id' => auth()->id() ?? 0,
                     'tool' => 'go-quick',
@@ -1355,7 +1750,11 @@ class GoQuickController extends Controller
                 ]);
 
                 $jobId = $job->id ?? $job->getKey();
-                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}");
+                
+                // Tạo usage history
+                $this->createUsageHistory($jobId, 'zip', $estimatedCccd);
+                
+                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}, estimated_cccd: {$estimatedCccd}");
                 \App\Jobs\ProcessGoQuickJob::dispatch($jobId, $job->params);
                 Log::info("ProcessGoQuickJob dispatched successfully for job_id: {$jobId}");
 
@@ -1395,14 +1794,6 @@ class GoQuickController extends Controller
     public function processPDFAsync(Request $request)
     {
         try {
-            $usageCheck = $this->checkUsage(1);
-            if (!$usageCheck['success']) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $usageCheck['message']
-                ], 403);
-            }
-
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 
@@ -1418,6 +1809,20 @@ class GoQuickController extends Controller
                 $tempPath = storage_path('app/temp/go_quick_' . uniqid() . '_' . $file->getClientOriginalName());
                 $file->move(storage_path('app/temp'), basename($tempPath));
                 
+                // Estimate total_cccd
+                $estimatedCccd = $this->estimateCccdFromPdf($tempPath);
+                
+                // Check và TRỪ trước khi tạo job
+                $usageCheck = $this->checkUsageAndDeduct($estimatedCccd);
+                if (!$usageCheck['success']) {
+                    // Xóa temp file nếu không đủ limit
+                    @unlink($tempPath);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $usageCheck['message']
+                    ], 403);
+                }
+                
                 $job = \App\Models\JobTool::create([
                     'user_id' => auth()->id() ?? 0,
                     'tool' => 'go-quick',
@@ -1431,7 +1836,11 @@ class GoQuickController extends Controller
                 ]);
 
                 $jobId = $job->id ?? $job->getKey();
-                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}");
+                
+                // Tạo usage history
+                $this->createUsageHistory($jobId, 'pdf', $estimatedCccd);
+                
+                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}, estimated_cccd: {$estimatedCccd}");
                 \App\Jobs\ProcessGoQuickJob::dispatch($jobId, $job->params);
                 Log::info("ProcessGoQuickJob dispatched successfully for job_id: {$jobId}");
 
@@ -1471,14 +1880,6 @@ class GoQuickController extends Controller
     public function processExcelAsync(Request $request)
     {
         try {
-            $usageCheck = $this->checkUsage(1);
-            if (!$usageCheck['success']) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $usageCheck['message']
-                ], 403);
-            }
-
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 
@@ -1494,6 +1895,20 @@ class GoQuickController extends Controller
                 $tempPath = storage_path('app/temp/go_quick_' . uniqid() . '_' . $file->getClientOriginalName());
                 $file->move(storage_path('app/temp'), basename($tempPath));
                 
+                // Estimate total_cccd
+                $estimatedCccd = $this->estimateCccdFromExcel($tempPath);
+                
+                // Check và TRỪ trước khi tạo job
+                $usageCheck = $this->checkUsageAndDeduct($estimatedCccd);
+                if (!$usageCheck['success']) {
+                    // Xóa temp file nếu không đủ limit
+                    @unlink($tempPath);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $usageCheck['message']
+                    ], 403);
+                }
+                
                 $job = \App\Models\JobTool::create([
                     'user_id' => auth()->id() ?? 0,
                     'tool' => 'go-quick',
@@ -1507,7 +1922,11 @@ class GoQuickController extends Controller
                 ]);
 
                 $jobId = $job->id ?? $job->getKey();
-                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}");
+                
+                // Tạo usage history
+                $this->createUsageHistory($jobId, 'excel', $estimatedCccd);
+                
+                Log::info("Dispatching ProcessGoQuickJob for job_id: {$jobId}, estimated_cccd: {$estimatedCccd}");
                 \App\Jobs\ProcessGoQuickJob::dispatch($jobId, $job->params);
                 Log::info("ProcessGoQuickJob dispatched successfully for job_id: {$jobId}");
 

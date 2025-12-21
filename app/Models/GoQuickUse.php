@@ -30,4 +30,9 @@ class GoQuickUse extends Model
     {
         return $this->belongsTo(GoQuickPackage::class, 'package_id')->withDefault();
     }
+
+    public function usageHistories()
+    {
+        return $this->hasMany(GoQuickUsageHistory::class, 'go_quick_use_id');
+    }
 }
