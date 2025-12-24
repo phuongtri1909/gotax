@@ -363,16 +363,9 @@ class JobStreamController extends Controller
                             $resultForSSE['download_id'] = $downloadId;
                         }
                         
-                        if ($downloadId) {
-                            $apiBaseUrl = env('API_BASE_URL', 'http://127.0.0.1:5000');
-                            $downloadUrl = "{$apiBaseUrl}/api/go-soft/download/{$downloadId}";
-                            if ($zipFilename) {
-                                $downloadUrl .= "?filename=" . urlencode($zipFilename);
-                            }
-                        } else {
-                            // Zip file is in Redis (zip_base64) - use Laravel download endpoint
-                            $downloadUrl = "/api/job/{$jobId}/download";
-                        }
+                        // ✅ LUÔN dùng Laravel download endpoint để tránh CORS và mixed content
+                        // Laravel sẽ proxy download từ API server
+                        $downloadUrl = "/api/job/{$jobId}/download";
                         
                         $completeData = [
                             'type' => 'complete',
@@ -673,7 +666,7 @@ class JobStreamController extends Controller
                 ->header('Content-Length', strlen($zipContent));
         }
         
-        // If no zip_base64 but we have download_id, redirect to API server
+        // If no zip_base64 but we have download_id, proxy download from API server
         if (!empty($result['download_id'])) {
             $downloadId = $result['download_id'];
             $filename = $result['zip_filename'] ?? "job_{$jobId}.zip";
@@ -683,9 +676,32 @@ class JobStreamController extends Controller
                 $apiDownloadUrl .= "?filename=" . urlencode($filename);
             }
             
-            
-            // Redirect to API server download endpoint
-            return redirect($apiDownloadUrl);
+            // ✅ Proxy download từ API server để tránh CORS và mixed content issues
+            try {
+                $ch = curl_init($apiDownloadUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 5 minutes timeout
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+                
+                $zipContent = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+                curl_close($ch);
+                
+                if ($httpCode === 200 && $zipContent !== false) {
+                    return response($zipContent, 200)
+                        ->header('Content-Type', $contentType ?: 'application/zip')
+                        ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+                        ->header('Content-Length', strlen($zipContent));
+                } else {
+                    // Fallback: redirect nếu proxy fail
+                    return redirect($apiDownloadUrl);
+                }
+            } catch (\Exception $e) {
+                // Fallback: redirect nếu có lỗi
+                return redirect($apiDownloadUrl);
+            }
         }
         
         // No zip_base64 and no download_id
