@@ -564,7 +564,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.textContent = 'Đăng nhập';
                 
             } catch (error) {
-                console.error('Init login error:', error);
                 showGoSoftFailed(error.message || 'Có lỗi xảy ra');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Đăng nhập';
@@ -582,7 +581,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } catch (error) {
-            console.error('Init login error:', error);
             showGoSoftFailed(error.message || 'Lỗi kết nối');
             const form = document.querySelector('.tax-login-form');
             if (form) {
@@ -962,6 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const total = downloadData.total || 0;
         const batchResults = downloadData.batch_results || {};
         
+        
         // Xử lý batch mode
         if (mode === 'batch' && batchResults) {
             
@@ -980,11 +979,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     const typeResult = batchResults[crawlType];
                     const typeZipBase64 = typeResult.zip_base64;
                     const hasZip = typeZipBase64 && typeof typeZipBase64 === 'string' && typeZipBase64.trim().length > 0;
+                    const typeTotal = typeResult.total || 0;
                     
                     
                     item.style.display = 'flex';
                     
                     if (button) {
+                        // Cập nhật text button với số tờ khai thực tế
+                        const buttonSpan = button.querySelector('span');
+                        if (buttonSpan && typeTotal > 0) {
+                            // Lấy label tương ứng với dataType
+                            let label = 'Tờ khai';
+                            if (dataType === 'giay-nop-tien') label = 'Giấy nộp tiền';
+                            else if (dataType === 'thong-bao') label = 'Thông báo';
+                            
+                            const buttonText = `${typeTotal} ${label}`;
+                            buttonSpan.textContent = buttonText;
+                            
+                        }
+                        
                         if (!hasZip) {
                             button.disabled = true;
                             button.style.opacity = '0.5';
@@ -997,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Lưu zip_base64 vào button để dùng khi click
                             button.dataset.zipBase64 = typeZipBase64;
                             button.dataset.crawlType = crawlType;
-                            button.dataset.total = typeResult.total || 0;
+                            button.dataset.total = typeTotal;
                         }
                     }
                 } else {
@@ -1018,6 +1031,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.style.display = 'flex';
                 
                 if (button) {
+                    // Cập nhật text button với số tờ khai thực tế
+                    const buttonSpan = button.querySelector('span');
+                    if (buttonSpan && total > 0) {
+                        // Lấy label tương ứng với loai
+                        let label = 'Tờ khai';
+                        if (loai === 'giay-nop-tien') label = 'Giấy nộp tiền';
+                        else if (loai === 'thong-bao') label = 'Thông báo';
+                        
+                        const buttonText = `${total} ${label}`;
+                        buttonSpan.textContent = buttonText;
+                        
+                    }
+                    
                     if (!canDownload) {
                         button.disabled = true;
                         button.style.opacity = '0.5';
@@ -1089,7 +1115,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.querySelector('span').textContent = originalText;
                         return;
                     } catch (err) {
-                        console.error('Error downloading from URL:', err);
                         showGoSoftFailed('Lỗi khi tải file: ' + err.message);
                         this.disabled = false;
                         this.querySelector('span').textContent = originalText;
@@ -1209,13 +1234,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 let message = errorMessage;
                 if (!message || message === 'Session not found' || message === 'Not logged in') {
                     if (errorCode === 'SESSION_NOT_FOUND' || errorCode === 'MISSING_SESSION_ID') {
-                        message = 'Session không tồn tại hoặc đã hết hạn. Vui lòng đăng nhập lại.';
+                        message = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
                     } else if (errorCode === 'SESSION_EXPIRED') {
                         message = 'Phiên giao dịch hết hạn. Vui lòng đăng nhập lại.';
                     } else if (errorCode === 'NOT_LOGGED_IN') {
                         message = 'Chưa đăng nhập. Vui lòng đăng nhập lại.';
                     } else {
-                        message = 'Session không hợp lệ. Vui lòng đăng nhập lại.';
+                        message = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
                     }
                 }
                 
@@ -1682,7 +1707,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 if (!createJobResponse.ok) {
-                    const errorData = await createJobResponse.json();
+                    let errorData;
+                    try {
+                        errorData = await createJobResponse.json();
+                    } catch (e) {
+                        errorData = { message: `HTTP ${createJobResponse.status}: ${createJobResponse.statusText}` };
+                    }
+                    
+                    // ✅ Check session error trước khi throw
+                    if (checkSessionError(errorData)) {
+                        reject(new Error(errorData.message || 'Session không hợp lệ'));
+                        return;
+                    }
+                    
                     throw new Error(errorData.message || 'Lỗi khi tạo job');
                 }
                 
@@ -1732,49 +1769,119 @@ document.addEventListener('DOMContentLoaded', function() {
             progressCount.textContent = '0/0 (0%)';
         }
         
+        // ✅ Lưu jobId vào window để có thể cancel khi disconnect
+        window.currentGoSoftJobId = jobId;
+        
+        // ✅ Hàm cancel job
+        const cancelJob = async () => {
+            if (!jobId) return;
+            try {
+                const cancelResponse = await fetch(`/api/job/${jobId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                if (cancelResponse.ok) {
+                    console.log(`[Go-Soft] Job ${jobId} đã được cancel`);
+                }
+            } catch (err) {
+                console.error(`[Go-Soft] Lỗi khi cancel job ${jobId}:`, err);
+            }
+        };
+        
+        // ✅ Cancel job khi đóng trang hoặc reload
+        const handleBeforeUnload = async () => {
+            await cancelJob();
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        // ✅ Cleanup khi hoàn thành
+        const cleanup = () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            delete window.currentGoSoftJobId;
+        };
+        
         // Connect SSE
         const eventSource = new EventSource(sseUrl);
         
         eventSource.onopen = () => {
-            updateProgressMessage('Đã kết nối, đang xử lý...');
+            updateProgressMessage('Đang xử lý...');
         };
         
         eventSource.addEventListener('connected', (e) => {
-            updateProgressMessage('Đã kết nối với job stream');
+            updateProgressMessage('Đang xử lý...');
         });
         
         eventSource.addEventListener('progress', (e) => {
             try {
                 const event = JSON.parse(e.data);
-                const percent = event.percent || 0;
-                const message = event.message || 'Đang xử lý...';
                 const data = event.data || {};
                 
-                updateProgressMessage(message);
-                
-                // Update progress bar
-                if (progressBar) {
-                    progressBar.style.width = `${percent}%`;
+                // ✅ Check session error nếu có error_code trong progress event
+                if (event.error_code || data.error_code) {
+                    const errorData = {
+                        error_code: event.error_code || data.error_code,
+                        error: event.error || data.error || event.message || 'Session không hợp lệ',
+                        message: event.message || data.error || 'Session không hợp lệ'
+                    };
+                    if (checkSessionError(errorData)) {
+                        eventSource.close();
+                        hideProgressModal();
+                        reject(new Error(errorData.message || 'Session không hợp lệ'));
+                        return;
+                    }
                 }
                 
-                // Update progress count nếu có data
+                // Sử dụng accumulated_percent từ backend để đảm bảo không thụt lùi
+                const accumulatedPercent = data.accumulated_percent !== undefined ? data.accumulated_percent : (event.percent || 0);
+                
+                // Update progress bar với accumulated_percent
+                if (progressBar) {
+                    progressBar.style.width = `${Math.min(accumulatedPercent, 100)}%`;
+                }
+                
+                // Tạo message đơn giản và hiển thị progress count
+                let displayMessage = 'Đang xử lý...';
+                let countText = '0/0 (0%)';
+                
+                // Nếu có thông tin download (đang tải file)
                 if (data.accumulated_total !== undefined && data.accumulated_downloaded !== undefined) {
                     accumulatedTotal = data.accumulated_total;
                     accumulatedDownloaded = data.accumulated_downloaded;
-                    const progressPercent = accumulatedTotal > 0 
-                        ? Math.round((accumulatedDownloaded / accumulatedTotal) * 100) 
-                        : 0;
                     
-                    if (progressCount) {
-                        progressCount.textContent = `${accumulatedDownloaded}/${accumulatedTotal} (${progressPercent}%)`;
+                    // Message đơn giản: "Đã tải X/Y"
+                    displayMessage = `Đã tải ${accumulatedDownloaded}/${accumulatedTotal} file`;
+                    
+                    // Thêm thông tin tờ thuyết minh nếu có
+                    const thuyetMinhDownloaded = data.thuyet_minh_downloaded || 0;
+                    const thuyetMinhTotal = data.thuyet_minh_total || 0;
+                    
+                    if (thuyetMinhTotal > 0) {
+                        displayMessage += ` - ${thuyetMinhDownloaded}/${thuyetMinhTotal} tm`;
                     }
-                } else if (percent > 0) {
-                    if (progressCount) {
-                        progressCount.textContent = `${percent}%`;
+                    
+                    // Progress count: X/Y (percent%) hoặc X/Y - A/B tm (percent%)
+                    countText = `${accumulatedDownloaded}/${accumulatedTotal}`;
+                    if (thuyetMinhTotal > 0) {
+                        countText += ` - ${thuyetMinhDownloaded}/${thuyetMinhTotal} tm`;
                     }
+                    countText += ` (${accumulatedPercent}%)`;
+                } else {
+                    // Chưa bắt đầu tải, chỉ hiển thị "Đang xử lý..."
+                    displayMessage = 'Đang xử lý...';
+                    countText = `0/0 (${accumulatedPercent}%)`;
+                }
+                
+                updateProgressMessage(displayMessage);
+                
+                if (progressCount) {
+                    progressCount.textContent = countText;
                 }
             } catch (err) {
-                console.error('Error parsing progress event:', err);
+                // Silent error
             }
         });
         
@@ -1784,47 +1891,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = event.result || {};
                 const downloadUrl = event.download_url || null;
                 
+                // ✅ Số file đã tải = tờ khai + tờ thuyết minh (để hiển thị trên button)
                 totalCount = result.total || 0;
                 zipFilename = result.zip_filename || null;
                 const hasZip = result.has_zip || false;
                 
-                console.log('Complete event received:', {
-                    totalCount,
-                    zipFilename,
-                    hasZip,
-                    downloadUrl,
-                    result,
-                    fullEvent: event
-                });
+                // ✅ Lấy message từ backend nếu có, nếu không thì tạo message mặc định
+                const completionMessage = result.message || `Hoàn thành! Đã tải ${totalCount} file. Đang tải file...`;
                 
-                updateProgressMessage(`Hoàn thành! Tổng cộng ${totalCount} ${getLoaiLabel('tokhai')}. Đang tải file...`);
+                updateProgressMessage(completionMessage);
                 
                 if (progressBar) {
                     progressBar.style.width = '100%';
                 }
                 
                 eventSource.close();
+                cleanup(); // ✅ Cleanup khi complete
                 
                 // Download zip file from separate endpoint (not via SSE to avoid large payload)
                 // Normalize downloadUrl
                 const normalizedDownloadUrl = downloadUrl ? String(downloadUrl).trim() : null;
                 const hasValidDownloadUrl = normalizedDownloadUrl && normalizedDownloadUrl.length > 0;
                 
-                console.log('Checking download conditions:', { 
-                    hasZip, 
-                    downloadUrl, 
-                    normalizedDownloadUrl,
-                    hasValidDownloadUrl,
-                    hasZipType: typeof hasZip,
-                    downloadUrlType: typeof downloadUrl,
-                    condition: hasValidDownloadUrl,  // Chỉ cần downloadUrl, không cần hasZip
-                    conditionResult: !!hasValidDownloadUrl
-                });
-                
                 // Nếu có downloadUrl thì download (không cần hasZip)
                 if (hasValidDownloadUrl) {
                     try {
-                        console.log('Starting download from:', normalizedDownloadUrl);
                         updateProgressMessage('Đang tải file zip...');
                         
                         // Ensure downloadUrl is absolute if it's relative
@@ -1832,34 +1923,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             ? normalizedDownloadUrl 
                             : `${window.location.origin}${normalizedDownloadUrl}`;
                         
-                        console.log('Full download URL:', fullDownloadUrl);
                         const downloadResponse = await fetch(fullDownloadUrl);
-                        
-                        console.log('Download response status:', downloadResponse.status, downloadResponse.ok);
                         
                         if (!downloadResponse.ok) {
                             throw new Error('Không thể tải file');
                         }
                         
                         // Get blob and convert to base64 for showDownloadSection
-                        console.log('Getting blob from response...');
                         const blob = await downloadResponse.blob();
-                        console.log('Blob received:', { size: blob.size, type: blob.type });
                         
                         const reader = new FileReader();
                         reader.onload = function() {
-                            console.log('FileReader onload called');
                             try {
                                 const base64 = reader.result.split(',')[1]; // Remove data URL prefix
-                                console.log('Base64 extracted, length:', base64 ? base64.length : 0);
                                 zipBase64 = base64;
-                                
-                                console.log('Calling showDownloadSection with:', { 
-                                    zipBase64Length: zipBase64 ? zipBase64.length : 0, 
-                                    zipFilename, 
-                                    totalCount, 
-                                    currentLoai 
-                                });
                                 
                                 hideProgressModal();
                                 
@@ -1871,61 +1948,31 @@ document.addEventListener('DOMContentLoaded', function() {
                                     results: results || []
                                 };
                                 
-                                console.log('Calling showDownloadSection with downloadData:', {
-                                    hasZipBase64: !!downloadData.zip_base64,
-                                    zipBase64Length: downloadData.zip_base64 ? downloadData.zip_base64.length : 0,
-                                    loai: downloadData.loai,
-                                    total: downloadData.total
-                                });
-                                
                                 showDownloadSection(downloadData, zipFilename, 'single');
-                                console.log('showDownloadSection called successfully');
                                 resolve({ total: totalCount, results, zipBase64, zipFilename });
                             } catch (err) {
-                                console.error('Error in FileReader onload:', err);
                                 hideProgressModal();
                                 showGoSoftFailed('Lỗi khi xử lý file: ' + err.message);
                                 reject(err);
                             }
                         };
                         reader.onerror = function(error) {
-                            console.error('FileReader onerror called:', error);
                             hideProgressModal();
                             showGoSoftFailed('Lỗi khi đọc file tải xuống');
                             reject(new Error('FileReader error'));
                         };
-                        reader.onprogress = function(e) {
-                            if (e.lengthComputable) {
-                                const percent = Math.round((e.loaded / e.total) * 100);
-                                console.log('FileReader progress:', percent + '%');
-                            }
-                        };
-                        
-                        console.log('Starting FileReader.readAsDataURL...');
                         reader.readAsDataURL(blob);
-                        console.log('FileReader.readAsDataURL called');
                     } catch (downloadErr) {
-                        console.error('Error downloading zip:', downloadErr);
                         hideProgressModal();
                         showGoSoftFailed('Lỗi khi tải file: ' + downloadErr.message);
                         reject(downloadErr);
                     }
                 } else {
-                    console.error('Download conditions not met:', { 
-                        hasZip, 
-                        downloadUrl, 
-                        normalizedDownloadUrl,
-                        hasValidDownloadUrl,
-                        totalCount, 
-                        zipFilename,
-                        reason: !hasZip ? 'hasZip is false' : (!hasValidDownloadUrl ? 'downloadUrl is invalid' : 'unknown')
-                    });
                     hideProgressModal();
                     showGoSoftFailed('Không có dữ liệu để tải xuống');
                     reject(new Error('No download available'));
                 }
             } catch (err) {
-                console.error('Error parsing complete event:', err);
                 eventSource.close();
                 hideProgressModal();
                 reject(err);
@@ -1937,21 +1984,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 const event = JSON.parse(e.data);
                 hasError = true;
                 eventSource.close();
+                cleanup(); // ✅ Cleanup khi error
                 hideProgressModal();
                 showGoSoftFailed(event.message || event.error || 'Có lỗi xảy ra');
                 reject(new Error(event.message || event.error));
             } catch (err) {
-                console.error('Error parsing error event:', err);
                 eventSource.close();
+                cleanup(); // ✅ Cleanup khi error
                 hideProgressModal();
                 showGoSoftFailed('Có lỗi xảy ra khi xử lý job');
                 reject(err);
             }
         });
         
-        eventSource.onerror = (error) => {
-            console.error('SSE connection error:', error);
+        eventSource.onerror = async (error) => {
+            // ✅ Cancel job khi mất kết nối
+            await cancelJob();
             eventSource.close();
+            cleanup(); // ✅ Cleanup khi mất kết nối
             hideProgressModal();
             showGoSoftFailed('Mất kết nối với server');
             reject(new Error('SSE connection error'));
@@ -2692,5 +2742,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
-
-

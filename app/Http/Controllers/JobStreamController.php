@@ -68,7 +68,6 @@ class JobStreamController extends Controller
                     $redis->auth(config('database.redis.default.password'));
                 }
             } catch (\Exception $e) {
-                Log::error("SSE: Lỗi kết nối Redis: " . $e->getMessage());
                 echo "event: error\n";
                 echo "data: " . json_encode(['error' => 'Lỗi kết nối Redis: ' . $e->getMessage()]) . "\n\n";
                 flush();
@@ -107,7 +106,6 @@ class JobStreamController extends Controller
                 
                 while (true) {
                     if (time() - $lastActivityTime > $timeout) {
-                        Log::debug("SSE: Stream timeout sau " . (time() - $lastActivityTime) . " giây không có activity");
                         echo "event: timeout\n";
                         echo "data: " . json_encode(['message' => 'Stream timeout - không có activity trong 30 phút']) . "\n\n";
                         flush();
@@ -123,11 +121,8 @@ class JobStreamController extends Controller
                         }
                         
                         if ($currentJobStatus === 'completed' || $currentJobStatus === 'failed') {
-                            Log::info("SSE: Client disconnected for job {$jobId}, but job is already {$currentJobStatus}, skipping cancellation");
                             break;
                         }
-                        
-                        Log::info("SSE: Client disconnected for job {$jobId}, cancelling job...");
                         try {
                             $redis->set("job:{$jobId}:cancelled", "1");
                             $redis->set("job:{$jobId}:status", "cancelled");
@@ -145,12 +140,12 @@ class JobStreamController extends Controller
                                         $goQuickController = new GoQuickController();
                                         $goQuickController->refundUsageOnCancel($jobId);
                                     } catch (\Exception $e) {
-                                        Log::error("Error refunding usage on connection aborted for job {$jobId}: " . $e->getMessage());
+                                        // Silent error
                                     }
                                 }
                             }
                         } catch (\Exception $e) {
-                            Log::error("SSE: Error cancelling job {$jobId}: " . $e->getMessage());
+                            // Silent error
                         }
                         break;
                     }
@@ -170,7 +165,6 @@ class JobStreamController extends Controller
                         
                         $lastListLength = $listLength;
                     } catch (\Exception $e) {
-                        Log::error("SSE: Lỗi Redis trong poll loop: " . $e->getMessage());
                         $progressList = [];
                     }
                     
@@ -180,17 +174,19 @@ class JobStreamController extends Controller
                     }
                     
                     foreach ($progressList as $progressJson) {
-                        if (!is_string($progressJson)) {
-                            $progressJson = (string)$progressJson;
-                        }
-                        
-                        $data = json_decode($progressJson, true);
-                        
-                        if (!$data) {
-                            Log::warning("SSE: Failed to parse JSON from Redis", [
-                                'raw_json' => substr($progressJson, 0, 200),
-                                'json_error' => json_last_error_msg()
-                            ]);
+                        try {
+                            if (!is_string($progressJson)) {
+                                $progressJson = (string)$progressJson;
+                            }
+                            
+                            $data = json_decode($progressJson, true);
+                            
+                            if (!$data || !is_array($data)) {
+                                $lastIndex++;
+                                continue;
+                            }
+                        } catch (\Exception $e) {
+                            // Skip invalid JSON
                             $lastIndex++;
                             continue;
                         }
@@ -199,6 +195,11 @@ class JobStreamController extends Controller
                             $percent = $data['percent'] ?? 0;
                             $messageText = $data['message'] ?? 'Đang xử lý...';
                             $eventData = $data['data'] ?? [];
+                            
+                            // ✅ Đảm bảo eventData là array (không phải null)
+                            if (!is_array($eventData)) {
+                                $eventData = [];
+                            }
                             
                             $flatData = $eventData;
                             
@@ -230,7 +231,43 @@ class JobStreamController extends Controller
                                 $flatData['processed_images'] = $data['processed_images'];
                             }
                             
+                            // ✅ Forward các field mới cho tờ khai (check cả trong eventData và top level)
+                            // Ưu tiên lấy từ eventData trước (vì đó là nơi các field được đặt trong data object)
+                            $accumulatedPercent = $eventData['accumulated_percent'] ?? $data['accumulated_percent'] ?? null;
+                            $accumulatedTotal = $eventData['accumulated_total'] ?? $data['accumulated_total'] ?? null;
+                            $accumulatedDownloaded = $eventData['accumulated_downloaded'] ?? $data['accumulated_downloaded'] ?? null;
+                            $thuyetMinhDownloaded = $eventData['thuyet_minh_downloaded'] ?? $data['thuyet_minh_downloaded'] ?? null;
+                            $thuyetMinhTotal = $eventData['thuyet_minh_total'] ?? $data['thuyet_minh_total'] ?? null;
+                            
+                            // Copy vào flatData nếu có giá trị (kể cả 0)
+                            if ($accumulatedPercent !== null) {
+                                $flatData['accumulated_percent'] = $accumulatedPercent;
+                            }
+                            if ($accumulatedTotal !== null) {
+                                $flatData['accumulated_total'] = $accumulatedTotal;
+                            }
+                            if ($accumulatedDownloaded !== null) {
+                                $flatData['accumulated_downloaded'] = $accumulatedDownloaded;
+                            }
+                            if ($thuyetMinhDownloaded !== null) {
+                                $flatData['thuyet_minh_downloaded'] = $thuyetMinhDownloaded;
+                            }
+                            if ($thuyetMinhTotal !== null) {
+                                $flatData['thuyet_minh_total'] = $thuyetMinhTotal;
+                            }
+                            
                             $processedCccd = $flatData['processed_cccd'] ?? null;
+                            
+                            // ✅ Tạo data object với TẤT CẢ các field từ flatData (bao gồm cả accumulated_*)
+                            // Copy tất cả field, kể cả khi giá trị là 0 (vì 0 là giá trị hợp lệ)
+                            $dataObject = [];
+                            foreach ($flatData as $key => $value) {
+                                // Copy nếu không phải null (bao gồm cả 0, false, empty string)
+                                if ($value !== null || (is_numeric($value) && $value == 0)) {
+                                    $dataObject[$key] = $value;
+                                }
+                            }
+                            
                             $finalData = [
                                 'percent' => $percent,
                                 'message' => $messageText,
@@ -241,7 +278,20 @@ class JobStreamController extends Controller
                                 'total_rows' => $flatData['total_rows'] ?? null,
                                 'estimated_cccd' => $flatData['estimated_cccd'] ?? null,
                                 'processed' => $flatData['processed'] ?? null,
+                                // ✅ Đặt data object để frontend có thể truy cập
+                                'data' => $dataObject,
                             ];
+                            
+                            // ✅ Forward error_code và error nếu có (từ eventData hoặc top level)
+                            if (isset($eventData['error_code']) || isset($data['error_code'])) {
+                                $finalData['error_code'] = $eventData['error_code'] ?? $data['error_code'];
+                            }
+                            if (isset($eventData['error']) || isset($data['error'])) {
+                                $finalData['error'] = $eventData['error'] ?? $data['error'];
+                            }
+                            if (isset($eventData['type']) || isset($data['type'])) {
+                                $finalData['type'] = $eventData['type'] ?? $data['type'];
+                            }
                             
                             echo "event: progress\n";
                             echo "data: " . json_encode($finalData) . "\n\n";
@@ -355,9 +405,8 @@ class JobStreamController extends Controller
                                 $goQuickController = new GoQuickController();
                                 $goQuickController->updateUsageOnComplete($jobId, $actualCccd);
                                 
-                                Log::info("Job {$jobId}: Updated usage on complete, actual_cccd={$actualCccd}");
                             } catch (\Exception $e) {
-                                Log::error("Error updating usage on complete for job {$jobId}: " . $e->getMessage());
+                                // Silent error
                             }
                         }
                         
@@ -388,7 +437,7 @@ class JobStreamController extends Controller
                                     $goQuickController = new GoQuickController();
                                     $goQuickController->refundUsageOnCancel($jobId);
                                 } catch (\Exception $e) {
-                                    Log::error("Error refunding usage on failed for job {$jobId}: " . $e->getMessage());
+                                    // Silent error
                                 }
                             }
                         }
@@ -429,11 +478,18 @@ class JobStreamController extends Controller
                 }
                 
             } catch (\Exception $e) {
-                Log::error("SSE Stream Error for job {$jobId}: " . $e->getMessage());
+                // Log error for debugging
+                \Log::error("SSE Stream error for job {$jobId}: " . $e->getMessage(), [
+                    'exception' => $e,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                // Send error event to frontend
                 echo "event: error\n";
                 echo "data: " . json_encode([
                     'status' => 'error',
-                    'message' => 'Stream error: ' . $e->getMessage(),
+                    'error' => 'Stream error: ' . $e->getMessage(),
+                    'error_code' => 'STREAM_ERROR'
                 ]) . "\n\n";
                 flush();
             }
@@ -514,7 +570,6 @@ class JobStreamController extends Controller
                     }
                     
                     if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
-                        Log::warning("Failed to decode JSON result for job {$jobId}: " . json_last_error_msg());
                         // Fallback to database
                     } else {
                         // Handle Go Quick format: {status: 'success', data: {...}}
@@ -533,7 +588,7 @@ class JobStreamController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::warning("Could not get result from Redis for job {$jobId}: " . $e->getMessage());
+                // Silent error
             }
             
             // Fallback to database
@@ -549,7 +604,6 @@ class JobStreamController extends Controller
                 'data' => $job->result,
             ]);
         } catch (\Exception $e) {
-            Log::error("Error in result() for job {$jobId}: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi lấy kết quả: ' . $e->getMessage()
@@ -600,7 +654,6 @@ class JobStreamController extends Controller
         $result = $resultJson ? json_decode($resultJson, true) : null;
         
         if (!$result) {
-            Log::warning("Job {$jobId} download: No result found in Redis");
             return response()->json([
                 'status' => 'error',
                 'message' => 'No download available for this job'
@@ -636,7 +689,6 @@ class JobStreamController extends Controller
         }
         
         // No zip_base64 and no download_id
-        Log::warning("Job {$jobId} download: No zip_base64 and no download_id");
         return response()->json([
             'status' => 'error',
             'message' => 'No download available for this job'
@@ -711,25 +763,21 @@ class JobStreamController extends Controller
                         $goQuickController = new GoQuickController();
                         $goQuickController->refundUsageOnCancel($jobId);
                     } catch (\Exception $e) {
-                        Log::error("Error refunding usage on cancel for job {$jobId}: " . $e->getMessage());
+                        // Silent error
                     }
                 }
-                
-                Log::info("Job {$jobId} cancelled by user");
                 
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Job đã được hủy'
                 ]);
             } catch (\Exception $e) {
-                Log::error("Error cancelling job {$jobId}: " . $e->getMessage());
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Lỗi khi hủy job: ' . $e->getMessage()
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error("Error in cancel() for job {$jobId}: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi hủy job: ' . $e->getMessage()

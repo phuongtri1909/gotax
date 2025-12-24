@@ -537,11 +537,11 @@ class GoQuickController extends Controller
             // Gọi API read-quick trực tiếp với 2 ảnh (không cần tạo ZIP)
             try {
                 $apiUrl = $this->getApiUrl() . '/read-quick';
-                
-                $response = Http::timeout(600)
+                    
+                    $response = Http::timeout(600)
                     ->attach('mt', file_get_contents($frontImage->getRealPath()), $frontImage->getClientOriginalName())
                     ->attach('ms', file_get_contents($backImage->getRealPath()), $backImage->getClientOriginalName())
-                    ->post($apiUrl);
+                        ->post($apiUrl);
 
                     if ($response->successful()) {
                         $apiResult = $response->json();
@@ -652,8 +652,8 @@ class GoQuickController extends Controller
                     $use->cccd_limit += $estimatedCccd;
                     $use->save();
                     Log::info("Quick read: Exception, refund {$estimatedCccd}");
-                    throw $e;
-                }
+                throw $e;
+            }
             
         } catch (ValidationException $e) {
             return response()->json([
